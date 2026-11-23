@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Engine</title>
+    <script>
+        (function () {
+            const path = window.location.pathname;
+            if (/\/custom-engine\/?$/i.test(path)) {
+                const destino = path.replace(/\/custom-engine\/?$/i, '/') + window.location.search + window.location.hash;
+                window.location.replace(destino);
+            }
+        })();
+    </script>
+    <style>
+        :root { color-scheme: dark; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background-color: #000000;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+            background-size: 28px 28px;
+            color: #f3f4f6;
+            font-family: 'Inter', 'Segoe UI Variable', system-ui, -apple-system, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .box {
+            max-width: 440px;
+            width: 100%;
+            background: #0d0f14;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-top: 3px solid #64748b;
+            border-radius: 12px;
+            padding: 28px 24px;
+            text-align: center;
+            box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.9);
+        }
+        h1 {
+            margin: 0 0 10px;
+            font-size: 1.2rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #f3f4f6;
+        }
+        p {
+            margin: 0 0 20px;
+            color: #9ca3af;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+        a {
+            display: inline-block;
+            background: #14171f;
+            color: #f3f4f6;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            padding: 11px 20px;
+            border-radius: 8px;
+            transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.15s ease;
+        }
+        a:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%);
+            border-color: #ef4444;
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <main class="box">
+        <h1>Página não encontrada</h1>
+        <p>Esta rota não existe. Podes voltar ao painel principal do motor.</p>
+        <a id="voltar-link" href="./">Voltar ao Painel</a>
+    </main>
+    <script>
+        (function () {
+            const link = document.getElementById('voltar-link');
+            if (!link) return;
+            if (window.location.hostname.endsWith('.github.io')) {
+                const segs = window.location.pathname.split('/').filter(Boolean);
+                link.href = segs.length > 0 ? '/' + segs[0] + '/' : '/';
+            } else {
+                link.href = '/';
+            }
+        })();
+    </script>
+</body>
+</html>
