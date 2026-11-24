@@ -2170,29 +2170,56 @@
                     void main() {
                         vec3 N = normalize(vNorm);
                         vec3 V = normalize(uCamPos - vWorldPos);
+                        vec3 R = reflect(-V, N);
                         vec3 L1 = normalize(vec3(0.55, 0.88, 0.65));
                         vec3 L2 = normalize(vec3(-0.78, 0.35, -0.55));
                         vec3 L3 = normalize(vec3(0.15, -0.65, 0.72));
+
+                        float metal = clamp((uSpec.x - 0.32) / 0.58, 0.0, 1.0);
+                        float rough = clamp(1.0 - (uSpec.y - 10.0) / 72.0, 0.08, 0.92);
+
+                        // Microtextura procedimental: maquinagem CNC longitudinal vs fundição granular
+                        float latheGrain = sin(vWorldPos.x * 115.0 + vWorldPos.z * 28.0) * 0.5 + 0.5;
+                        float castNoise = fract(sin(dot(floor(vWorldPos * 90.0), vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+                        float microTex = mix((castNoise - 0.5) * 0.055, (latheGrain - 0.5) * 0.042, step(0.56, uSpec.x));
+                        vec3 baseCol = clamp(uColor.rgb * (1.0 + microTex), 0.0, 1.0);
+
+                        // Oclusão espacial sutil no cárter/inferior e cavidades voltadas para baixo
+                        float vertAo = mix(0.68, 1.0, smoothstep(-1.35, 0.75, vWorldPos.y));
+                        float cavAo = mix(0.76, 1.0, smoothstep(-0.65, 0.45, N.y));
+                        float ao = vertAo * cavAo;
+
                         float hemi = 0.5 + 0.5 * N.y;
-                        vec3 ambient = mix(vec3(0.28, 0.31, 0.37), vec3(0.74, 0.78, 0.84), hemi);
+                        vec3 ambient = mix(vec3(0.22, 0.25, 0.31), vec3(0.72, 0.77, 0.85), hemi);
                         float diff1 = max(dot(N, L1), 0.0);
                         float diff2 = max(dot(N, L2), 0.0);
                         float diff3 = max(dot(N, L3), 0.0);
+
                         vec3 H1 = normalize(L1 + V);
                         vec3 H2 = normalize(L2 + V);
-                        float spec1 = pow(max(dot(N, H1), 1e-4), max(1.0, uSpec.y)) * uSpec.x * 1.15;
-                        float spec2 = pow(max(dot(N, H2), 1e-4), max(1.0, uSpec.y * 0.7)) * uSpec.x * 0.45;
-                        float fres = pow(clamp(1.0 - max(dot(N, V), 0.0), 1e-4, 1.0), 2.8);
-                        float metal = clamp((uSpec.x - 0.34) / 0.56, 0.0, 1.0);
-                        float studioBand = smoothstep(0.14, 0.86, diff1 * 0.72 + fres * 0.68) * metal;
-                        vec3 studioTint = mix(vec3(0.74, 0.84, 0.96), vec3(1.0, 0.95, 0.88), clamp(diff2 * 1.4, 0.0, 1.0));
-                        float rim = fres * (0.15 + 0.22 * uSpec.x);
-                        float diffGain = mix(1.0, 0.80, metal);
-                        vec3 specTint = mix(vec3(1.0), uColor.rgb * 0.55 + vec3(0.45), metal);
-                        vec3 col = uColor.rgb * (ambient * 0.44 + (diff1 * 0.74 + diff2 * 0.34 + diff3 * 0.18) * diffGain)
-                                 + specTint * vec3(spec1 * 1.16 + spec2 * 1.06)
-                                 + studioTint * (studioBand * 0.15)
-                                 + vec3(rim * 0.74, rim * 0.84, rim);
+                        float shin = max(4.0, uSpec.y);
+                        float spec1 = pow(max(dot(N, H1), 1e-4), shin) * uSpec.x * 1.25;
+                        float spec2 = pow(max(dot(N, H2), 1e-4), max(2.0, shin * 0.55)) * uSpec.x * 0.50;
+
+                        // Reflexo de estúdio simulado no vetor R (softbox superior + rebote inferior)
+                        float skyRef = smoothstep(0.08 - rough * 0.25, 0.85, R.y) * smoothstep(-0.2, 0.8, 1.0 - abs(R.z));
+                        float sideStrip = smoothstep(0.25, 0.92, abs(R.x)) * (1.0 - rough * 0.55);
+                        float floorBounce = smoothstep(0.15, -0.75, R.y) * 0.35;
+                        vec3 envCol = mix(vec3(0.12, 0.14, 0.18), vec3(0.95, 0.97, 1.0), skyRef)
+                                    + vec3(0.55, 0.68, 0.82) * (sideStrip * 0.28)
+                                    + vec3(0.32, 0.28, 0.24) * floorBounce;
+
+                        float ndotv = clamp(dot(N, V), 0.0, 1.0);
+                        float fres = pow(clamp(1.0 - ndotv, 1e-4, 1.0), 3.0);
+                        vec3 F0 = mix(vec3(0.04), baseCol, metal);
+                        vec3 fresTint = F0 + (vec3(1.0) - F0) * fres;
+
+                        float diffGain = mix(1.0, 0.66, metal);
+                        vec3 specTint = mix(vec3(1.0), baseCol * 0.62 + vec3(0.38), metal);
+                        vec3 col = baseCol * (ambient * 0.42 + (diff1 * 0.78 + diff2 * 0.36 + diff3 * 0.20) * diffGain) * ao
+                                 + specTint * (spec1 * 1.15 + spec2 * 0.95)
+                                 + envCol * fresTint * (0.14 + 0.38 * metal) * ao
+                                 + vec3(0.76, 0.86, 1.0) * (fres * (0.12 + 0.18 * uSpec.x));
                         gl_FragColor = vec4(col, uColor.a);
                     }
                 `;
@@ -2245,6 +2272,7 @@
 
                 this.meshes = {
                     box: this.makeMesh(this.buildBoxData()),
+                    bevelBox: this.makeMesh(this.buildBevelBoxData(0.08)),
                     cyl: this.makeMesh(this.buildCylinderData(32, 1.0, 1.0)),
                     cone: this.makeMesh(this.buildCylinderData(32, 1.0, 0.54)),
                     hex: this.makeMesh(this.buildCylinderData(6, 1.0, 1.0)),
@@ -2252,6 +2280,9 @@
                     gear: this.makeMesh(this.buildGearData(20, 0.88, 1.04)),
                     torus: this.makeMesh(this.buildTorusData(32, 16, 0.42)),
                     sphere: this.makeMesh(this.buildSphereData(12, 16)),
+                    spring: this.makeMesh(this.buildHelixSpringData(4.0, 36, 6)),
+                    crankWeb: this.makeMesh(this.buildCrankWebData(36)),
+                    impeller: this.makeMesh(this.buildImpellerData(7)),
                     wankelHousing: this.makeMesh(this.buildWankelHousingData(54)),
                     wankelRotor: this.makeMesh(this.buildWankelRotorData(36))
                 };
@@ -2538,7 +2569,8 @@
                     const outY = Math.cos(midA), outZ = Math.sin(midA);
                     for (let s = 0; s < perSide; s++) {
                         const u = s / perSide;
-                        const bulge = 0.12 * Math.sin(Math.PI * u);
+                        // Flanco convexo com cavidade central de combustão (bathtub pocket)
+                        const bulge = 0.13 * Math.sin(Math.PI * u) - 0.042 * Math.pow(Math.max(0, Math.sin(Math.PI * u)), 6);
                         const py = (1 - u) * ay0 + u * ay1 + outY * bulge;
                         const pz = (1 - u) * az0 + u * az1 + outZ * bulge;
                         pts.push([py, pz]);
@@ -2556,6 +2588,169 @@
                     for (let k = 0; k < 3; k++) norm.push(1, 0, 0);
                     pos.push(-0.5, 0, 0, ...l1, ...l0);
                     for (let k = 0; k < 3; k++) norm.push(-1, 0, 0);
+                }
+                for (let i = 0; i < pos.length / 3; i++) idx.push(i);
+                return { pos, norm, idx };
+            }
+
+            pushCheckedTri(pos, norm, p0, p1, p2, outDir) {
+                const ax = p1[0] - p0[0], ay = p1[1] - p0[1], az = p1[2] - p0[2];
+                const bx = p2[0] - p0[0], by = p2[1] - p0[1], bz = p2[2] - p0[2];
+                const cx = ay * bz - az * by, cy = az * bx - ax * bz, cz = ax * by - ay * bx;
+                const d = cx * outDir[0] + cy * outDir[1] + cz * outDir[2];
+                const nLen = Math.hypot(outDir[0], outDir[1], outDir[2]) || 1;
+                const nx = outDir[0] / nLen, ny = outDir[1] / nLen, nz = outDir[2] / nLen;
+                if (d >= 0) {
+                    pos.push(...p0, ...p1, ...p2);
+                } else {
+                    pos.push(...p0, ...p2, ...p1);
+                }
+                for (let k = 0; k < 3; k++) norm.push(nx, ny, nz);
+            }
+
+            pushCheckedQuad(pos, norm, p0, p1, p2, p3, outDir) {
+                this.pushCheckedTri(pos, norm, p0, p1, p2, outDir);
+                this.pushCheckedTri(pos, norm, p0, p2, p3, outDir);
+            }
+
+            buildBevelBoxData(bev = 0.08) {
+                const pos = [], norm = [], idx = [];
+                const h = 0.5, d = 0.5 - Math.max(0.02, Math.min(0.18, bev));
+                const faces = [
+                    { n: [ 1, 0, 0], pts: [[ h,-d, d],[ h,-d,-d],[ h, d,-d],[ h, d, d]] },
+                    { n: [-1, 0, 0], pts: [[-h,-d,-d],[-h,-d, d],[-h, d, d],[-h, d,-d]] },
+                    { n: [ 0, 1, 0], pts: [[-d, h, d],[ d, h, d],[ d, h,-d],[-d, h,-d]] },
+                    { n: [ 0,-1, 0], pts: [[-d,-h,-d],[ d,-h,-d],[ d,-h, d],[-d,-h, d]] },
+                    { n: [ 0, 0, 1], pts: [[-d,-d, h],[ d,-d, h],[ d, d, h],[-d, d, h]] },
+                    { n: [ 0, 0,-1], pts: [[ d,-d,-h],[-d,-d,-h],[-d, d,-h],[ d, d,-h]] }
+                ];
+                for (const f of faces) {
+                    this.pushCheckedQuad(pos, norm, f.pts[0], f.pts[1], f.pts[2], f.pts[3], f.n);
+                }
+                for (const sy of [-1, 1]) {
+                    for (const sz of [-1, 1]) {
+                        this.pushCheckedQuad(pos, norm, [-d, sy * h, sz * d], [d, sy * h, sz * d], [d, sy * d, sz * h], [-d, sy * d, sz * h], [0, sy, sz]);
+                    }
+                }
+                for (const sx of [-1, 1]) {
+                    for (const sz of [-1, 1]) {
+                        this.pushCheckedQuad(pos, norm, [sx * h, -d, sz * d], [sx * h, d, sz * d], [sx * d, d, sz * h], [sx * d, -d, sz * h], [sx, 0, sz]);
+                    }
+                }
+                for (const sx of [-1, 1]) {
+                    for (const sy of [-1, 1]) {
+                        this.pushCheckedQuad(pos, norm, [sx * h, sy * d, -d], [sx * h, sy * d, d], [sx * d, sy * h, d], [sx * d, sy * h, -d], [sx, sy, 0]);
+                    }
+                }
+                for (const sx of [-1, 1]) {
+                    for (const sy of [-1, 1]) {
+                        for (const sz of [-1, 1]) {
+                            this.pushCheckedTri(pos, norm, [sx * h, sy * d, sz * d], [sx * d, sy * h, sz * d], [sx * d, sy * d, sz * h], [sx, sy, sz]);
+                        }
+                    }
+                }
+                for (let i = 0; i < pos.length / 3; i++) idx.push(i);
+                return { pos, norm, idx };
+            }
+
+            buildHelixSpringData(coils = 4.0, pathSegs = 36, tubeSegs = 6) {
+                const pos = [], norm = [], idx = [];
+                const R = 0.84, r = 0.14;
+                const spine = (t) => {
+                    const a = t * coils * Math.PI * 2;
+                    return [R * Math.cos(a), t - 0.5, R * Math.sin(a), a];
+                };
+                const rings = [];
+                for (let i = 0; i <= pathSegs; i++) {
+                    const t = i / pathSegs;
+                    const [px, py, pz, a] = spine(t);
+                    const pPrev = spine(Math.max(0, t - 0.01));
+                    const pNext = spine(Math.min(1, t + 0.01));
+                    let tx = pNext[0] - pPrev[0], ty = pNext[1] - pPrev[1], tz = pNext[2] - pPrev[2];
+                    const tLen = Math.hypot(tx, ty, tz) || 1;
+                    tx /= tLen; ty /= tLen; tz /= tLen;
+                    const rx0 = Math.cos(a), ry0 = 0, rz0 = Math.sin(a);
+                    const dot = rx0 * tx + ry0 * ty + rz0 * tz;
+                    let ux = rx0 - tx * dot, uy = ry0 - ty * dot, uz = rz0 - tz * dot;
+                    const uLen = Math.hypot(ux, uy, uz) || 1;
+                    ux /= uLen; uy /= uLen; uz /= uLen;
+                    const bx = ty * uz - tz * uy, by = tz * ux - tx * uz, bz = tx * uy - ty * ux;
+                    const ring = [];
+                    for (let j = 0; j < tubeSegs; j++) {
+                        const ph = (j / tubeSegs) * Math.PI * 2;
+                        const cp = Math.cos(ph), sp = Math.sin(ph);
+                        const nx = cp * ux + sp * bx, ny = cp * uy + sp * by, nz = cp * uz + sp * bz;
+                        ring.push({ p: [px + r * nx, py + r * ny, pz + r * nz], n: [nx, ny, nz] });
+                    }
+                    rings.push(ring);
+                }
+                for (let i = 0; i < pathSegs; i++) {
+                    for (let j = 0; j < tubeSegs; j++) {
+                        const jn = (j + 1) % tubeSegs;
+                        const v00 = rings[i][j], v10 = rings[i + 1][j], v11 = rings[i + 1][jn], v01 = rings[i][jn];
+                        const avgN = [
+                            v00.n[0] + v10.n[0] + v11.n[0] + v01.n[0],
+                            v00.n[1] + v10.n[1] + v11.n[1] + v01.n[1],
+                            v00.n[2] + v10.n[2] + v11.n[2] + v01.n[2]
+                        ];
+                        this.pushCheckedQuad(pos, norm, v00.p, v10.p, v11.p, v01.p, avgN);
+                    }
+                }
+                for (let i = 0; i < pos.length / 3; i++) idx.push(i);
+                return { pos, norm, idx };
+            }
+
+            buildCrankWebData(segs = 36) {
+                const pos = [], norm = [], idx = [];
+                const radAt = (a) => {
+                    const dPin = Math.abs(Math.atan2(Math.sin(a), Math.cos(a)));
+                    const dCw  = Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI)));
+                    if (dPin < 0.36) return 1.24 - dPin * 1.15;
+                    if (dCw < 1.18) {
+                        const u = dCw / 1.18;
+                        return 0.44 + 0.84 * Math.pow(Math.cos(u * Math.PI * 0.5), 0.55);
+                    }
+                    return 0.42;
+                };
+                for (let i = 0; i < segs; i++) {
+                    const a0 = (i / segs) * Math.PI * 2;
+                    const a1 = ((i + 1) / segs) * Math.PI * 2;
+                    const r0 = radAt(a0), r1 = radAt(a1);
+                    const y0 = Math.cos(a0) * r0, z0 = Math.sin(a0) * r0;
+                    const y1 = Math.cos(a1) * r1, z1 = Math.sin(a1) * r1;
+                    const nl = Math.hypot(z1 - z0, y1 - y0) || 1;
+                    const ny = (z1 - z0) / nl, nz = -(y1 - y0) / nl;
+                    const l0 = [-0.5, y0, z0], l1 = [-0.5, y1, z1], r1p = [0.5, y1, z1], r0p = [0.5, y0, z0];
+                    pos.push(...l0, ...l1, ...r1p, ...l0, ...r1p, ...r0p);
+                    for (let k = 0; k < 6; k++) norm.push(0, ny, nz);
+                    pos.push(0.5, 0, 0, ...r0p, ...r1p);
+                    for (let k = 0; k < 3; k++) norm.push(1, 0, 0);
+                    pos.push(-0.5, 0, 0, ...l1, ...l0);
+                    for (let k = 0; k < 3; k++) norm.push(-1, 0, 0);
+                }
+                for (let i = 0; i < pos.length / 3; i++) idx.push(i);
+                return { pos, norm, idx };
+            }
+
+            buildImpellerData(blades = 7) {
+                const pos = [], norm = [], idx = [];
+                for (let b = 0; b < blades; b++) {
+                    const a0 = (b / blades) * Math.PI * 2;
+                    const aTip = a0 + 0.38;
+                    const rIn = 0.24, rOut = 0.96, th = 0.04;
+                    const nx = Math.sin(a0 + 0.2), nz = -Math.cos(a0 + 0.2);
+                    const ax = Math.cos(a0) * rIn, az = Math.sin(a0) * rIn;
+                    const bx = Math.cos(aTip) * rOut, bz = Math.sin(aTip) * rOut;
+                    const offX = nx * th, offZ = nz * th;
+                    const pA = [ax - offX, 0.36, az - offZ], pB = [bx - offX, -0.32, bz - offZ];
+                    const pC = [bx + offX, -0.32, bz + offZ], pD = [ax + offX, 0.36, az + offZ];
+                    const bA = [ax - offX, -0.45, az - offZ], bB = [bx - offX, -0.45, bz - offZ];
+                    const bC = [bx + offX, -0.45, bz + offZ], bD = [ax + offX, -0.45, az + offZ];
+                    this.pushCheckedQuad(pos, norm, pA, pB, pC, pD, [nx * 0.2, 1.0, nz * 0.2]);
+                    this.pushCheckedQuad(pos, norm, bA, pA, pD, bD, [-Math.cos(a0), 0, -Math.sin(a0)]);
+                    this.pushCheckedQuad(pos, norm, bB, bC, pC, pB, [Math.cos(aTip), 0, Math.sin(aTip)]);
+                    this.pushCheckedQuad(pos, norm, pA, bA, bB, pB, [-nx, 0.2, -nz]);
+                    this.pushCheckedQuad(pos, norm, pD, pC, bC, bD, [nx, 0.2, nz]);
                 }
                 for (let i = 0; i < pos.length / 3; i++) idx.push(i);
                 return { pos, norm, idx };
@@ -2687,39 +2882,72 @@
                 targetList.push({ type, model, color, spec });
             }
 
-            addPipe(targetList, points, radius, color, spec = [0.62, 52], couplerIndices = []) {
-                const C_COUPLER = [0.16, 0.20, 0.28, 1.0];
-                for (let i = 0; i < points.length - 1; i++) {
-                    const p1 = points[i], p2 = points[i + 1];
+            addPipe(targetList, points, radius, color, spec = [0.62, 52], couplerIndices = [], smooth = true) {
+                const C_COUPLER = [0.14, 0.19, 0.28, 1.0];
+                const C_CLAMP = [0.82, 0.86, 0.90, 1.0];
+                const addSeg = (p1, p2, r, col, sp) => {
                     const dx = p2[0] - p1[0], dy = p2[1] - p1[1], dz = p2[2] - p1[2];
                     const len = Math.hypot(dx, dy, dz);
-                    if (len < 0.001) continue;
+                    if (len < 0.001) return;
                     const ux = dx / len, uy = dy / len, uz = dz / len;
-                    const mx = (p1[0] + p2[0]) * 0.5;
-                    const my = (p1[1] + p2[1]) * 0.5;
-                    const mz = (p1[2] + p2[2]) * 0.5;
+                    const mx = (p1[0] + p2[0]) * 0.5, my = (p1[1] + p2[1]) * 0.5, mz = (p1[2] + p2[2]) * 0.5;
                     const ax = uz, az = -ux;
                     const axisLen = Math.hypot(ax, az);
-                    let m;
-                    if (axisLen < 1e-4) {
-                        m = this.matTRS(mx, my, mz, uy < 0 ? Math.PI : 0, 0, 0, radius, len, radius);
-                    } else {
-                        const ang = Math.acos(Math.max(-1, Math.min(1, uy)));
-                        m = this.matAxisAngle(mx, my, mz, ax, 0, az, ang, radius, len, radius);
-                    }
-                    this.addPart(targetList, 'cyl', m, color, spec);
-                    if (i > 0) {
-                        this.addPart(targetList, 'sphere', this.matTRS(p1[0], p1[1], p1[2], 0, 0, 0, radius * 1.02, radius * 1.02, radius * 1.02), color, spec);
-                    }
-                    if (couplerIndices.includes(i) && len > 0.16) {
-                        let cm;
-                        if (axisLen < 1e-4) {
-                            cm = this.matTRS(mx, my, mz, uy < 0 ? Math.PI : 0, 0, 0, radius * 1.24, 0.12, radius * 1.24);
-                        } else {
-                            const ang = Math.acos(Math.max(-1, Math.min(1, uy)));
-                            cm = this.matAxisAngle(mx, my, mz, ax, 0, az, ang, radius * 1.24, 0.12, radius * 1.24);
+                    const m = (axisLen < 1e-4)
+                        ? this.matTRS(mx, my, mz, uy < 0 ? Math.PI : 0, 0, 0, r, len, r)
+                        : this.matAxisAngle(mx, my, mz, ax, 0, az, Math.acos(Math.max(-1, Math.min(1, uy))), r, len, r);
+                    this.addPart(targetList, 'cyl', m, col, sp);
+                };
+
+                for (const ci of couplerIndices) {
+                    if (ci >= 0 && ci < points.length - 1) {
+                        const p1 = points[ci], p2 = points[ci + 1];
+                        const len = Math.hypot(p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2]);
+                        if (len > 0.16) {
+                            const mx = (p1[0] + p2[0]) * 0.5, my = (p1[1] + p2[1]) * 0.5, mz = (p1[2] + p2[2]) * 0.5;
+                            const u = [(p2[0] - p1[0]) / len, (p2[1] - p1[1]) / len, (p2[2] - p1[2]) / len];
+                            const s0 = [mx - u[0] * 0.06, my - u[1] * 0.06, mz - u[2] * 0.06];
+                            const s1 = [mx + u[0] * 0.06, my + u[1] * 0.06, mz + u[2] * 0.06];
+                            addSeg(s0, s1, radius * 1.24, C_COUPLER, [0.22, 16]);
+                            addSeg([mx - u[0] * 0.052, my - u[1] * 0.052, mz - u[2] * 0.052], [mx - u[0] * 0.036, my - u[1] * 0.036, mz - u[2] * 0.036], radius * 1.31, C_CLAMP, [0.82, 68]);
+                            addSeg([mx + u[0] * 0.036, my + u[1] * 0.036, mz + u[2] * 0.036], [mx + u[0] * 0.052, my + u[1] * 0.052, mz + u[2] * 0.052], radius * 1.31, C_CLAMP, [0.82, 68]);
                         }
-                        this.addPart(targetList, 'cyl', cm, C_COUPLER, [0.25, 16]);
+                    }
+                }
+
+                let curvePts = points;
+                if (smooth && points.length >= 3) {
+                    const maxFil = (couplerIndices.length > 0) ? 0.18 : 0.24;
+                    curvePts = [points[0]];
+                    for (let i = 1; i < points.length - 1; i++) {
+                        const pPrev = points[i - 1], pCurr = points[i], pNext = points[i + 1];
+                        const d1x = pCurr[0] - pPrev[0], d1y = pCurr[1] - pPrev[1], d1z = pCurr[2] - pPrev[2];
+                        const d2x = pNext[0] - pCurr[0], d2y = pNext[1] - pCurr[1], d2z = pNext[2] - pCurr[2];
+                        const l1 = Math.hypot(d1x, d1y, d1z), l2 = Math.hypot(d2x, d2y, d2z);
+                        if (l1 > 0.04 && l2 > 0.04) {
+                            const f = Math.min(maxFil, l1 * 0.32, l2 * 0.32);
+                            const q0 = [pCurr[0] - (d1x / l1) * f, pCurr[1] - (d1y / l1) * f, pCurr[2] - (d1z / l1) * f];
+                            const q1 = [pCurr[0] + (d2x / l2) * f, pCurr[1] + (d2y / l2) * f, pCurr[2] + (d2z / l2) * f];
+                            for (let st = 0; st <= 3; st++) {
+                                const t = st / 3, it = 1 - t;
+                                curvePts.push([
+                                    it * it * q0[0] + 2 * it * t * pCurr[0] + t * t * q1[0],
+                                    it * it * q0[1] + 2 * it * t * pCurr[1] + t * t * q1[1],
+                                    it * it * q0[2] + 2 * it * t * pCurr[2] + t * t * q1[2]
+                                ]);
+                            }
+                        } else {
+                            curvePts.push(pCurr);
+                        }
+                    }
+                    curvePts.push(points[points.length - 1]);
+                }
+
+                for (let i = 0; i < curvePts.length - 1; i++) {
+                    addSeg(curvePts[i], curvePts[i + 1], radius, color, spec);
+                    if (i > 0) {
+                        const p1 = curvePts[i];
+                        this.addPart(targetList, 'sphere', this.matTRS(p1[0], p1[1], p1[2], 0, 0, 0, radius * 1.01, radius * 1.01, radius * 1.01), color, spec);
                     }
                 }
             }
@@ -2732,7 +2960,7 @@
                     const C_CAP = [0.22, 0.25, 0.30, 1.0];
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, dBase * cosA, z + dBase * sinA, tiltAngle, 0, 0, 0.044, 0.16, 0.044), C_INJ, [0.75, 58]);
                     const dTop = y + 0.10;
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(x, dTop * cosA, z + dTop * sinA, tiltAngle, 0, 0, 0.095, 0.06, 0.11), C_CAP, [0.45, 34]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, dTop * cosA, z + dTop * sinA, tiltAngle, 0, 0, 0.095, 0.06, 0.11), C_CAP, [0.45, 34]);
                     // Linha metálica de alta pressão Common Rail para cada injetor
                     const dSide = y + 0.04;
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, dSide * cosA - 0.06 * sinA, z + dSide * sinA + 0.06 * cosA, tiltAngle + 0.6, 0, 0, 0.018, 0.14, 0.018), [0.80, 0.84, 0.88, 1.0], [0.8, 64]);
@@ -2741,8 +2969,8 @@
                     const C_BOOT = [0.18, 0.20, 0.24, 1.0];
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, dBase * cosA, z + dBase * sinA, tiltAngle, 0, 0, 0.055, 0.13, 0.055), C_BOOT, [0.3, 18]);
                     const dTop = y + 0.08;
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(x, dTop * cosA, z + dTop * sinA, tiltAngle, 0, 0, 0.12, 0.075, 0.14), C_COIL, [0.55, 40]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(x, (dTop + 0.045) * cosA, z + (dTop + 0.045) * sinA, tiltAngle, 0, 0, 0.06, 0.025, 0.08), C_BOOT, [0.4, 24]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, dTop * cosA, z + dTop * sinA, tiltAngle, 0, 0, 0.12, 0.075, 0.14), C_COIL, [0.58, 44]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, (dTop + 0.045) * cosA, z + (dTop + 0.045) * sinA, tiltAngle, 0, 0, 0.06, 0.025, 0.08), C_BOOT, [0.4, 24]);
                 }
             }
 
@@ -2771,21 +2999,22 @@
                 const C_BLADE = [0.90, 0.93, 0.96, 1.0];
                 const C_WASTE = [0.58, 0.62, 0.68, 1.0];
 
-                // Center bearing housing (CHRA) + oil feed/drain bosses + V-band clamp rings
+                // Center bearing housing (CHRA) + linha AN malha de aço + V-bands
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy, cz, 0, 0, Math.PI * 0.5, 0.14 * s, 0.32 * s, 0.14 * s), C_CART, [0.55, 40]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + 0.17 * s, cz, 0, 0, 0, 0.038 * s, 0.14 * s, 0.038 * s), [0.72, 0.60, 0.32, 1.0], [0.65, 52]);
+                this.addPart(this.staticOpaque, 'hex', this.matTRS(cx, cy + 0.16 * s, cz, 0, 0, 0, 0.044 * s, 0.10 * s, 0.044 * s), [0.20, 0.46, 0.78, 1.0], [0.74, 58]);
+                this.addPipe(this.staticOpaque, [[cx, cy + 0.21 * s, cz], [cx, cy + 0.30 * s, cz + 0.18 * s * flipZ], [cx, cy + 0.12 * s, cz + 0.34 * s * flipZ]], 0.015 * s, C_COMP, [0.80, 64]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy - 0.16 * s, cz, 0, 0, 0, 0.042 * s, 0.12 * s, 0.042 * s), C_CART, [0.5, 36]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.21 * s, 0.03 * s, 0.21 * s), C_COMP, [0.75, 62]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.19 * s, 0.03 * s, 0.19 * s), C_WASTE, [0.65, 52]);
+                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.21 * s, 0.03 * s, 0.21 * s), C_COMP, [0.78, 64]);
+                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.19 * s, 0.03 * s, 0.19 * s), C_WASTE, [0.68, 54]);
                 // Compressor snail + intake bellmouth + blow-off valve (BOV)
                 this.addPart(this.staticOpaque, 'torus', this.matTRS(cx - 0.17 * s, cy, cz, 0, Math.PI * 0.5, 0, 0.25 * s, 0.25 * s, 0.25 * s), C_COMP, [0.78, 68]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.25 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.19 * s, 0.15 * s, 0.19 * s), C_COMP, [0.72, 60]);
-                this.addPart(this.staticOpaque, 'cone', this.matTRS(cx - 0.34 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.21 * s, 0.09 * s, 0.21 * s), C_COMP, [0.76, 64]);
+                this.addPart(this.staticOpaque, 'cone', this.matTRS(cx - 0.34 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.22 * s, 0.09 * s, 0.22 * s), C_COMP, [0.78, 66]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.17 * s, cy + 0.26 * s, cz - 0.14 * s * flipZ, 0, 0, 0, 0.065 * s, 0.14 * s, 0.065 * s), [0.72, 0.24, 0.24, 1.0], [0.68, 54]);
-                // Turbine snail + exhaust outlet flange + downpipe + O2 sensor
+                // Turbine snail + heat-tinted downpipe + lambda O2 sensor
                 this.addPart(this.staticOpaque, 'torus', this.matTRS(cx + 0.17 * s, cy, cz, 0, Math.PI * 0.5, 0, 0.22 * s, 0.22 * s, 0.22 * s), C_TURB, [0.40, 28]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + 0.26 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.15 * s, 0.16 * s, 0.15 * s), C_TURB, [0.35, 24]);
-                this.addPipe(this.staticOpaque, [[cx + 0.33 * s, cy, cz], [cx + 0.62 * s, cy - 0.08 * s, cz], [cx + 0.78 * s, cy - 0.36 * s, cz]], 0.115 * s, C_TURB, [0.42, 30]);
+                this.addPipe(this.staticOpaque, [[cx + 0.33 * s, cy, cz], [cx + 0.62 * s, cy - 0.08 * s, cz], [cx + 0.78 * s, cy - 0.36 * s, cz]], 0.115 * s, C_TURB, [0.44, 34]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + 0.55 * s, cy + 0.05 * s, cz, -0.35, 0, -0.35, 0.028 * s, 0.14 * s, 0.028 * s), C_WASTE, [0.7, 56]);
                 // Wastegate actuator canister + rod
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.04 * s, cy + 0.26 * s, cz + 0.16 * s * flipZ, 0, 0, Math.PI * 0.5, 0.08 * s, 0.16 * s, 0.08 * s), C_WASTE, [0.6, 48]);
@@ -2793,8 +3022,9 @@
 
                 this.dynamicRotors.push({
                     type: 'impeller',
+                    symmetry: 7,
                     cx: cx - 0.35 * s, cy, cz,
-                    r: 0.145 * s,
+                    r: 0.148 * s,
                     speedMult: 2.2,
                     colorHub: C_HUB,
                     colorBlade: C_BLADE
@@ -2813,18 +3043,16 @@
                 const C_SNOUT = [0.68, 0.73, 0.79, 1.0];
                 const C_BELT = [0.15, 0.17, 0.20, 1.0];
 
-                this.addPart(this.staticOpaque, 'box', this.matTRS(x, y, z, 0, 0, 0, lenX, 0.42, widthZ), C_BODY, [0.55, 44]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y, z, 0, 0, 0, lenX, 0.42, widthZ), C_BODY, [0.55, 44]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y + 0.08, z - widthZ * 0.22, 0, 0, Math.PI * 0.5, 0.18, lenX * 0.98, 0.18), C_RIB, [0.68, 58]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y + 0.08, z + widthZ * 0.22, 0, 0, Math.PI * 0.5, 0.18, lenX * 0.98, 0.18), C_RIB, [0.68, 58]);
                 for (let k = -3; k <= 3; k++) {
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(x + k * (lenX * 0.13), y + 0.25, z, 0, 0, 0, 0.045, 0.055, widthZ * 0.94), C_RIB, [0.62, 50]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x + k * (lenX * 0.13), y + 0.25, z, 0, 0, 0, 0.045, 0.055, widthZ * 0.94), C_RIB, [0.62, 50]);
                 }
-                // Billet blower snout & flange
                 const snoutLen = Math.max(0.25, (x - lenX * 0.5) - pulleyX);
                 const snoutCx = pulleyX + snoutLen * 0.5;
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(snoutCx, y, z, 0, 0, Math.PI * 0.5, 0.098, snoutLen + 0.14, 0.098), C_SNOUT, [0.72, 62]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(x - lenX * 0.5, y, z, 0, 0, 0, 0.07, 0.30, 0.32), C_RIB, [0.65, 52]);
-                // Bypass actuator valve on side
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x - lenX * 0.5, y, z, 0, 0, 0, 0.07, 0.30, 0.32), C_RIB, [0.65, 52]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(x + lenX * 0.2, y + 0.10, z + widthZ * 0.55, Math.PI * 0.5, 0, 0, 0.07, 0.16, 0.07), C_SNOUT, [0.6, 48]);
 
                 this.dynamicRotors.push({
@@ -2860,15 +3088,14 @@
                 const C_CORE = [0.74, 0.78, 0.84, 1.0];
                 const C_TANK = [0.42, 0.47, 0.54, 1.0];
                 const C_FIN  = [0.48, 0.52, 0.58, 1.0];
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy, cz, 0, 0, 0, wX, hY, dZ * 0.76), C_CORE, [0.65, 50]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy, cz - dZ * 0.48, 0, 0, 0, wX * 1.06, hY * 1.04, dZ * 0.20), C_TANK, [0.5, 40]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy, cz + dZ * 0.48, 0, 0, 0, wX * 1.06, hY * 1.04, dZ * 0.20), C_TANK, [0.5, 40]);
-                // Cooling fin rows + top mounting brackets
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz, 0, 0, 0, wX, hY, dZ * 0.76), C_CORE, [0.65, 50]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz - dZ * 0.48, 0, 0, 0, wX * 1.06, hY * 1.04, dZ * 0.20), C_TANK, [0.54, 44]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz + dZ * 0.48, 0, 0, 0, wX * 1.06, hY * 1.04, dZ * 0.20), C_TANK, [0.54, 44]);
                 for (let k = -3; k <= 3; k++) {
                     this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + k * (hY * 0.13), cz, 0, 0, 0, wX * 1.05, 0.020, dZ * 0.73), C_FIN, [0.4, 24]);
                 }
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + hY * 0.54, cz - dZ * 0.3, 0, 0, 0, wX * 0.6, 0.06, 0.08), C_TANK, [0.5, 36]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + hY * 0.54, cz + dZ * 0.3, 0, 0, 0, wX * 0.6, 0.06, 0.08), C_TANK, [0.5, 36]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + hY * 0.54, cz - dZ * 0.3, 0, 0, 0, wX * 0.6, 0.06, 0.08), C_TANK, [0.5, 36]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + hY * 0.54, cz + dZ * 0.3, 0, 0, 0, wX * 0.6, 0.06, 0.08), C_TANK, [0.5, 36]);
             }
 
             addFreevalveBank(cylSpecs, xValOffs, deckDist, cylR, halfLenX) {
@@ -2967,7 +3194,6 @@
                     'Titânio':      { pis: [0.72, 0.67, 0.60, 1.0], rod: [0.64, 0.59, 0.52, 1.0] }
                 };
                 const pisP = pistonPalettes[pMatOpt] || pistonPalettes['Alumínio'];
-                const C_GASKET  = [0.76, 0.45, 0.22, 1.0];
                 const C_HOSE    = [0.09, 0.11, 0.15, 1.0];
                 const C_BRASS   = [0.82, 0.63, 0.24, 1.0];
                 const C_DIP     = [0.92, 0.72, 0.10, 1.0];
@@ -3018,31 +3244,30 @@
 
                     const blockW = halfLenX * 2.04;
                     const blockZ = isVR ? cylR * 3.8 : cylR * 2.5;
-                    // Cárter detalhado + aletas de arrefecimento + bujão sextavado em latão
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, -crankR - 0.14, 0, 0, 0, 0, blockW * 1.03, 0.10, blockZ * 1.02), C_SUMP, [0.4, 24]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, -crankR - 0.30, 0, 0, 0, 0, blockW * 0.96, 0.28, blockZ * 0.90), C_SUMP, [0.35, 20]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(halfLenX * 0.60, -crankR - 0.43, 0, 0, 0, 0, 0.048, 0.05, 0.048), [0.76, 0.62, 0.28, 1.0], [0.7, 52]);
+                    // Cárter detalhado chanfrado + aletas de arrefecimento + parafusos do cárter + bujão em latão
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.14, 0, 0, 0, 0, blockW * 1.04, 0.10, blockZ * 1.04), C_SUMP, [0.44, 28]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.30, 0, 0, 0, 0, blockW * 0.96, 0.28, blockZ * 0.90), C_SUMP, [0.38, 22]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(halfLenX * 0.60, -crankR - 0.43, 0, 0, 0, 0, 0.052, 0.05, 0.052), [0.80, 0.64, 0.28, 1.0], [0.74, 56]);
                     for (let f = -2; f <= 2; f++) {
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, -crankR - 0.45, f * (blockZ * 0.16), 0, 0, 0, blockW * 0.88, 0.03, 0.03), C_BLOCK, [0.5, 32]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.45, f * (blockZ * 0.16), 0, 0, 0, blockW * 0.88, 0.03, 0.03), C_BLOCK, [0.5, 32]);
                     }
 
-                    // Bloco, saia do cárter a cobrir a cambota, nervuras estruturais, capas de mancal, relas, arranque e filtro
+                    // Bloco esculpido chanfrado, saia do cárter, bosses dos cilindros e capas de mancal
                     const blockY = deckDist * 0.46;
                     const blockH = deckDist * 0.92;
                     const skirtBot = -crankR - 0.10;
                     const skirtH = 0.04 - skirtBot;
                     const skirtZ = Math.max(blockZ * 1.02, crankR * 2.55);
-                    this.addPart(this.staticTrans, 'box', this.matTRS(0, blockY, 0, 0, 0, 0, blockW, blockH, blockZ), C_BLOCK, BLK_SPEC);
-                    this.addPart(this.staticTrans, 'box', this.matTRS(0, skirtBot + skirtH * 0.5, 0, 0, 0, 0, blockW * 1.01, skirtH, skirtZ), C_BLOCK, BLK_SPEC);
-                    this.addPart(this.staticTrans, 'box', this.matTRS(halfLenX + 0.03, skirtBot + skirtH * 0.5, 0, 0, 0, 0, 0.06, skirtH, skirtZ * 0.98), C_BLOCK, BLK_SPEC);
-                    // Junta MLS da colaça em cobre-bronze + nervuras estruturais laterais + vareta do óleo + termóstato
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist - 0.012, 0, 0, 0, 0, blockW * 1.018, 0.024, blockZ * 1.018), C_GASKET, [0.72, 54]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(-halfLenX - 0.11, deckDist - 0.012, blockZ * 0.36, 0, 0, 0, 0.09, 0.026, 0.12), C_GASKET, [0.75, 56]);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, blockY, 0, 0, 0, 0, blockW, blockH, blockZ * 0.94), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, skirtBot + skirtH * 0.5, 0, 0, 0, 0, blockW * 1.01, skirtH, skirtZ), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(halfLenX + 0.03, skirtBot + skirtH * 0.5, 0, 0, 0, 0, 0.06, skirtH, skirtZ * 0.98), C_BLOCK, BLK_SPEC);
+                    // Nervuras laterais + relas de latão + bosses dos cilindros
                     for (const ribSide of [-1, 1]) {
                         for (let rIdx = 0; rIdx < n; rIdx++) {
                             const rx = cylSpecs[rIdx].x;
-                            this.addPart(this.staticOpaque, 'box', this.matTRS(rx, blockY, ribSide * (blockZ * 0.51), 0, 0, 0, 0.042, blockH * 0.78, 0.036), C_BLOCK, BLK_SPEC);
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(rx, blockY, ribSide * (blockZ * 0.49), 0, 0, 0, 0.044, blockH * 0.80, 0.040), C_BLOCK, BLK_SPEC);
                             this.addPart(this.staticOpaque, 'hex', this.matTRS(rx, deckDist + 0.415, ribSide * (blockZ * 0.34), 0, 0, 0, 0.032, 0.024, 0.032), C_BOLT, [0.78, 60]);
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(rx, -crankR - 0.105, ribSide * (blockZ * 0.50), 0, 0, 0, 0.022, 0.036, 0.022), C_BOLT, [0.80, 62]);
                         }
                     }
                     // Termóstato frontal + mangueiras do radiador com abraçadeiras em inox
@@ -3057,25 +3282,33 @@
                     if (adm !== 'Atmosférico' && adm !== 'Supercompressor') {
                         this.addPipe(this.staticOpaque, [[halfLenX * 0.12, 0.06, -blockZ * 0.54], [halfLenX * 0.04, deckDist * 0.52, -blockZ * 0.72], [-halfLenX * 0.18, deckDist * 0.54, -blockZ * 0.78]], 0.012, C_PIPE, [0.84, 66]);
                     }
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, blockY - 0.10, blockZ * 0.50, 0, 0, 0, blockW * 0.96, 0.045, 0.045), C_BLOCK, [0.5, 32]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, blockY - 0.10, -blockZ * 0.50, 0, 0, 0, blockW * 0.96, 0.045, 0.045), C_BLOCK, [0.5, 32]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, blockY - 0.10, blockZ * 0.48, 0, 0, 0, blockW * 0.96, 0.048, 0.050), C_BLOCK, [0.5, 32]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, blockY - 0.10, -blockZ * 0.48, 0, 0, 0, blockW * 0.96, 0.048, 0.050), C_BLOCK, [0.5, 32]);
                     for (let i = 0; i < n; i++) {
                         const cx = cylSpecs[i].x;
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, blockY, blockZ * 0.51, Math.PI * 0.5, 0, 0, 0.075, 0.03, 0.075), C_BOLT, [0.7, 56]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, blockY, -blockZ * 0.51, Math.PI * 0.5, 0, 0, 0.075, 0.03, 0.075), C_BOLT, [0.7, 56]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(cx, -0.05, 0, 0, 0, 0, 0.12, 0.24, 0.28), C_CRANK, [0.48, 34]);
+                        const angC = cylSpecs[i].angle;
+                        this.addPart(this.staticTrans, 'cyl', this.matTRS(cx, blockY, 0, angC, 0, 0, cylR * 1.15, blockH * 0.92, cylR * 1.15), C_BLOCK, BLK_SPEC);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, blockY, blockZ * 0.48, Math.PI * 0.5, 0, 0, 0.075, 0.032, 0.075), C_BRASS, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, blockY, -blockZ * 0.48, Math.PI * 0.5, 0, 0, 0.075, 0.032, 0.075), C_BRASS, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, -0.05, 0, 0, 0, 0, 0.12, 0.24, 0.28), C_CRANK, [0.48, 34]);
                     }
                     // Filtro de óleo + sensor de pressão + motor de arranque traseiro
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.32, -0.06, blockZ * 0.64, 0.65, 0, 0, 0.12, 0.28, 0.12), C_FILTER, [0.55, 44]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.05, 0.08, blockZ * 0.55, Math.PI * 0.5, 0, 0, 0.032, 0.08, 0.032), [0.76, 0.62, 0.28, 1.0], [0.7, 54]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.05, 0.08, blockZ * 0.55, Math.PI * 0.5, 0, 0, 0.032, 0.08, 0.032), C_BRASS, [0.74, 58]);
                     this.addStarterMotor(halfLenX * 0.62, -0.06, blockZ * 0.56 + 0.16);
 
-                    // Cabeça, tampa de válvulas sólida de largura integral, tampa de óleo e pernos de cabeça
-                    this.addPart(this.staticTrans, 'box', this.matTRS(0, deckDist + 0.16, 0, 0, 0, 0, blockW * 1.01, 0.28, blockZ * 1.04), C_HEAD, [0.46, 36]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist + 0.37, 0, 0, 0, 0, blockW * 1.02, 0.14, blockZ * 1.02), C_VALVE, [0.55, 48]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist + 0.445, -blockZ * 0.24, 0, 0, 0, blockW * 0.92, 0.035, 0.06), C_BOLT, [0.7, 54]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist + 0.445,  blockZ * 0.24, 0, 0, 0, blockW * 0.92, 0.035, 0.06), C_BOLT, [0.7, 54]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.70, deckDist + 0.46, 0.06, 0, 0, 0, 0.095, 0.06, 0.095), C_BOLT, [0.7, 54]);
+                    // Cabeça + tampa de válvulas esculpida em dois túneis (DOHC) / torre central + respiro PCV
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, deckDist + 0.16, 0, 0, 0, 0, blockW * 1.01, 0.28, blockZ * 1.04), C_HEAD, [0.46, 36]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.36, 0, 0, 0, 0, blockW * 1.02, 0.11, blockZ * 1.02), C_VALVE, [0.58, 50]);
+                    if (!isFreevalve && camMode === 'DOHC') {
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, -blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43,  blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
+                    } else if (!isFreevalve) {
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, 0, 0, 0, 0, blockW * 0.98, 0.075, blockZ * 0.62), C_VALVE, [0.60, 52]);
+                    }
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47, -blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47,  blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.70, deckDist + 0.48, 0.12, 0, 0, 0, 0.092, 0.055, 0.092), C_BOLT, [0.78, 62]);
 
                     // Distribuição DOHC / SOHC / OHV / Freevalve + capas + calha elétrica + bobinas/injetores
                     const camZIn = blockZ * 0.22;
@@ -3294,12 +3527,12 @@
 
                     // Cárter central horizontal reforçado + cárter de óleo inferior + aletas + filtro frontal superior
                     const bCaseZ = Math.max(crankCaseZ, crankR * 2.65);
-                    this.addPart(this.staticTrans, 'box', this.matTRS(0, -0.02, 0, 0, 0, 0, blockW * 1.01, bankH * 1.06, bCaseZ), C_BLOCK, BLK_SPEC);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, bankH * 0.50, 0, 0, 0, 0, blockW * 0.96, 0.08, bCaseZ * 0.94), C_HEAD, [0.46, 36]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, -bankH * 0.54, 0, 0, 0, 0, blockW * 0.98, 0.11, bCaseZ * 1.08), C_SUMP, [0.4, 24]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, -bankH * 0.70, 0, 0, 0, 0, blockW * 0.88, 0.24, bCaseZ * 0.92), C_SUMP, [0.35, 20]);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, -0.02, 0, 0, 0, 0, blockW * 1.01, bankH * 1.06, bCaseZ), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, bankH * 0.50, 0, 0, 0, 0, blockW * 0.96, 0.08, bCaseZ * 0.94), C_HEAD, [0.46, 36]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -bankH * 0.54, 0, 0, 0, 0, blockW * 0.98, 0.11, bCaseZ * 1.08), C_SUMP, [0.4, 24]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -bankH * 0.70, 0, 0, 0, 0, blockW * 0.88, 0.24, bCaseZ * 0.92), C_SUMP, [0.35, 20]);
                     for (let f = -2; f <= 2; f++) {
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, -bankH * 0.83, f * 0.11, 0, 0, 0, blockW * 0.80, 0.03, 0.03), C_BLOCK, [0.5, 32]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -bankH * 0.83, f * 0.11, 0, 0, 0, blockW * 0.80, 0.03, 0.03), C_BLOCK, [0.5, 32]);
                     }
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.62, bankH * 0.56, bCaseZ * 0.42, 0.2, 0, 0, 0.11, 0.24, 0.11), C_FILTER, [0.55, 44]);
 
@@ -3308,16 +3541,20 @@
                     for (const side of [-1, 1]) {
                         const ang = side * Math.PI * 0.5;
                         const blockMidZ = side * deckDist * 0.48;
-                        this.addPart(this.staticTrans, 'box', this.matTRS(0, 0, blockMidZ, ang, 0, 0, blockW, deckDist * 0.88, bankH), C_BLOCK, BLK_SPEC);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, 0, side * (deckDist - 0.011), ang, 0, 0, blockW * 1.018, 0.022, bankH * 1.04), C_GASKET, [0.72, 54]);
-                        this.addPart(this.staticTrans, 'box', this.matTRS(0, 0, side * (deckDist + 0.14), ang, 0, 0, blockW * 1.01, 0.26, bankH * 1.04), C_HEAD, [0.45, 36]);
+                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, 0, blockMidZ, ang, 0, 0, blockW, deckDist * 0.88, bankH * 0.94), C_BLOCK, BLK_SPEC);
+                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, 0, side * (deckDist + 0.14), ang, 0, 0, blockW * 1.01, 0.26, bankH * 1.04), C_HEAD, [0.45, 36]);
                         for (const boltSide of [-1, 1]) {
                             for (const c of cylSpecs) {
                                 this.addPart(this.staticOpaque, 'hex', this.matTRS(c.x, boltSide * bankH * 0.36, side * (deckDist + 0.39), ang, 0, 0, 0.028, 0.022, 0.028), C_BOLT, [0.78, 60]);
                             }
                         }
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, 0, side * (deckDist + 0.35), ang, 0, 0, blockW * 1.02, 0.14, bankH * 1.02), C_VALVE, [0.55, 48]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, 0, side * (deckDist + 0.425), ang, 0, 0, blockW * 0.90, 0.03, bankH * 0.26), C_BOLT, [0.7, 54]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, 0, side * (deckDist + 0.35), ang, 0, 0, blockW * 1.02, 0.11, bankH * 1.02), C_VALVE, [0.58, 50]);
+                        if (!isFreevalve && camMode === 'DOHC') {
+                            for (const cyOff of [-bankH * 0.26, bankH * 0.26]) {
+                                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, cyOff, side * (deckDist + 0.42), ang, 0, 0, blockW * 0.98, 0.075, bankH * 0.34), C_VALVE, [0.62, 54]);
+                            }
+                        }
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, 0, side * (deckDist + 0.425), ang, 0, 0, blockW * 0.90, 0.03, bankH * 0.26), C_BOLT, [0.7, 54]);
 
                         const camZ = side * (deckDist + 0.20);
                         if (isFreevalve) {
@@ -3509,44 +3746,49 @@
                     const bankMidDist = deckDist * 0.48;
                     const bankH = deckDist * 0.88;
 
-                    // Cárter detalhado + saia do bloco cobrindo toda a cambota + tampa central do vale + filtro
+                    // Cárter detalhado chanfrado + saia do bloco + tampa central do vale + filtro
                     const skirtBotV = -crankR - 0.10;
                     const vCaseH = 0.28 - skirtBotV;
                     const vCaseZ = Math.max(cylR * 2.85, crankR * 2.55);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, -crankR - 0.14, 0, 0, 0, 0, blockW * 1.03, 0.10, vCaseZ * 1.04), C_SUMP, [0.4, 24]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, -crankR - 0.30, 0, 0, 0, 0, blockW * 0.96, 0.28, vCaseZ * 0.92), C_SUMP, [0.35, 20]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.14, 0, 0, 0, 0, blockW * 1.03, 0.10, vCaseZ * 1.04), C_SUMP, [0.44, 28]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.30, 0, 0, 0, 0, blockW * 0.96, 0.28, vCaseZ * 0.92), C_SUMP, [0.38, 22]);
                     for (let f = -2; f <= 2; f++) {
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, -crankR - 0.45, f * 0.14, 0, 0, 0, blockW * 0.88, 0.03, 0.03), C_BLOCK, [0.5, 32]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.45, f * 0.14, 0, 0, 0, blockW * 0.88, 0.03, 0.03), C_BLOCK, [0.5, 32]);
                     }
-                    this.addPart(this.staticTrans, 'box', this.matTRS(0, skirtBotV + vCaseH * 0.5, 0, 0, 0, 0, blockW * 1.01, vCaseH, vCaseZ), C_BLOCK, BLK_SPEC);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist * 0.52, 0, 0, 0, 0, blockW * 0.98, 0.08, Math.max(0.32, cylR * 1.1)), C_HEAD, [0.46, 36]);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, skirtBotV + vCaseH * 0.5, 0, 0, 0, 0, blockW * 1.01, vCaseH, vCaseZ), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist * 0.52, 0, 0, 0, 0, blockW * 0.98, 0.08, Math.max(0.32, cylR * 1.1)), C_HEAD, [0.46, 36]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.45, -0.05, cylR * 1.38, 0.7, 0, 0, 0.12, 0.26, 0.12), C_FILTER, [0.55, 44]);
                     this.addStarterMotor(halfLenX * 0.62, -0.14, cylR * 1.48);
 
                     for (const side of [-1, 1]) {
                         const ang = side * baseBankAng;
                         const sinA = Math.sin(ang), cosA = Math.cos(ang);
-                        this.addPart(this.staticTrans, 'box', this.matTRS(0, bankMidDist * cosA, bankMidDist * sinA, ang, 0, 0, blockW, bankH, bankZWidth), C_BLOCK, BLK_SPEC);
-                        const gskD = deckDist - 0.011;
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, gskD * cosA, gskD * sinA, ang, 0, 0, blockW * 1.018, 0.022, bankZWidth * 1.02), C_GASKET, [0.72, 54]);
-                        const outerSideZ = ang >= 0 ? bankZWidth * 0.52 : -bankZWidth * 0.52;
+                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, bankMidDist * cosA, bankMidDist * sinA, ang, 0, 0, blockW, bankH, bankZWidth * 0.94), C_BLOCK, BLK_SPEC);
+                        const outerSideZ = ang >= 0 ? bankZWidth * 0.50 : -bankZWidth * 0.50;
                         const bankCylSpecs = cylSpecs.filter(c => c.bank === side);
                         for (const c of bankCylSpecs) {
                             const rx = c.x;
                             const ribY = bankMidDist * cosA - outerSideZ * sinA;
                             const ribZ = bankMidDist * sinA + outerSideZ * cosA;
-                            this.addPart(this.staticOpaque, 'box', this.matTRS(rx, ribY, ribZ, ang, 0, 0, 0.040, bankH * 0.72, 0.034), C_BLOCK, BLK_SPEC);
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(rx, ribY, ribZ, ang, 0, 0, 0.042, bankH * 0.74, 0.038), C_BLOCK, BLK_SPEC);
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(rx, ribY, ribZ, ang + Math.PI * 0.5, 0, 0, 0.068, 0.032, 0.068), C_BRASS, [0.74, 58]);
                             const boltD = deckDist + 0.39;
                             const boltY = boltD * cosA - (outerSideZ * 0.65) * sinA;
                             const boltZ = boltD * sinA + (outerSideZ * 0.65) * cosA;
                             this.addPart(this.staticOpaque, 'hex', this.matTRS(rx, boltY, boltZ, ang, 0, 0, 0.030, 0.022, 0.030), C_BOLT, [0.78, 60]);
                         }
                         const headD = deckDist + 0.14;
-                        this.addPart(this.staticTrans, 'box', this.matTRS(0, headD * cosA, headD * sinA, ang, 0, 0, blockW * 1.01, 0.26, bankZWidth * 1.03), C_HEAD, [0.45, 36]);
+                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, headD * cosA, headD * sinA, ang, 0, 0, blockW * 1.01, 0.26, bankZWidth * 1.03), C_HEAD, [0.45, 36]);
                         const vcD = deckDist + 0.35;
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, vcD * cosA, vcD * sinA, ang, 0, 0, blockW * 1.02, 0.14, bankZWidth * 1.02), C_VALVE, [0.55, 48]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, vcD * cosA, vcD * sinA, ang, 0, 0, blockW * 1.02, 0.11, bankZWidth * 1.02), C_VALVE, [0.58, 50]);
+                        if (!isFreevalve && camMode === 'DOHC') {
+                            const camRidgeD = deckDist + 0.415;
+                            for (const off of [-bankZWidth * 0.25, bankZWidth * 0.25]) {
+                                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, camRidgeD * cosA - off * sinA, camRidgeD * sinA + off * cosA, ang, 0, 0, blockW * 0.98, 0.072, bankZWidth * 0.34), C_VALVE, [0.62, 54]);
+                            }
+                        }
                         const ribD = deckDist + 0.425;
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, ribD * cosA, ribD * sinA, ang, 0, 0, blockW * 0.90, 0.03, bankZWidth * 0.28), C_BOLT, [0.7, 54]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, ribD * cosA, ribD * sinA, ang, 0, 0, blockW * 0.90, 0.03, bankZWidth * 0.28), C_BOLT, [0.7, 54]);
 
                         const vvtColor = vType === 'VVT' ? [0.76, 0.60, 0.24, 1.0] : [0.26, 0.44, 0.64, 1.0];
                         if (isFreevalve) {
@@ -3727,23 +3969,34 @@
                     const startRx = -((nRotors - 1) * pitchX) * 0.5;
                     const stackW = nRotors * pitchX + ironW;
 
-                    // Placas laterais e intermédias (Irons) + carcaças epitrocoidais + rotores
+                    // Placas laterais e intermédias (Irons) + pernos axiais + carcaças epitrocoidais com aletas + rotores
                     for (let i = 0; i <= nRotors; i++) {
                         const px = startRx - pitchX * 0.5 + i * pitchX;
                         const isEnd = (i === 0 || i === nRotors);
                         const targetPlate = isEnd ? this.staticOpaque : this.staticTrans;
-                        this.addPart(targetPlate, 'box', this.matTRS(px, 0, 0, 0, 0, 0, ironW, 2.38 * rotorR, 2.02 * rotorR), isEnd ? C_HEAD : C_BLOCK, BLK_SPEC);
+                        this.addPart(targetPlate, 'bevelBox', this.matTRS(px, 0, 0, 0, 0, 0, ironW, 2.38 * rotorR, 2.02 * rotorR), isEnd ? C_HEAD : C_BLOCK, BLK_SPEC);
                         this.addPart(targetPlate, 'cyl', this.matTRS(px, 1.04 * rotorR, 0, 0, 0, Math.PI * 0.5, 0.92 * rotorR, ironW * 0.98, 0.92 * rotorR), isEnd ? C_HEAD : C_BLOCK, BLK_SPEC);
                         this.addPart(targetPlate, 'cyl', this.matTRS(px, -1.04 * rotorR, 0, 0, 0, Math.PI * 0.5, 0.92 * rotorR, ironW * 0.98, 0.92 * rotorR), isEnd ? C_HEAD : C_BLOCK, BLK_SPEC);
+                    }
+                    // Pernos de tensão perimetrais a unir todo o bloco Wankel
+                    for (let tb = 0; tb < 10; tb++) {
+                        const ta = (tb / 10) * Math.PI * 2 + 0.15;
+                        const tby = (1.14 * Math.cos(ta) + 0.11 * Math.cos(3 * ta)) * rotorR;
+                        const tbz = (1.14 * Math.sin(ta) + 0.11 * Math.sin(3 * ta)) * rotorR;
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, tby, tbz, 0, 0, Math.PI * 0.5, 0.022, stackW * 1.04, 0.022), C_BOLT, [0.78, 62]);
                     }
 
                     for (let rIdx = 0; rIdx < nRotors; rIdx++) {
                         const rx = startRx + rIdx * pitchX;
                         this.addPart(this.staticTrans, 'wankelHousing', this.matTRS(rx, 0, 0, 0, 0, 0, housingW, rotorR, rotorR), C_BLOCK, BLK_SPEC);
-                        // Velas Leading & Trailing no lado +Z (câmara de combustão) + bobinas vermelhas
+                        for (let fin = -1; fin <= 1; fin++) {
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(rx + fin * (housingW * 0.28), 1.24 * rotorR, 0, 0, 0, 0, 0.028, 0.12, 1.38 * rotorR), C_BLOCK, BLK_SPEC);
+                        }
+                        // Velas Leading & Trailing no lado +Z (câmara de combustão) + cabos HT
                         for (const spY of [-0.20 * rotorR, 0.20 * rotorR]) {
                             this.addPart(this.staticOpaque, 'cyl', this.matTRS(rx, spY, 1.02 * rotorR, Math.PI * 0.5, 0, 0, 0.042, 0.16, 0.042), C_BOLT, [0.76, 60]);
                             this.addPart(this.staticOpaque, 'cyl', this.matTRS(rx, spY, 1.13 * rotorR, Math.PI * 0.5, 0, 0, 0.052, 0.10, 0.052), [0.72, 0.22, 0.22, 1.0], [0.55, 42]);
+                            this.addPipe(this.staticOpaque, [[rx, spY, 1.15 * rotorR], [rx, 0.90 * rotorR, 1.22 * rotorR], [rx, 1.26 * rotorR, 0.65 * rotorR]], 0.018, [0.16, 0.18, 0.22, 1.0], [0.22, 16]);
                         }
                         this.dynamicWankel.push({
                             x: rx,
@@ -3760,13 +4013,13 @@
 
                     // Cárter sólido inferior + aletas + cobertura superior sólida epitrocoidal
                     const sumpY = -1.30 * rotorR;
-                    this.addPart(this.staticTrans, 'box', this.matTRS(0, sumpY + 0.12, 0, 0, 0, 0, stackW * 0.98, 0.26, 1.72 * rotorR), C_BLOCK, BLK_SPEC);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, sumpY - 0.06, 0, 0, 0, 0, stackW * 1.02, 0.12, 1.85 * rotorR), C_SUMP, [0.4, 24]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, sumpY - 0.22, 0, 0, 0, 0, stackW * 0.94, 0.24, 1.65 * rotorR), C_SUMP, [0.35, 20]);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, sumpY + 0.12, 0, 0, 0, 0, stackW * 0.98, 0.26, 1.72 * rotorR), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, sumpY - 0.06, 0, 0, 0, 0, stackW * 1.02, 0.12, 1.85 * rotorR), C_SUMP, [0.44, 28]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, sumpY - 0.22, 0, 0, 0, 0, stackW * 0.94, 0.24, 1.65 * rotorR), C_SUMP, [0.38, 22]);
                     for (let f = -2; f <= 2; f++) {
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, sumpY - 0.35, f * 0.18 * rotorR, 0, 0, 0, stackW * 0.86, 0.03, 0.03), C_BLOCK, [0.5, 32]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, sumpY - 0.35, f * 0.18 * rotorR, 0, 0, 0, stackW * 0.86, 0.03, 0.03), C_BLOCK, [0.5, 32]);
                     }
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, 1.32 * rotorR, 0, 0, 0, 0, stackW * 0.96, 0.12, 1.24 * rotorR), C_VALVE, [0.55, 48]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, 1.32 * rotorR, 0, 0, 0, 0, stackW * 0.96, 0.12, 1.24 * rotorR), C_VALVE, [0.58, 50]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.65, 1.41 * rotorR, 0.16, 0, 0, 0, 0.088, 0.06, 0.088), C_BOLT, [0.72, 54]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.35, -0.35 * rotorR, 1.18 * rotorR, 0.45, 0, 0, 0.11, 0.24, 0.11), C_FILTER, [0.55, 44]);
                     this.addStarterMotor(halfLenX * 0.56, -0.78 * rotorR, 1.04 * rotorR);
@@ -3852,10 +4105,10 @@
 
                 // Chapa frontal da distribuição + flange traseira da caixa + tubagem de respiro + cambota principal
                 if (fmt !== 'WANKEL') {
-                    this.addPart(this.staticTrans, 'box', this.matTRS(-halfLenX - 0.11, (deckDist - crankR) * 0.36, 0, 0, 0, 0, 0.06, deckDist + crankR + 0.46, Math.max(cylR * 2.5, crankR * 2.5)), C_HEAD, [0.48, 36]);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(-halfLenX - 0.11, (deckDist - crankR) * 0.36, 0, 0, 0, 0, 0.06, deckDist + crankR + 0.46, Math.max(cylR * 2.5, crankR * 2.5)), C_HEAD, [0.48, 36]);
                 }
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(halfLenX + 0.08, 0, 0, 0, 0, Math.PI * 0.5, 0.42, 0.06, 0.42), C_SUMP, [0.42, 30]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, 0, 0, 0, 0, Math.PI * 0.5, 0.11, halfLenX * 2.24, 0.11), C_CRANK, [0.65, 56]);
+                this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, 0, 0, 0, 0, Math.PI * 0.5, 0.11, halfLenX * 2.24, 0.11), C_CRANK, [0.68, 58]);
                 this.dynamicRotors.push({
                     type: 'pulley',
                     cx: -halfLenX - 0.24, cy: 0, cz: 0,
@@ -3879,9 +4132,16 @@
                     this.addPart(
                         this.staticTrans,
                         'cyl',
-                        this.matTRS(c.x, sleeveCenterDist * cosA, c.zOff + sleeveCenterDist * sinA, c.angle, 0, 0, cylR * 1.06, cylLen, cylR * 1.06),
-                        C_LINER,
-                        [0.5, 42]
+                        this.matTRS(c.x, sleeveCenterDist * cosA, c.zOff + sleeveCenterDist * sinA, c.angle, 0, 0, cylR * 1.18, cylLen * 0.96, cylR * 1.18),
+                        C_BLOCK,
+                        BLK_SPEC
+                    );
+                    this.addPart(
+                        this.staticTrans,
+                        'cyl',
+                        this.matTRS(c.x, sleeveCenterDist * cosA, c.zOff + sleeveCenterDist * sinA, c.angle, 0, 0, cylR * 1.04, cylLen, cylR * 1.04),
+                        [0.34, 0.37, 0.43, 1.0],
+                        [0.64, 52]
                     );
                     this.dynamicCyls.push({
                         x: c.x, zOff: c.zOff, angle: c.angle, phase: c.phase,
@@ -3895,32 +4155,21 @@
                         for (const sideSign of [-1, 1]) {
                             const latOff = sideSign * (cylR * 0.34);
                             if (!isFreevalve) {
-                                const springD = deckDist + 0.16;
-                                const spCol = vType === 'Pneumático'
-                                    ? [0.62, 0.78, 0.86, 1.0]
-                                    : (vType === 'Desmodrómico' ? [0.72, 0.56, 0.32, 1.0] : C_RING);
+                                const seatD = deckDist + 0.105;
                                 const spRad = vType === 'Pneumático' ? 0.048 : 0.040;
                                 this.addPart(
                                     this.staticOpaque,
                                     'cyl',
-                                    this.matTRS(c.x + xOff, springD * cosA + latOff * latY, c.zOff + springD * sinA + latOff * latZ, c.angle + sideSign * 0.10, 0, 0, spRad, 0.095, spRad),
-                                    spCol,
-                                    [0.55, 36]
-                                );
-                                const retD = springD + 0.048;
-                                this.addPart(
-                                    this.staticOpaque,
-                                    'cyl',
-                                    this.matTRS(c.x + xOff, retD * cosA + latOff * latY, c.zOff + retD * sinA + latOff * latZ, c.angle + sideSign * 0.10, 0, 0, spRad * 1.18, 0.016, spRad * 1.18),
-                                    C_BOLT,
-                                    [0.76, 58]
+                                    this.matTRS(c.x + xOff, seatD * cosA + latOff * latY, c.zOff + seatD * sinA + latOff * latZ, c.angle + sideSign * 0.10, 0, 0, spRad * 1.15, 0.012, spRad * 1.15),
+                                    C_CRANK,
+                                    [0.65, 52]
                                 );
                                 if (camMode !== 'DOHC') {
-                                    const rkD = springD + 0.072;
+                                    const rkD = deckDist + 0.232;
                                     this.addPart(
                                         this.staticOpaque,
-                                        'box',
-                                        this.matTRS(c.x + xOff, rkD * cosA + (latOff * 0.55) * latY, c.zOff + rkD * sinA + (latOff * 0.55) * latZ, c.angle, 0, 0, 0.032, 0.022, cylR * 0.42),
+                                        'bevelBox',
+                                        this.matTRS(c.x + xOff, rkD * cosA + (latOff * 0.55) * latY, c.zOff + rkD * sinA + (latOff * 0.55) * latZ, c.angle, 0, 0, 0.032, 0.024, cylR * 0.42),
                                         C_CRANK,
                                         [0.65, 52]
                                     );
@@ -3929,7 +4178,8 @@
                             this.dynamicValves.push({
                                 x: c.x + xOff, zOff: c.zOff, angle: c.angle,
                                 phase: c.phase * 0.5 + (sideSign > 0 ? 0 : 2.1),
-                                deckDist, cylR, sideSign, vHeadScale
+                                deckDist, cylR, sideSign, vHeadScale,
+                                vType, showSpring: !isFreevalve
                             });
                         }
                     }
@@ -4193,29 +4443,25 @@
                     const zPinGlobal = c.zOff + zPin;
                     const zPisGlobal = c.zOff + zPis;
 
-                    for (const cheekOff of [-0.074, 0.074]) {
-                        const cheekM = this.matSpinX(c.x + cheekOff, -yPin * 0.40, c.zOff - zPin * 0.40, phi, 0, 0, Math.PI * 0.5, c.crankR * 0.64, 0.034, c.crankR * 0.92);
-                        this.drawItem(this.meshes.cyl, cheekM, c.cCrank, [0.62, 48], viewProj);
+                    for (const cheekOff of [-0.088, 0.088]) {
+                        const webM = this.matSpinX(c.x + cheekOff, 0, c.zOff, phi, 0, 0, 0, 0.044, c.crankR, c.crankR);
+                        this.drawItem(this.meshes.crankWeb, webM, c.cCrank, [0.64, 52], viewProj);
+                        const tungM = this.matSpinX(c.x + cheekOff, -yPin * 0.96, c.zOff - zPin * 0.96, phi, 0, 0, Math.PI * 0.5, 0.048, 0.048, 0.048);
+                        this.drawItem(this.meshes.cyl, tungM, [0.76, 0.58, 0.24, 1.0], [0.76, 60], viewProj);
                     }
-                    const cwM = this.matTRS(c.x, -yPin * 0.46, c.zOff - zPin * 0.46, phi, 0, 0, 0.076, c.crankR * 1.04, 0.155);
-                    this.drawItem(this.meshes.box, cwM, c.cCrank, [0.55, 42], viewProj);
-                    const cwBrassM = this.matTRS(c.x, -yPin * 0.88, c.zOff - zPin * 0.88, phi, 0, 0, 0.066, 0.026, 0.12);
-                    this.drawItem(this.meshes.box, cwBrassM, [0.76, 0.58, 0.24, 1.0], [0.74, 58], viewProj);
-                    const armM = this.matTRS(c.x, yPin * 0.5, c.zOff + zPin * 0.5, phi, 0, 0, 0.062, c.crankR, 0.105);
-                    this.drawItem(this.meshes.box, armM, c.cCrank, [0.55, 42], viewProj);
-                    const pinM = this.matSpinX(c.x, yPin, zPinGlobal, phi, 0, 0, Math.PI * 0.5, 0.075, 0.14, 0.075);
-                    this.drawItem(this.meshes.cyl, pinM, c.cCrank, [0.65, 52], viewProj);
+                    const pinM = this.matSpinX(c.x, yPin, zPinGlobal, phi, 0, 0, Math.PI * 0.5, 0.075, 0.148, 0.075);
+                    this.drawItem(this.meshes.cyl, pinM, c.cCrank, [0.70, 58], viewProj);
 
                     const rodAngle = Math.atan2(zPisGlobal - zPinGlobal, yPis - yPin);
                     const rodMidY = (yPin + yPis) * 0.5;
                     const rodMidZ = (zPinGlobal + zPisGlobal) * 0.5;
                     const rodDark = [c.cRod[0] * 0.78, c.cRod[1] * 0.78, c.cRod[2] * 0.78, 1.0];
                     const rodWebM = this.matTRS(c.x, rodMidY, rodMidZ, rodAngle, 0, 0, 0.028, c.rodLen * 0.96, 0.056);
-                    this.drawItem(this.meshes.box, rodWebM, rodDark, [0.54, 40], viewProj);
+                    this.drawItem(this.meshes.bevelBox, rodWebM, rodDark, [0.58, 44], viewProj);
                     const rSin = Math.sin(rodAngle), rCos = Math.cos(rodAngle);
                     for (const fOff of [-0.028, 0.028]) {
-                        const rFlangeM = this.matTRS(c.x, rodMidY - fOff * rSin, rodMidZ + fOff * rCos, rodAngle, 0, 0, 0.056, c.rodLen * 0.94, 0.018);
-                        this.drawItem(this.meshes.box, rFlangeM, c.cRod, [0.68, 54], viewProj);
+                        const rFlangeM = this.matTRS(c.x, rodMidY - fOff * rSin, rodMidZ + fOff * rCos, rodAngle, 0, 0, 0.058, c.rodLen * 0.94, 0.019);
+                        this.drawItem(this.meshes.bevelBox, rFlangeM, c.cRod, [0.70, 56], viewProj);
                     }
                     const yWrist = 2.0 * rodMidY - yPin;
                     const zWrist = 2.0 * rodMidZ - zPinGlobal;
@@ -4233,19 +4479,28 @@
                         this.drawItem(this.meshes.hex, boltM, [0.84, 0.87, 0.92, 1.0], [0.82, 64], viewProj);
                     }
 
-                    // Pistão + coroa chanfrada + cavilhão + anéis de segmento
-                    const pisM = this.matTRS(c.x, yPis, zPisGlobal, c.angle, 0, 0, c.cylR * 0.88, c.pistonH, c.cylR * 0.88);
+                    // Pistão forjado: saia aliviada com patins em grafite + cúpula chanfrada + cavidade + 3 anéis distintos
+                    const pisM = this.matTRS(c.x, yPis, zPisGlobal, c.angle, 0, 0, c.cylR * 0.88, c.pistonH * 0.86, c.cylR * 0.88);
                     this.drawItem(this.meshes.cyl, pisM, c.cPiston, [0.78, 64], viewProj);
-                    const crownOff = c.pistonH * 0.54;
-                    const crownM = this.matTRS(c.x, yPis + crownOff * cosA, zPisGlobal + crownOff * sinA, c.angle, 0, 0, c.cylR * 0.72, 0.032, c.cylR * 0.72);
-                    this.drawItem(this.meshes.cyl, crownM, [0.90, 0.93, 0.96, 1.0], [0.85, 72], viewProj);
-                    const wristPinM = this.matTRS(c.x, yPis - (c.pistonH * 0.10) * cosA, zPisGlobal - (c.pistonH * 0.10) * sinA, 0, 0, Math.PI * 0.5, 0.048, c.cylR * 1.48, 0.048);
-                    this.drawItem(this.meshes.cyl, wristPinM, c.cCrank, [0.7, 54], viewProj);
-                    const ringOffset = c.pistonH * 0.28;
-                    const ringM = this.matTRS(c.x, yPis + ringOffset * cosA, zPisGlobal + ringOffset * sinA, c.angle, 0, 0, c.cylR * 0.90, 0.036, c.cylR * 0.90);
-                    this.drawItem(this.meshes.cyl, ringM, c.cRing, [0.4, 24], viewProj);
-                    const ringM2 = this.matTRS(c.x, yPis + (ringOffset * 0.5) * cosA, zPisGlobal + (ringOffset * 0.5) * sinA, c.angle, 0, 0, c.cylR * 0.90, 0.030, c.cylR * 0.90);
-                    this.drawItem(this.meshes.cyl, ringM2, c.cRing, [0.4, 24], viewProj);
+                    for (const padSide of [-1, 1]) {
+                        const padOff = padSide * (c.cylR * 0.84);
+                        const padM = this.matTRS(c.x, yPis - (c.pistonH * 0.12) * cosA - padOff * sinA, zPisGlobal - (c.pistonH * 0.12) * sinA + padOff * cosA, c.angle, 0, 0, c.cylR * 0.95, c.pistonH * 0.42, 0.022);
+                        this.drawItem(this.meshes.bevelBox, padM, [0.16, 0.18, 0.22, 1.0], [0.28, 18], viewProj);
+                    }
+                    const crownOff = c.pistonH * 0.47;
+                    const crownM = this.matTRS(c.x, yPis + crownOff * cosA, zPisGlobal + crownOff * sinA, c.angle, 0, 0, c.cylR * 0.82, 0.042, c.cylR * 0.82);
+                    this.drawItem(this.meshes.cone, crownM, [0.90, 0.93, 0.96, 1.0], [0.86, 74], viewProj);
+                    const dishM = this.matTRS(c.x, yPis + (crownOff + 0.018) * cosA, zPisGlobal + (crownOff + 0.018) * sinA, c.angle, 0, 0, c.cylR * 0.36, 0.012, c.cylR * 0.36);
+                    this.drawItem(this.meshes.cyl, dishM, [0.28, 0.31, 0.36, 1.0], [0.35, 22], viewProj);
+                    const wristPinM = this.matTRS(c.x, yPis - (c.pistonH * 0.10) * cosA, zPisGlobal - (c.pistonH * 0.10) * sinA, 0, 0, Math.PI * 0.5, 0.050, c.cylR * 1.50, 0.050);
+                    this.drawItem(this.meshes.cyl, wristPinM, c.cCrank, [0.72, 56], viewProj);
+                    const ringOffset = c.pistonH * 0.31;
+                    const ring1M = this.matTRS(c.x, yPis + ringOffset * cosA, zPisGlobal + ringOffset * sinA, c.angle, 0, 0, c.cylR * 0.905, 0.022, c.cylR * 0.905);
+                    this.drawItem(this.meshes.cyl, ring1M, [0.92, 0.95, 0.98, 1.0], [0.86, 72], viewProj);
+                    const ring2M = this.matTRS(c.x, yPis + (ringOffset * 0.64) * cosA, zPisGlobal + (ringOffset * 0.64) * sinA, c.angle, 0, 0, c.cylR * 0.902, 0.022, c.cylR * 0.902);
+                    this.drawItem(this.meshes.cyl, ring2M, c.cRing, [0.42, 26], viewProj);
+                    const ring3M = this.matTRS(c.x, yPis + (ringOffset * 0.28) * cosA, zPisGlobal + (ringOffset * 0.28) * sinA, c.angle, 0, 0, c.cylR * 0.902, 0.028, c.cylR * 0.902);
+                    this.drawItem(this.meshes.cyl, ring3M, [0.78, 0.56, 0.24, 1.0], [0.74, 56], viewProj);
                 }
 
                 // Rotores epitrocoidais Wankel, excêntricos e selos de vértice
@@ -4297,22 +4552,40 @@
                     this.drawItem(this.meshes.cyl, vHeadM, [0.85, 0.88, 0.92, 1.0], [0.82, 68], viewProj);
                     const vStemM = this.matTRS(v.x, dStem * axY + latOff * latY, v.zOff + dStem * axZ + latOff * latZ, tilt, 0, 0, 0.019, 0.22, 0.019);
                     this.drawItem(this.meshes.cyl, vStemM, [0.72, 0.76, 0.82, 1.0], [0.75, 60], viewProj);
+                    if (v.showSpring) {
+                        const retD = v.deckDist + 0.21 - lift;
+                        const seatD = v.deckDist + 0.11;
+                        const spH = Math.max(0.024, retD - seatD);
+                        const spMidD = seatD + spH * 0.5;
+                        const spMesh = v.vType === 'Pneumático' ? this.meshes.cyl : this.meshes.spring;
+                        const spCol = v.vType === 'Pneumático'
+                            ? [0.62, 0.78, 0.86, 1.0]
+                            : (v.vType === 'Desmodrómico' ? [0.72, 0.56, 0.32, 1.0] : [0.78, 0.82, 0.88, 1.0]);
+                        const spRad = v.vType === 'Pneumático' ? 0.048 : 0.044;
+                        const spM = this.matTRS(v.x, spMidD * axY + latOff * latY, v.zOff + spMidD * axZ + latOff * latZ, tilt, 0, 0, spRad, spH, spRad);
+                        this.drawItem(spMesh, spM, spCol, [0.74, 58], viewProj);
+                        const retM = this.matTRS(v.x, retD * axY + latOff * latY, v.zOff + retD * axZ + latOff * latZ, tilt, 0, 0, spRad * 1.18, 0.016, spRad * 1.18);
+                        this.drawItem(this.meshes.cyl, retM, [0.78, 0.82, 0.88, 1.0], [0.80, 64], viewProj);
+                    }
                 }
 
-                // Rodas/polias e volante estáticos na posição e a rodar apenas num sentido em torno do eixo X
+                // Rodas/polias multi-raios e compressor 7 pás estáticos na posição e a rodar apenas num sentido em torno do eixo X
                 for (const r of this.dynamicRotors) {
                     const ang = r.angle !== undefined ? r.angle : this.crankAngle * r.speedMult;
                     if (r.type === 'pulley') {
                         const rimM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r, r.thick, r.r);
-                        this.drawItem(this.meshes.cyl, rimM, r.colorRim, [0.6, 48], viewProj);
-                        const hubM = this.matSpinX(r.cx - r.thick * 0.35, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.52, r.thick * 0.6, r.r * 0.52);
-                        this.drawItem(this.meshes.cyl, hubM, r.colorHub, [0.75, 64], viewProj);
-                        const timingBarM = this.matTRS(r.cx - r.thick * 0.54, r.cy + Math.cos(ang) * (r.r * 0.40), r.cz + Math.sin(ang) * (r.r * 0.40), ang, 0, 0, 0.026, r.r * 0.78, 0.044);
-                        this.drawItem(this.meshes.box, timingBarM, r.colorHub, [0.7, 56], viewProj);
-                        const pinMarkM = this.matTRS(r.cx - r.thick * 0.56, r.cy + Math.cos(ang) * (r.r * 0.72), r.cz + Math.sin(ang) * (r.r * 0.72), ang, 0, 0, 0.034, 0.055, 0.055);
+                        this.drawItem(this.meshes.gear, rimM, r.colorRim, [0.64, 52], viewProj);
+                        const hubM = this.matSpinX(r.cx - r.thick * 0.35, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.44, r.thick * 0.65, r.r * 0.44);
+                        this.drawItem(this.meshes.cyl, hubM, r.colorHub, [0.76, 64], viewProj);
+                        for (let sp = 0; sp < 4; sp++) {
+                            const sAng = ang + sp * Math.PI * 0.5;
+                            const spokeM = this.matTRS(r.cx - r.thick * 0.54, r.cy + Math.cos(sAng) * (r.r * 0.42), r.cz + Math.sin(sAng) * (r.r * 0.42), sAng, 0, 0, 0.024, r.r * 0.72, 0.036);
+                            this.drawItem(this.meshes.box, spokeM, sp === 0 ? r.colorHub : [0.56, 0.61, 0.68, 1.0], [0.74, 60], viewProj);
+                        }
+                        const pinMarkM = this.matTRS(r.cx - r.thick * 0.56, r.cy + Math.cos(ang) * (r.r * 0.74), r.cz + Math.sin(ang) * (r.r * 0.74), ang, 0, 0, 0.034, 0.055, 0.055);
                         this.drawItem(this.meshes.box, pinMarkM, [0.92, 0.34, 0.24, 1.0], [0.7, 56], viewProj);
-                        const boltCenterM = this.matSpinX(r.cx - r.thick * 0.62, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.22, r.thick * 0.45, r.r * 0.22);
-                        this.drawItem(this.meshes.cyl, boltCenterM, [0.80, 0.84, 0.89, 1.0], [0.82, 68], viewProj);
+                        const boltCenterM = this.matSpinX(r.cx - r.thick * 0.62, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.20, r.thick * 0.45, r.r * 0.20);
+                        this.drawItem(this.meshes.hex, boltCenterM, [0.84, 0.87, 0.92, 1.0], [0.84, 68], viewProj);
                     } else if (r.type === 'flywheel') {
                         const ringM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r, r.thick, r.r);
                         this.drawItem(this.meshes.cyl, ringM, r.colorRim, [0.55, 44], viewProj);
@@ -4335,13 +4608,10 @@
                         const notchM = this.matTRS(r.cx + r.thick * 0.58, r.cy + Math.cos(ang) * (r.r * 0.48), r.cz + Math.sin(ang) * (r.r * 0.48), ang, 0, 0, 0.032, r.r * 0.56, 0.055);
                         this.drawItem(this.meshes.box, notchM, [0.92, 0.34, 0.24, 1.0], [0.6, 48], viewProj);
                     } else if (r.type === 'impeller') {
-                        const hubM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.36, 0.06, r.r * 0.36);
-                        this.drawItem(this.meshes.cyl, hubM, r.colorHub, [0.7, 56], viewProj);
-                        for (let b = 0; b < 5; b++) {
-                            const bAng = ang + (b * Math.PI * 2) / 5;
-                            const bM = this.matTRS(r.cx - 0.02, r.cy + Math.cos(bAng) * (r.r * 0.45), r.cz + Math.sin(bAng) * (r.r * 0.45), bAng, 0, 0, 0.024, r.r * 0.90, 0.032);
-                            this.drawItem(this.meshes.box, bM, r.colorBlade, [0.8, 64], viewProj);
-                        }
+                        const noseM = this.matSpinX(r.cx - 0.02, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.26, 0.08, r.r * 0.26);
+                        this.drawItem(this.meshes.cone, noseM, r.colorHub, [0.78, 64], viewProj);
+                        const wheelM = this.matSpinX(r.cx - 0.01, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r, 0.075, r.r);
+                        this.drawItem(this.meshes.impeller, wheelM, r.colorBlade, [0.86, 74], viewProj);
                     }
                 }
 
