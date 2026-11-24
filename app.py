@@ -594,6 +594,69 @@ def widget_dyno_modular(potencia_txt: str = "146 kW", torque_txt: str = "212 Nm"
 # ==============================================================================
 # WIDGET 3: CONFIGURAÇÕES DO MOTOR (BARRA INFERIOR EM 3 SECÇÕES) + CÁLCULOS
 # ==============================================================================
+def calcular_peso_ideal_damper(
+    bore: float = 86.0,
+    stroke: float = 86.0,
+    max_rpm: int = 7500,
+    combustivel: str = "Gasolina 95",
+    ciclo: str = "4T",
+    num_cilindros: int = 4,
+    admissao: str = "Atmosférico",
+    formato: str = "I",
+    piston_material: str = "Alumínio",
+    turbo_bar: float = 0.0,
+    sc_bar: float = 0.0,
+) -> float:
+    """Sugere o peso ideal (kg, limite 2000 kg) do harmonic damper conforme a arquitetura do motor."""
+    fmt = str(formato).upper() if str(formato).upper() in FORMATOS_MOTOR else "I"
+    cyl = clamp_cilindros_formato(fmt, num_cilindros)
+    is_wankel = fmt == "WANKEL"
+    unit_cc = (math.pi / 4.0) * ((max(10.0, float(bore)) / 10.0) ** 2) * (max(10.0, float(stroke)) / 10.0)
+    litros = (unit_cc * (1.308 if is_wankel else 1.0) * cyl) / 1000.0
+    base_mass = 1.25 + (max(0.3, litros) ** 0.72) * 1.10
+
+    if is_wankel:
+        fmt_mult = 0.42
+    elif fmt == "B":
+        fmt_mult = 0.82
+    elif fmt == "VR":
+        fmt_mult = 0.94
+    elif fmt == "V":
+        fmt_mult = 1.06 if cyl >= 10 else 0.98
+    elif fmt == "W":
+        fmt_mult = 1.22
+    else:
+        fmt_mult = 1.12 if cyl >= 5 else (1.04 if cyl == 3 else 1.00)
+
+    is_diesel = combustivel in ("Diesel", "Biodiesel")
+    if is_diesel:
+        fuel_mult = 1.38
+    elif combustivel == "Nitrometano":
+        fuel_mult = 1.34
+    elif combustivel in ("Etanol (E85)", "Metanol", "Gasolina 102", "Gasolina 110"):
+        fuel_mult = 1.06
+    else:
+        fuel_mult = 1.00
+
+    cycle_mult = 0.90 if str(ciclo).upper() == "2T" else 1.00
+    adm = admissao if admissao in PERFIS_ADMISSAO else "Atmosférico"
+    if adm == "Supercompressor":
+        boost_total = max(0.0, min(4.0, float(sc_bar)))
+    elif adm == "Twincharge":
+        boost_total = max(0.0, min(6.0, float(turbo_bar))) + max(0.0, min(4.0, float(sc_bar)))
+    elif adm != "Atmosférico":
+        boost_total = max(0.0, min(6.0, float(turbo_bar)))
+    else:
+        boost_total = 0.0
+    boost_mult = 1.0 + min(0.45, boost_total * 0.08)
+
+    rpm_mult = max(0.75, min(1.16, 1.06 - (max(1500, int(max_rpm)) - 6500) * 0.000022))
+    pis_ideal_map = {"Alumínio": 1.00, "Forged": 1.06, "Forged Heavy": 1.15, "Titânio": 0.88}
+    pis_mult = 0.92 if is_wankel else pis_ideal_map.get(piston_material, 1.00)
+    raw = base_mass * fmt_mult * fuel_mult * cycle_mult * boost_mult * rpm_mult * pis_mult
+    return round(max(0.5, min(2000.0, raw)), 1)
+
+
 def processar_combustao(
     bore: float = 86.0,
     stroke: float = 86.0,
@@ -615,6 +678,7 @@ def processar_combustao(
     turbo_config: str = "Paralelo",
     flywheel: str = "Monomassa Aço",
     damper: str = "Elastómero OEM",
+    damper_weight: float | None = None,
     intake_type: str = "Plenum OEM",
     intake_material: str = "Alumínio Fundido",
     gearbox_type: str = "Manual",
@@ -814,6 +878,39 @@ def processar_combustao(
         "Polia Sólida": {"tq": 1.000, "hp": 1.006, "tol": -2.5},
     }
     p_dmp = perfis_damper.get(damper, perfis_damper["Elastómero OEM"])
+    ideal_damper_kg = calcular_peso_ideal_damper(
+        bore=bore,
+        stroke=stroke,
+        max_rpm=max_rpm,
+        combustivel=combustivel,
+        ciclo=ciclo,
+        num_cilindros=num_cilindros,
+        admissao=admissao_valida,
+        formato=formato_valido,
+        piston_material=piston_material,
+        turbo_bar=turbo_b,
+        sc_bar=sc_b,
+    )
+    damper_w = ideal_damper_kg if (damper_weight is None or float(damper_weight) <= 0) else max(0.1, min(2000.0, float(damper_weight)))
+    w_ratio = damper_w / max(0.5, ideal_damper_kg)
+    w_hp = (
+        max(0.95, 1.0 - (0.70 - w_ratio) * 0.06)
+        if w_ratio < 0.70
+        else (max(0.72, 1.0 - math.log1p(max(0.0, damper_w - ideal_damper_kg * 1.4)) * 0.030) if damper_w > ideal_damper_kg * 1.4 else 1.00)
+    )
+    w_tq = (
+        max(0.84, 1.0 - math.log1p(max(0.0, damper_w - ideal_damper_kg * 2.0)) * 0.018)
+        if damper_w > ideal_damper_kg * 2.0
+        else 1.00
+    )
+    if 0.75 <= w_ratio <= 1.35:
+        w_tol = 0.4
+    elif w_ratio < 0.75:
+        w_tol = -min(3.0, (0.75 - w_ratio) * 5.0)
+    elif damper_w > ideal_damper_kg * 1.8:
+        w_tol = -min(3.5, math.log1p(max(0.0, damper_w - ideal_damper_kg * 1.8)) * 0.55)
+    else:
+        w_tol = 0.0
 
     is_wankel = formato_valido == "WANKEL"
     n_val = 2 if int(num_valvulas) == 2 else 4
@@ -847,6 +944,7 @@ def processar_combustao(
         * p_pis["tq"]
         * p_fw["tq"]
         * p_dmp["tq"]
+        * w_tq
         * p_int["tq"]
         * p_imat["tq"]
         * p_gb["tq"]
@@ -869,6 +967,7 @@ def processar_combustao(
         * (p_pis["hp"] / p_pis["tq"])
         * (p_fw["hp"] / p_fw["tq"])
         * (p_dmp["hp"] / p_dmp["tq"])
+        * (w_hp / w_tq)
         * (p_int["hp"] / p_int["tq"])
         * (p_imat["hp"] / p_imat["tq"])
         * (p_gb["hp"] / p_gb["tq"])
@@ -886,7 +985,7 @@ def processar_combustao(
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * (max_rpm / 3.0) * 1.55) / 60.0
     else:
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * max_rpm) / 60.0
-    limite_vm = min(30.0, 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"] + p_fw["tol"] + p_dmp["tol"])
+    limite_vm = min(30.0, 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"] + p_fw["tol"] + p_dmp["tol"] + w_tol)
     limite_cr = perfil_comb["cr_lim"] + p_pis["cr_tol"]
     motivos_alerta = []
     if velocidade_pistao_mps > limite_vm:
@@ -910,6 +1009,7 @@ def processar_combustao(
         "limite_cr": round(limite_cr, 1),
         "alerta_rpm": alerta_rpm,
         "motivos_alerta": motivos_alerta,
+        "damper_ideal_kg": ideal_damper_kg,
     }
 
 
@@ -1031,7 +1131,7 @@ def widget_3_modular(
 
             <!-- Página 2: Distribuição, Válvulas, Volante & Damper -->
             <div class="config-page" id="cfg-page-1" data-page="1">
-                <div class="config-page-grid grid-cols-6">
+                <div class="config-page-grid grid-cols-7">
                     <div class="campo-grupo">
                         <label for="select-camshaft" id="lbl-camshaft">CAMSHAFT</label>
                         <select id="select-camshaft" class="input-cyber">
@@ -1083,6 +1183,13 @@ def widget_3_modular(
                             <option value="ATI Super Damper">ATI Super Damper</option>
                             <option value="Polia Sólida">Polia Sólida (Sem Damper)</option>
                         </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-damper-weight" id="lbl-damper-weight">PESO DO DAMPER (kg)</label>
+                        <div class="damper-weight-row">
+                            <input type="number" id="input-damper-weight" class="input-cyber" value="{dados_iniciais['damper_ideal_kg']:.1f}" step="0.1" min="0.1" max="2000" aria-label="Peso do harmonic damper em kg (máximo 2000 kg)">
+                            <button type="button" class="btn-damper-ideal" id="btn-damper-ideal" title="Peso ideal sugerido para este motor (máx. 2000 kg) · Clique para aplicar">Ideal: {dados_iniciais['damper_ideal_kg']:.1f} kg</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1496,6 +1603,10 @@ def gerar_dashboard_html(
 
         .dashboard-container.dyno-hidden .panels-right-col {{
             display: none;
+        }}
+
+        .dashboard-container.dyno-compact {{
+            grid-template-columns: minmax(0, 1fr) clamp(248px, 19.5vw, 295px);
         }}
 
         .engine-foreground-col {{
@@ -2096,6 +2207,101 @@ def gerar_dashboard_html(
             overflow: hidden;
         }}
 
+        .dashboard-container.dyno-compact .widget-dyno {{
+            padding: 10px 12px;
+            gap: 6px;
+        }}
+
+        .dashboard-container.dyno-compact .widget-dyno .widget-header {{
+            padding-bottom: 6px;
+        }}
+
+        .dashboard-container.dyno-compact .widget-dyno .ficha-titulo {{
+            font-size: 0.72rem;
+        }}
+
+        .dashboard-container.dyno-compact .dyno-header-actions {{
+            gap: 5px;
+        }}
+
+        .dashboard-container.dyno-compact .widget-dyno .widget-badge {{
+            font-size: 0.59rem;
+            padding: 3px 7px;
+        }}
+
+        .dashboard-container.dyno-compact .btn-unit-toggle {{
+            font-size: 0.60rem;
+            padding: 3px 7px;
+        }}
+
+        .dashboard-container.dyno-compact .dyno-legend {{
+            font-size: 0.61rem;
+            gap: 8px;
+        }}
+
+        .dashboard-container.dyno-compact .dyno-readout {{
+            display: none;
+        }}
+
+        .dashboard-container.dyno-compact .dyno-canvas-wrap {{
+            height: 132px;
+        }}
+
+        .damper-weight-row {{
+            display: flex;
+            align-items: stretch;
+            gap: 5px;
+            width: 100%;
+        }}
+
+        .damper-weight-row input[type="number"] {{
+            flex: 1 1 54px;
+            min-width: 54px;
+            width: 0;
+        }}
+
+        .btn-damper-ideal {{
+            flex: 0 1 auto;
+            white-space: nowrap;
+            background: rgba(110, 168, 166, 0.14);
+            color: #a7f3d0;
+            border: 1px solid rgba(110, 168, 166, 0.48);
+            border-radius: var(--radius-md);
+            padding: 0 7px;
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }}
+
+        .btn-damper-ideal.warn {{
+            background: rgba(212, 155, 75, 0.16);
+            border-color: rgba(212, 155, 75, 0.55);
+            color: #fde68a;
+        }}
+
+        .btn-damper-ideal.alert {{
+            background: rgba(220, 38, 38, 0.18);
+            border-color: rgba(239, 68, 68, 0.62);
+            color: #fca5a5;
+        }}
+
+        .btn-damper-ideal:hover {{
+            background: var(--btn-hover-grad);
+            border-color: #ef4444;
+            color: #ffffff;
+            box-shadow: 0 4px 12px -4px rgba(220, 38, 38, 0.55);
+        }}
+
+        .btn-damper-ideal:focus-visible {{
+            outline: 2px solid #ef4444;
+            outline-offset: 2px;
+        }}
+
         .dyno-canvas {{
             position: absolute;
             inset: 0;
@@ -2369,6 +2575,9 @@ def gerar_dashboard_html(
             .dyno-canvas-wrap {{
                 height: 195px;
             }}
+            .dashboard-container.dyno-compact .dyno-canvas-wrap {{
+                height: 118px;
+            }}
         }}
     </style>
 </head>
@@ -2549,6 +2758,8 @@ def gerar_dashboard_html(
         const selectValves = document.getElementById('select-valves');
         const selectFlywheel = document.getElementById('select-flywheel');
         const selectDamper = document.getElementById('select-damper');
+        const inputDamperWeight = document.getElementById('input-damper-weight');
+        const btnDamperIdeal = document.getElementById('btn-damper-ideal');
         const selectTurboConfig = document.getElementById('select-turbo-config');
         const selectIntakeType = document.getElementById('select-intake-type');
         const selectIntakeMaterial = document.getElementById('select-intake-material');
@@ -2775,6 +2986,13 @@ def gerar_dashboard_html(
                 lblCiclo: 'CICLO (2T / 4T)',
                 lblFlywheel: 'VOLANTE (FLYWHEEL)',
                 lblDamper: 'HARMONIC DAMPER',
+                lblDamperWeight: 'PESO DO DAMPER (kg)',
+                damperWeightAria: 'Peso do harmonic damper em quilogramas (máximo 2000 kg)',
+                damperIdealPrefix: 'Ideal',
+                damperIdealTitle: (motorTag, kg, statusTxt) => `Sugestão para ${{motorTag}}: ${{kg}} kg (${{statusTxt}} · máx. 2000 kg) — clique para aplicar`,
+                damperStatusOk: 'peso equilibrado',
+                damperStatusLight: 'leve demais para este motor',
+                damperStatusHeavy: 'acima do ideal',
                 lblAdmissao: 'TIPO DE ADMISSÃO',
                 lblTurboConfig: 'MULTI-TURBO',
                 lblIntakeType: 'TIPO DE INTAKE',
@@ -3034,6 +3252,13 @@ def gerar_dashboard_html(
                 lblCiclo: 'CYCLE (2T / 4T)',
                 lblFlywheel: 'FLYWHEEL',
                 lblDamper: 'HARMONIC DAMPER',
+                lblDamperWeight: 'DAMPER WEIGHT (kg)',
+                damperWeightAria: 'Harmonic damper weight in kilograms (max 2000 kg)',
+                damperIdealPrefix: 'Ideal',
+                damperIdealTitle: (motorTag, kg, statusTxt) => `Suggested for ${{motorTag}}: ${{kg}} kg (${{statusTxt}} · max 2000 kg) — click to apply`,
+                damperStatusOk: 'balanced weight',
+                damperStatusLight: 'too light for this engine',
+                damperStatusHeavy: 'heavier than ideal',
                 lblAdmissao: 'INDUCTION',
                 lblTurboConfig: 'TURBO LAYOUT',
                 lblIntakeType: 'INTAKE TYPE',
@@ -3306,6 +3531,8 @@ def gerar_dashboard_html(
             currentPageIdx = clamped;
             const t = I18N[currentLang];
             const isLast = clamped === 3;
+            const showDyno = clamped === 2 || clamped === 3;
+            const isCompactDyno = clamped === 2;
             for (let i = 0; i < 4; i++) {{
                 const pg = document.getElementById(`cfg-page-${{i}}`);
                 const dot = document.getElementById(`page-dot-${{i}}`);
@@ -3320,12 +3547,18 @@ def gerar_dashboard_html(
             }}
             if (btnPagePrev) btnPagePrev.disabled = (clamped === 0);
             if (btnPageNext) btnPageNext.disabled = isLast;
-            if (dashboardMain) dashboardMain.classList.toggle('dyno-hidden', !isLast);
-            if (motor3D && typeof motor3D.setRightPanelVisible === 'function') {{
-                motor3D.setRightPanelVisible(isLast);
+            if (dashboardMain) {{
+                dashboardMain.classList.toggle('dyno-hidden', !showDyno);
+                dashboardMain.classList.toggle('dyno-compact', isCompactDyno);
             }}
-            if (isLast) {{
+            if (motor3D && typeof motor3D.setRightPanelVisible === 'function') {{
+                motor3D.setRightPanelVisible(showDyno, isCompactDyno);
+            }}
+            if (showDyno) {{
                 drawDynoChart();
+                if (typeof requestAnimationFrame === 'function') {{
+                    requestAnimationFrame(() => drawDynoChart());
+                }}
             }}
         }}
 
@@ -3369,6 +3602,8 @@ def gerar_dashboard_html(
             setTxt('lbl-ciclo', t.lblCiclo);
             setTxt('lbl-flywheel', t.lblFlywheel);
             setTxt('lbl-damper', t.lblDamper);
+            setTxt('lbl-damper-weight', t.lblDamperWeight);
+            if (inputDamperWeight) inputDamperWeight.setAttribute('aria-label', t.damperWeightAria);
             setTxt('lbl-admissao', t.lblAdmissao);
             setTxt('lbl-turbo-config', t.lblTurboConfig);
             setTxt('lbl-intake-type', t.lblIntakeType);
@@ -3485,6 +3720,94 @@ def gerar_dashboard_html(
         function smoothstep(e0, e1, x) {{
             const t = Math.max(0, Math.min(1, (x - e0) / Math.max(1e-6, e1 - e0)));
             return t * t * (3 - 2 * t);
+        }}
+
+        function computeIdealDamperKg(params) {{
+            const isWankel = params.formato === 'WANKEL';
+            const cyl = Math.max(1, parseInt(params.cilindros, 10) || 4);
+            const bore = Math.max(10.0, Number(params.bore) || 86.0);
+            const stroke = Math.max(10.0, Number(params.stroke) || 86.0);
+            const unitCc = (Math.PI / 4.0) * Math.pow(bore / 10.0, 2) * (stroke / 10.0);
+            const litros = (unitCc * (isWankel ? 1.308 : 1.0) * cyl) / 1000.0;
+            const baseMass = 1.25 + Math.pow(Math.max(0.3, litros), 0.72) * 1.10;
+            let fmtMult = 1.00;
+            if (isWankel) fmtMult = 0.42;
+            else if (params.formato === 'B') fmtMult = 0.82;
+            else if (params.formato === 'VR') fmtMult = 0.94;
+            else if (params.formato === 'V') fmtMult = cyl >= 10 ? 1.06 : 0.98;
+            else if (params.formato === 'W') fmtMult = 1.22;
+            else if (params.formato === 'I') fmtMult = cyl >= 5 ? 1.12 : (cyl === 3 ? 1.04 : 1.00);
+            const comb = params.combustivel || 'Gasolina 95';
+            const isDiesel = comb === 'Diesel' || comb === 'Biodiesel';
+            let fuelMult = 1.00;
+            if (isDiesel) fuelMult = 1.38;
+            else if (comb === 'Nitrometano') fuelMult = 1.34;
+            else if (['Etanol (E85)', 'Metanol', 'Gasolina 102', 'Gasolina 110'].includes(comb)) fuelMult = 1.06;
+            const cycleMult = params.ciclo === '2T' ? 0.90 : 1.00;
+            const boostTotal = Math.max(0, Number(params.turbo_bar) || 0) + Math.max(0, Number(params.sc_bar) || 0);
+            const boostMult = 1.0 + Math.min(0.45, boostTotal * 0.08);
+            const maxR = Math.max(1500, Number(params.max_rpm) || 7500);
+            const rpmMult = Math.max(0.75, Math.min(1.16, 1.06 - (maxR - 6500) * 0.000022));
+            const pisIdealMap = {{ 'Alumínio': 1.00, 'Forged': 1.06, 'Forged Heavy': 1.15, 'Titânio': 0.88 }};
+            const pisMult = isWankel ? 0.92 : (pisIdealMap[params.piston_material] || 1.00);
+            const rawIdeal = baseMass * fmtMult * fuelMult * cycleMult * boostMult * rpmMult * pisMult;
+            return Math.round(Math.max(0.5, Math.min(2000.0, rawIdeal)) * 10) / 10;
+        }}
+
+        function computeDamperWeightStats(params) {{
+            const idealKg = computeIdealDamperKg(params);
+            const rawW = Number(params.damper_weight);
+            const damperW = (Number.isFinite(rawW) && rawW > 0) ? Math.max(0.1, Math.min(2000.0, rawW)) : idealKg;
+            const wRatio = damperW / Math.max(0.5, idealKg);
+            const wIn = damperW >= idealKg
+                ? (1.0 + (damperW - idealKg) * 0.045)
+                : Math.max(0.72, 1.0 - (1.0 - wRatio) * 0.25);
+            const wHp = wRatio < 0.70
+                ? Math.max(0.95, 1.0 - (0.70 - wRatio) * 0.06)
+                : (damperW > idealKg * 1.4
+                    ? Math.max(0.72, 1.0 - Math.log1p(Math.max(0.0, damperW - idealKg * 1.4)) * 0.030)
+                    : 1.00);
+            const wTq = damperW > idealKg * 2.0
+                ? Math.max(0.84, 1.0 - Math.log1p(Math.max(0.0, damperW - idealKg * 2.0)) * 0.018)
+                : 1.00;
+            let wTol = 0.0;
+            let status = 'ok';
+            if (wRatio >= 0.75 && wRatio <= 1.35) {{
+                wTol = 0.4;
+                status = 'ok';
+            }} else if (wRatio < 0.75) {{
+                wTol = -Math.min(3.0, (0.75 - wRatio) * 5.0);
+                status = wRatio < 0.50 ? 'alert' : 'warn';
+            }} else {{
+                wTol = damperW > idealKg * 1.8
+                    ? -Math.min(3.5, Math.log1p(Math.max(0.0, damperW - idealKg * 1.8)) * 0.55)
+                    : 0.0;
+                status = wRatio > 2.2 ? 'alert' : 'warn';
+            }}
+            return {{ idealKg, damperW, wRatio, wIn, wHp, wTq, wTol, status }};
+        }}
+
+        function syncDamperSuggestionUI(params) {{
+            const p = params || readEnginePayload();
+            const stats = computeDamperWeightStats(p);
+            engineSim.damperIdealKg = stats.idealKg;
+            if (!btnDamperIdeal) return;
+            const t = I18N[currentLang];
+            const unitCc = (Math.PI / 4.0) * Math.pow(Math.max(10, p.bore) / 10.0, 2) * (Math.max(10, p.stroke) / 10.0);
+            const isWankel = p.formato === 'WANKEL';
+            const litros = ((unitCc * (isWankel ? 1.308 : 1.0) * p.cilindros) / 1000.0).toFixed(1);
+            const motorTag = `${{p.formato}}${{p.cilindros}} · ${{litros}} L · ${{p.combustivel}}`;
+            const statusTxt = stats.status === 'ok'
+                ? t.damperStatusOk
+                : (stats.wRatio < 0.75 ? t.damperStatusLight : t.damperStatusHeavy);
+            const idealStr = stats.idealKg.toFixed(1);
+            btnDamperIdeal.textContent = `${{t.damperIdealPrefix}}: ${{idealStr}} kg`;
+            btnDamperIdeal.title = t.damperIdealTitle(motorTag, idealStr, statusTxt);
+            btnDamperIdeal.dataset.idealKg = idealStr;
+            btnDamperIdeal.classList.remove('warn', 'alert');
+            if (stats.status === 'warn' || stats.status === 'alert') {{
+                btnDamperIdeal.classList.add(stats.status);
+            }}
         }}
 
         function computeDynoData(params) {{
@@ -3644,16 +3967,18 @@ def gerar_dashboard_html(
                 tq: Math.max(0.96, Math.min(1.03, 1.0 - 0.024 * dDelta)),
                 hp: Math.max(0.92, Math.min(1.06, 1.0 + 0.055 * (1.0 - Math.exp(-dDelta * 1.4))))
             }};
-            engineSim.inertiaFactor = pFw.in * pDmp.in * pGb.in * pCl.in;
+            const dmpStats = computeDamperWeightStats(params);
+            engineSim.damperIdealKg = dmpStats.idealKg;
+            engineSim.inertiaFactor = pFw.in * pDmp.in * pGb.in * pCl.in * dmpStats.wIn;
             const nVal = parseInt(params.num_valvulas, 10) === 2 ? 2 : 4;
             const valTq = isWankel ? 1.00 : (nVal === 2 ? 1.02 : 1.00);
             const valHp = isWankel ? 1.00 : (nVal === 2 ? 0.93 : 1.00);
 
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (params.ciclo === '2T' ? 1.25 : 1.00);
-            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq);
+            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq);
             const fatorRpmHp = isWankel ? 0.93 : (params.ciclo === '4T' ? 0.88 : 0.94);
-            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * 1.01387;
+            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * 1.01387;
             const peakPowerKw = Math.round(peakPowerCv * 0.73549875);
 
             const maxRpm = Math.max(1500, params.max_rpm);
@@ -3730,7 +4055,7 @@ def gerar_dashboard_html(
 
             const pisInMap = {{ 'Alumínio': 1.00, 'Forged': 1.08, 'Forged Heavy': 1.24, 'Titânio': 0.82 }};
             const pisInertia = isWankel ? 0.92 : (pisInMap[params.piston_material] || 1.00);
-            engineSim.rotInertia = Math.max(0.055, (0.088 + Math.max(0.4, litros) * 0.032) * pisInertia * Math.max(0.32, engineSim.inertiaFactor || 1.0));
+            engineSim.rotInertia = Math.max(0.055, (0.088 + Math.max(0.4, litros) * 0.032) * pisInertia * Math.max(0.32, Math.min(14.0, engineSim.inertiaFactor || 1.0)));
             engineSim.maxRpm = maxRpm;
             engineSim.idleRpm = Math.min(1150, Math.max(750, Math.round(maxRpm * 0.13)));
             engineSim.dynoPoints = points;
@@ -3780,6 +4105,17 @@ def gerar_dashboard_html(
             return Math.ceil(target / (niceStep * mag * 4)) * (niceStep * mag * 4);
         }}
 
+        function getDynoChartPadding(cw, ch) {{
+            const compact = cw < 320 || ch < 175;
+            return {{
+                compact,
+                padL: compact ? 33 : 40,
+                padR: compact ? 33 : 40,
+                padT: compact ? 15 : 18,
+                padB: compact ? 25 : 34
+            }};
+        }}
+
         function drawDynoChart() {{
             if (!dynoCanvas) return;
             const wrap = dynoCanvas.parentElement;
@@ -3801,7 +4137,7 @@ def gerar_dashboard_html(
             const ch = rect.height;
             ctx.clearRect(0, 0, cw, ch);
 
-            const padL = 40, padR = 40, padT = 18, padB = 34;
+            const {{ compact, padL, padR, padT, padB }} = getDynoChartPadding(cw, ch);
             const pw = Math.max(40, cw - padL - padR);
             const ph = Math.max(40, ch - padT - padB);
             const pts = engineSim.dynoPoints;
@@ -3821,35 +4157,39 @@ def gerar_dashboard_html(
             // Grelha do dinamómetro + rótulos das unidades no topo dos eixos
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
             ctx.lineWidth = 1;
-            ctx.font = '600 9.5px "JetBrains Mono", monospace';
+            ctx.font = compact ? '600 8.5px "JetBrains Mono", monospace' : '600 9.5px "JetBrains Mono", monospace';
             ctx.fillStyle = 'rgba(248, 113, 113, 0.90)';
             ctx.textAlign = 'right';
-            ctx.fillText(powerUnitLabel(), padL - 6, padT - 5);
+            ctx.fillText(powerUnitLabel(), padL - 5, padT - 4);
             ctx.fillStyle = 'rgba(212, 155, 75, 0.92)';
             ctx.textAlign = 'left';
-            ctx.fillText(torqueUnitLabel(), padL + pw + 6, padT - 5);
+            ctx.fillText(torqueUnitLabel(), padL + pw + 5, padT - 4);
 
-            ctx.font = '600 10px "JetBrains Mono", monospace';
-            for (let g = 0; g <= 4; g++) {{
-                const gy = padT + (ph * g) / 4;
+            ctx.font = compact ? '600 8.5px "JetBrains Mono", monospace' : '600 10px "JetBrains Mono", monospace';
+            const rowsY = compact ? 2 : 4;
+            for (let g = 0; g <= rowsY; g++) {{
+                const gy = padT + (ph * g) / rowsY;
                 ctx.beginPath();
                 ctx.moveTo(padL, gy);
                 ctx.lineTo(padL + pw, gy);
                 ctx.stroke();
 
-                const pVal = Math.round(maxPowerAxis * (1 - g / 4));
-                const tVal = Math.round(maxTorqueAxis * (1 - g / 4));
+                const pVal = Math.round(maxPowerAxis * (1 - g / rowsY));
+                const tVal = Math.round(maxTorqueAxis * (1 - g / rowsY));
                 ctx.fillStyle = 'rgba(248, 113, 113, 0.82)';
                 ctx.textAlign = 'right';
-                ctx.fillText(String(pVal), padL - 6, gy + 3);
+                ctx.fillText(String(pVal), padL - 5, gy + 3);
 
                 ctx.fillStyle = 'rgba(212, 155, 75, 0.85)';
                 ctx.textAlign = 'left';
-                ctx.fillText(String(tVal), padL + pw + 6, gy + 3);
+                ctx.fillText(String(tVal), padL + pw + 5, gy + 3);
             }}
 
             // Eixo X simplificado (×1000 RPM: 1K -> 1, 2K -> 2...)
-            const stepRpm = maxRpm > 16000 ? 4000 : (maxRpm > 9000 ? 2000 : 1000);
+            let stepRpm = maxRpm > 16000 ? 4000 : (maxRpm > 9000 ? 2000 : 1000);
+            if (compact && pw < 215) {{
+                stepRpm = maxRpm > 14000 ? 4000 : (maxRpm > 6500 ? 2000 : 1000);
+            }}
             const firstTick = Math.max(stepRpm, Math.ceil(minRpm / stepRpm) * stepRpm);
             ctx.fillStyle = '#9ca3af';
             ctx.textAlign = 'center';
@@ -3859,11 +4199,11 @@ def gerar_dashboard_html(
                 ctx.moveTo(gx, padT);
                 ctx.lineTo(gx, padT + ph);
                 ctx.stroke();
-                ctx.fillText(String(Math.round(rVal / 1000)), gx, padT + ph + 13);
+                ctx.fillText(String(Math.round(rVal / 1000)), gx, padT + ph + (compact ? 11 : 13));
             }}
-            ctx.font = '600 9px "JetBrains Mono", monospace';
+            ctx.font = compact ? '600 8px "JetBrains Mono", monospace' : '600 9px "JetBrains Mono", monospace';
             ctx.fillStyle = '#6b7280';
-            ctx.fillText('RPM (×1000)', padL + pw * 0.5, ch - 4);
+            ctx.fillText(compact ? 'RPM ×1k' : 'RPM (×1000)', padL + pw * 0.5, ch - (compact ? 3 : 4));
 
             // Área sutil sob a curva de potência
             const gradArea = ctx.createLinearGradient(0, padT, 0, padT + ph);
@@ -3887,7 +4227,7 @@ def gerar_dashboard_html(
                 if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }});
             ctx.strokeStyle = '#d49b4b';
-            ctx.lineWidth = 2.2;
+            ctx.lineWidth = compact ? 1.8 : 2.2;
             ctx.stroke();
 
             // Curva de Potência
@@ -3897,7 +4237,7 @@ def gerar_dashboard_html(
                 if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }});
             ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = compact ? 2.1 : 2.5;
             ctx.stroke();
 
             // Marcador ao vivo (hover ou rotação atual do motor)
@@ -3924,11 +4264,11 @@ def gerar_dashboard_html(
                 const ty = yTorque(convertTorque(sample.torqueNm));
 
                 ctx.fillStyle = '#d49b4b';
-                ctx.beginPath(); ctx.arc(mx, ty, 4.2, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(mx, ty, compact ? 3.3 : 4.2, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = '#07090d'; ctx.lineWidth = 1.5; ctx.stroke();
 
                 ctx.fillStyle = '#ef4444';
-                ctx.beginPath(); ctx.arc(mx, py, 4.6, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(mx, py, compact ? 3.6 : 4.6, 0, Math.PI * 2); ctx.fill();
                 ctx.strokeStyle = '#07090d'; ctx.lineWidth = 1.5; ctx.stroke();
             }}
 
@@ -3940,7 +4280,7 @@ def gerar_dashboard_html(
                 const rect = dynoCanvas.getBoundingClientRect();
                 const pts = engineSim.dynoPoints;
                 if (!pts.length || !rect.width) return;
-                const padL = 40, padR = 40;
+                const {{ padL, padR }} = getDynoChartPadding(rect.width, rect.height);
                 const pw = Math.max(40, rect.width - padL - padR);
                 const frac = Math.max(0, Math.min(1, (e.clientX - rect.left - padL) / pw));
                 const minRpm = pts[0].rpm;
@@ -3952,6 +4292,9 @@ def gerar_dashboard_html(
                 engineSim.hoverRpm = null;
                 drawDynoChart();
             }});
+            if (typeof ResizeObserver !== 'undefined' && dynoCanvas.parentElement) {{
+                new ResizeObserver(() => drawDynoChart()).observe(dynoCanvas.parentElement);
+            }}
         }}
 
         /* ----------------------------------------------------------------------
@@ -3983,6 +4326,7 @@ def gerar_dashboard_html(
                     intakeMaterial: 'Alumínio Fundido',
                     flywheel: 'Monomassa Aço',
                     damper: 'Elastómero OEM',
+                    damperWeight: 3.2,
                     viewMode: 'engine',
                     gearboxType: 'Manual',
                     gearboxSpeeds: 6,
@@ -6680,11 +7024,14 @@ def gerar_dashboard_html(
                     'Polia Sólida':     {{ r: 0.23, thick: 0.075, rim: [0.74, 0.78, 0.84, 1.0], hub: [0.72, 0.24, 0.24, 1.0] }}
                 }};
                 const dProf = damperProfiles[dmpType] || damperProfiles['Elastómero OEM'];
+                const dWeight = Math.max(0.1, Math.min(2000.0, Number(this.config.damperWeight) || 3.2));
+                const dWScale = Math.max(0.84, Math.min(1.85, 0.88 + Math.log1p(dWeight / 3.2) * 0.16));
                 this.dynamicRotors.push({{
                     type: 'pulley',
                     damperStyle: dmpType,
-                    cx: -halfLenX - 0.24, cy: 0, cz: 0,
-                    r: dProf.r, thick: dProf.thick, speedMult: 1.0,
+                    cx: -halfLenX - 0.24 - (dWScale - 1.0) * 0.05, cy: 0, cz: 0,
+                    r: dProf.r * Math.min(1.42, 0.85 + dWScale * 0.15),
+                    thick: dProf.thick * dWScale, speedMult: 1.0,
                     colorRim: dProf.rim,
                     colorHub: dProf.hub
                 }});
@@ -6873,11 +7220,11 @@ def gerar_dashboard_html(
                 }}
             }}
 
-            setRightPanelVisible(visible) {{
+            setRightPanelVisible(visible, compact = false) {{
                 const isDesktop = window.innerWidth > 1020;
                 const prevPanX = this.defaultCam.panX;
-                const nextPanX = (visible && isDesktop) ? 0.78 : 0.0;
-                const nextPanY = isDesktop ? (visible ? -0.05 : 0.04) : 0.12;
+                const nextPanX = (visible && isDesktop) ? (compact ? 0.42 : 0.78) : 0.0;
+                const nextPanY = isDesktop ? (visible ? (compact ? -0.01 : -0.05) : 0.04) : 0.12;
                 this.defaultCam.panX = nextPanX;
                 this.defaultCam.panY = nextPanY;
                 if (Math.abs(this.targetCam.panX - prevPanX) < 0.12) {{
@@ -6890,8 +7237,9 @@ def gerar_dashboard_html(
                 const isDesktop = window.innerWidth > 1020;
                 const dyEl = document.getElementById('dashboard-main');
                 const rightVis = dyEl ? !dyEl.classList.contains('dyno-hidden') : false;
-                this.defaultCam.panX = (rightVis && isDesktop) ? 0.78 : 0.0;
-                this.defaultCam.panY = isDesktop ? (rightVis ? -0.05 : 0.04) : 0.12;
+                const rightCompact = dyEl ? dyEl.classList.contains('dyno-compact') : false;
+                this.defaultCam.panX = (rightVis && isDesktop) ? (rightCompact ? 0.42 : 0.78) : 0.0;
+                this.defaultCam.panY = isDesktop ? (rightVis ? (rightCompact ? -0.01 : -0.05) : 0.04) : 0.12;
                 this.targetCam = {{ ...this.defaultCam }};
             }}
 
@@ -6929,7 +7277,7 @@ def gerar_dashboard_html(
                 this.lastTime = now;
 
                 // Dinâmica de rotação do motor acoplada à curva real de potência/binário, inércia e barra de acelerador (%)
-                const inertiaMult = Math.max(0.35, Math.min(1.55, engineSim.inertiaFactor || 1.0));
+                const inertiaMult = Math.max(0.35, Math.min(12.0, engineSim.inertiaFactor || 1.0));
                 const invInertia = 1.0 / inertiaMult;
                 if (!engineSim.on) {{
                     if (engineSim.throttlePct !== 0 || engineSim.spaceHeld) {{
@@ -6960,7 +7308,7 @@ def gerar_dashboard_html(
                             const rotJ = Math.max(0.055, engineSim.rotInertia || (0.15 * inertiaMult));
                             const rawDrive = (inst.torqueNm * 2.15 + inst.powerKw * 3.35) / rotJ;
                             const thrGain = 0.18 + 0.82 * thr;
-                            const climbRate = Math.max(420, Math.min(22000, rawDrive)) * thrGain;
+                            const climbRate = Math.max(65, Math.min(22000, rawDrive)) * thrGain;
                             const gap = targetRpm - engineSim.currentRpm;
                             const rawStep = Math.min(gap, climbRate * dt);
                             const step = thr >= 0.98 ? rawStep : Math.min(rawStep, gap * Math.min(1, dt * 11.0));
@@ -7716,6 +8064,7 @@ def gerar_dashboard_html(
             const rawRpm = parseInt(inputRpm.value, 10);
             const rawTurbo = inputTurboBoost ? parseFloat(inputTurboBoost.value) : 0;
             const rawSc = inputScBoost ? parseFloat(inputScBoost.value) : 0;
+            const rawDamperWeight = inputDamperWeight ? parseFloat(inputDamperWeight.value) : 3.2;
             const adm = selectAdmissao.value || 'Atmosférico';
             const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
             return {{
@@ -7732,6 +8081,7 @@ def gerar_dashboard_html(
                 intake_material: selectIntakeMaterial ? selectIntakeMaterial.value : 'Alumínio Fundido',
                 flywheel: selectFlywheel ? selectFlywheel.value : 'Monomassa Aço',
                 damper: selectDamper ? selectDamper.value : 'Elastómero OEM',
+                damper_weight: (Number.isFinite(rawDamperWeight) && rawDamperWeight > 0) ? Math.max(0.1, Math.min(2000.0, rawDamperWeight)) : 3.2,
                 gearbox_type: selectGearboxType ? selectGearboxType.value : 'Manual',
                 gearbox_speeds: selectGearboxSpeeds ? (parseInt(selectGearboxSpeeds.value, 10) || 6) : 6,
                 clutch_type: selectClutchType ? selectClutchType.value : 'Monodisco Orgânica',
@@ -7807,8 +8157,9 @@ def gerar_dashboard_html(
             if (sumBuildVal) sumBuildVal.textContent = matLabel;
             if (sumBuildSub) {{
                 const pWord = isWankel ? t.rotorMatWord : t.pistonWord;
-                sumBuildSub.textContent = `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}} · ${{fwShort}} · ${{dmpShort}}`;
+                sumBuildSub.textContent = `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}} · ${{fwShort}} · ${{dmpShort}} (${{p.damper_weight.toFixed(1)}} kg)`;
             }}
+            syncDamperSuggestionUI(p);
             if (motor3D) {{
                 motor3D.setConfig({{
                     cilindros: p.cilindros,
@@ -7819,6 +8170,7 @@ def gerar_dashboard_html(
                     intakeMaterial: p.intake_material,
                     flywheel: p.flywheel,
                     damper: p.damper,
+                    damperWeight: p.damper_weight,
                     viewMode: viewMode,
                     gearboxType: p.gearbox_type,
                     gearboxSpeeds: p.gearbox_speeds,
@@ -7857,7 +8209,7 @@ def gerar_dashboard_html(
 
         async function atualizarWidget3() {{
             const payload = readEnginePayload();
-
+            syncDamperSuggestionUI(payload);
             computeDynoData(payload);
 
             const t = I18N[currentLang];
@@ -7903,7 +8255,8 @@ def gerar_dashboard_html(
             const pisTVal = pisTol[payload.piston_material] || 0.0;
             const fwTVal = fwTol[payload.flywheel] !== undefined ? fwTol[payload.flywheel] : 0.0;
             const dmpTVal = dmpTol[payload.damper] !== undefined ? dmpTol[payload.damper] : 0.0;
-            const limiteVm = Math.min(30.0, 25.0 + matTVal + valTVal + pisTVal + fwTVal + dmpTVal);
+            const dmpWStats = computeDamperWeightStats(payload);
+            const limiteVm = Math.min(30.0, 25.0 + matTVal + valTVal + pisTVal + fwTVal + dmpTVal + dmpWStats.wTol);
             const motivosAlerta = [];
             if (velMediaPistao > limiteVm) {{
                 motivosAlerta.push(t.warnPiston(velMediaPistao.toFixed(1), limiteVm.toFixed(1)));
@@ -8125,6 +8478,34 @@ def gerar_dashboard_html(
             }});
         }});
 
+        if (inputDamperWeight) {{
+            inputDamperWeight.addEventListener('input', () => {{
+                const raw = parseFloat(inputDamperWeight.value);
+                if (Number.isFinite(raw) && raw > 2000) {{
+                    inputDamperWeight.value = '2000';
+                }}
+                atualizarMotor3D();
+                atualizarWidget3();
+            }});
+            inputDamperWeight.addEventListener('change', () => {{
+                const raw = parseFloat(inputDamperWeight.value);
+                const clamped = (Number.isFinite(raw) && raw > 0) ? Math.max(0.1, Math.min(2000.0, raw)) : (engineSim.damperIdealKg || 3.2);
+                inputDamperWeight.value = String(Math.round(clamped * 10) / 10);
+                atualizarMotor3D();
+                atualizarWidget3();
+            }});
+        }}
+
+        if (btnDamperIdeal) {{
+            btnDamperIdeal.addEventListener('click', () => {{
+                const p = readEnginePayload();
+                const ideal = computeIdealDamperKg(p);
+                if (inputDamperWeight) inputDamperWeight.value = ideal.toFixed(1);
+                atualizarMotor3D();
+                atualizarWidget3();
+            }});
+        }}
+
         [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectCiclo, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial].forEach(el => {{
             if (!el) return;
             el.addEventListener('input', () => {{
@@ -8257,6 +8638,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 turbo_config=str(dados.get("turbo_config") or "Paralelo"),
                 flywheel=str(dados.get("flywheel") or "Monomassa Aço"),
                 damper=str(dados.get("damper") or "Elastómero OEM"),
+                damper_weight=(float(dados.get("damper_weight")) if dados.get("damper_weight") is not None else None),
                 intake_type=str(dados.get("intake_type") or "Plenum OEM"),
                 intake_material=str(dados.get("intake_material") or "Alumínio Fundido"),
                 gearbox_type=str(dados.get("gearbox_type") or "Manual"),
@@ -8274,6 +8656,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 "limite_cr": resultado["limite_cr"],
                 "alerta_rpm": resultado["alerta_rpm"],
                 "motivos_alerta": resultado["motivos_alerta"],
+                "damper_ideal_kg": resultado["damper_ideal_kg"],
             }, ensure_ascii=False).encode("utf-8")
 
             self.send_response(200)
