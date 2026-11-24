@@ -60,6 +60,7 @@ def gerar_svg_motor_inline(
     num_cilindros: int = 4,
     formato: str = "I",
     admissao: str = "Atmosférico",
+    turbo_config: str = "Paralelo",
 ) -> str:
     """
     Desenha o SVG 2D simplista e estilizado do motor de acordo com o formato escolhido
@@ -74,6 +75,7 @@ def gerar_svg_motor_inline(
     adm = str(admissao) if str(admissao) in (
         "Atmosférico", "Turbo", "Supercompressor", "Biturbo", "Quad Turbo", "Twincharge"
     ) else "Atmosférico"
+    t_cfg = "Sequencial" if (adm in ("Biturbo", "Quad Turbo") and str(turbo_config) == "Sequencial") else "Paralelo"
 
     def desenhar_cilindro(cx: float, cy: float, r: float) -> str:
         r_pistao = max(3.4, r * 0.72)
@@ -169,9 +171,25 @@ def gerar_svg_motor_inline(
         if adm == "Turbo":
             turbo_wankel = desenhar_turbo(210.0, 206.0, 1.28)
         elif adm == "Biturbo":
-            turbo_wankel = desenhar_turbo(152.0, 206.0, 1.18) + desenhar_turbo(266.0, 206.0, 1.18)
+            if t_cfg == "Sequencial":
+                turbo_wankel = (
+                    '<path d="M 164,206 L 254,206" stroke="#f59e0b" stroke-width="2.4" stroke-dasharray="4 3" />\n'
+                    + desenhar_turbo(152.0, 206.0, 0.96)
+                    + desenhar_turbo(266.0, 206.0, 1.32)
+                )
+            else:
+                turbo_wankel = desenhar_turbo(152.0, 206.0, 1.18) + desenhar_turbo(266.0, 206.0, 1.18)
         elif adm == "Quad Turbo":
-            turbo_wankel = "".join(desenhar_turbo(106.0 + k * 64.0, 206.0, 1.0) for k in range(4))
+            if t_cfg == "Sequencial":
+                turbo_wankel = (
+                    '<path d="M 106,206 L 298,206" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="4 3" />\n'
+                    + "".join(
+                        desenhar_turbo(106.0 + k * 64.0, 206.0, 0.84 if k % 2 == 0 else 1.12)
+                        for k in range(4)
+                    )
+                )
+            else:
+                turbo_wankel = "".join(desenhar_turbo(106.0 + k * 64.0, 206.0, 1.0) for k in range(4))
         elif adm == "Supercompressor":
             turbo_wankel = desenhar_supercharger(92.0, 32.0, 212.0, 22.0, 48.0, 43.0, 48.0, 123.0)
         elif adm == "Twincharge":
@@ -235,28 +253,34 @@ def gerar_svg_motor_inline(
                 f'{desenhar_supercharger(92.0, 30.0, 212.0, 24.0, 48.0, 42.0, 48.0, 123.0)}'
             )
         elif adm == "Biturbo":
+            seq_pipe = '<path d="M 164,211 L 266,211" fill="none" stroke="#f59e0b" stroke-width="2.4" stroke-dasharray="4 3" />\n' if t_cfg == "Sequencial" else ""
+            s1, s2 = (1.00, 1.38) if t_cfg == "Sequencial" else (1.24, 1.24)
             admissao_svg = (
                 f'<path d="M 30,190 L 30,47 L 78,47" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" stroke-linejoin="round" />\n'
                 f'<path d="M 68,210 L 266,210" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" />\n'
+                f'{seq_pipe}'
                 f'{desenhar_intercooler(16.0, 194.0, 50.0, 26.0)}'
                 f'<rect x="78" y="40" width="248" height="14" rx="5" fill="#121620" stroke="#94a3b8" stroke-width="1.3" />\n'
                 f'<rect x="90" y="45.5" width="224" height="3" rx="1.5" fill="url(#eng-accent)" />\n'
                 f'<rect x="82" y="191" width="240" height="8" rx="4" fill="#1a100e" stroke="#ea580c" stroke-width="1.1" />\n'
-                f'{desenhar_turbo(146.0, 211.0, 1.24)}'
-                f'{desenhar_turbo(282.0, 211.0, 1.24)}'
+                f'{desenhar_turbo(146.0, 211.0, s1)}'
+                f'{desenhar_turbo(282.0, 211.0, s2)}'
             )
         elif adm == "Quad Turbo":
+            seq_pipe = '<path d="M 112,211 L 310,211" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="4 3" />\n' if t_cfg == "Sequencial" else ""
+            qs = (0.86, 1.18, 0.86, 1.18) if t_cfg == "Sequencial" else (1.05, 1.05, 1.05, 1.05)
             admissao_svg = (
                 f'<path d="M 30,190 L 30,47 L 78,47" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" stroke-linejoin="round" />\n'
                 f'<path d="M 68,210 L 326,210" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" />\n'
+                f'{seq_pipe}'
                 f'{desenhar_intercooler(16.0, 194.0, 50.0, 26.0)}'
                 f'<rect x="78" y="40" width="248" height="14" rx="5" fill="#121620" stroke="#94a3b8" stroke-width="1.3" />\n'
                 f'<rect x="90" y="45.5" width="224" height="3" rx="1.5" fill="url(#eng-accent)" />\n'
                 f'<rect x="82" y="191" width="240" height="8" rx="4" fill="#1a100e" stroke="#ea580c" stroke-width="1.1" />\n'
-                f'{desenhar_turbo(112.0, 211.0, 1.05)}'
-                f'{desenhar_turbo(178.0, 211.0, 1.05)}'
-                f'{desenhar_turbo(244.0, 211.0, 1.05)}'
-                f'{desenhar_turbo(310.0, 211.0, 1.05)}'
+                f'{desenhar_turbo(112.0, 211.0, qs[0])}'
+                f'{desenhar_turbo(178.0, 211.0, qs[1])}'
+                f'{desenhar_turbo(244.0, 211.0, qs[2])}'
+                f'{desenhar_turbo(310.0, 211.0, qs[3])}'
             )
         else:  # Twincharge
             admissao_svg = (
@@ -351,28 +375,37 @@ def gerar_svg_motor_inline(
                 f'{desenhar_supercharger(84.0, 108.0, 236.0, 30.0, 48.0, 123.0, 48.0, 123.0)}'
             )
         elif adm == "Biturbo":
+            seq_pipe = '<path d="M 212,24 L 212,222" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="4 3" />\n' if t_cfg == "Sequencial" else ""
+            s1, s2 = (0.98, 1.35) if t_cfg == "Sequencial" else (1.22, 1.22)
             admissao_vw = (
                 f'<path d="M 185,24 L 24,24 L 24,86" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" stroke-linejoin="round" />\n'
                 f'<path d="M 185,222 L 24,222 L 24,160" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" stroke-linejoin="round" />\n'
                 f'<line x1="34" y1="123" x2="82" y2="123" stroke="url(#eng-pipe)" stroke-width="4.5" />\n'
+                f'{seq_pipe}'
                 f'{desenhar_intercooler(14.0, 86.0, 20.0, 74.0, True)}'
                 f'<rect x="78" y="109" width="250" height="28" rx="6" fill="#121620" stroke="#94a3b8" stroke-width="1.3" />\n'
                 f'<rect x="94" y="121.5" width="218" height="3" rx="1.5" fill="url(#eng-accent)" />\n'
-                f'{desenhar_turbo(212.0, 24.0, 1.22)}'
-                f'{desenhar_turbo(212.0, 222.0, 1.22)}'
+                f'{desenhar_turbo(212.0, 24.0, s1)}'
+                f'{desenhar_turbo(212.0, 222.0, s2)}'
             )
         elif adm == "Quad Turbo":
+            seq_pipe = (
+                '<path d="M 150,24 L 272,24 M 150,222 L 272,222" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="4 3" />\n'
+                if t_cfg == "Sequencial" else ""
+            )
+            s_pri, s_sec = (0.86, 1.18) if t_cfg == "Sequencial" else (1.05, 1.05)
             admissao_vw = (
                 f'<path d="M 120,24 L 24,24 L 24,86" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" stroke-linejoin="round" />\n'
                 f'<path d="M 272,24 L 180,24" fill="none" stroke="url(#eng-pipe)" stroke-width="4.2" />\n'
                 f'<path d="M 120,222 L 24,222 L 24,160" fill="none" stroke="url(#eng-pipe)" stroke-width="4.5" stroke-linejoin="round" />\n'
                 f'<path d="M 272,222 L 180,222" fill="none" stroke="url(#eng-pipe)" stroke-width="4.2" />\n'
                 f'<line x1="34" y1="123" x2="82" y2="123" stroke="url(#eng-pipe)" stroke-width="4.5" />\n'
+                f'{seq_pipe}'
                 f'{desenhar_intercooler(14.0, 86.0, 20.0, 74.0, True)}'
-                f'{desenhar_turbo(150.0, 24.0, 1.05)}'
-                f'{desenhar_turbo(272.0, 24.0, 1.05)}'
-                f'{desenhar_turbo(150.0, 222.0, 1.05)}'
-                f'{desenhar_turbo(272.0, 222.0, 1.05)}'
+                f'{desenhar_turbo(150.0, 24.0, s_pri)}'
+                f'{desenhar_turbo(272.0, 24.0, s_sec)}'
+                f'{desenhar_turbo(150.0, 222.0, s_pri)}'
+                f'{desenhar_turbo(272.0, 222.0, s_sec)}'
             )
         else:  # Twincharge
             admissao_vw = (
@@ -575,6 +608,9 @@ def processar_combustao(
     num_valvulas: int = 4,
     turbo_bar: float = 1.5,
     sc_bar: float = 0.8,
+    turbo_config: str = "Paralelo",
+    flywheel: str = "Monomassa Aço",
+    damper: str = "Elastómero OEM",
 ) -> dict:
     """
     Calcula automaticamente em Python os parâmetros do motor (potência em kW,
@@ -590,6 +626,10 @@ def processar_combustao(
     admissao_valida = admissao if admissao in PERFIS_ADMISSAO else "Atmosférico"
     turbo_b = max(0.0, min(6.0, float(turbo_bar)))
     sc_b = max(0.0, min(4.0, float(sc_bar)))
+    has_multi_turbo = admissao_valida in ("Biturbo", "Quad Turbo")
+    t_cfg = "Sequencial" if (has_multi_turbo and str(turbo_config) == "Sequencial") else "Paralelo"
+    tcfg_tq = 1.025 if (has_multi_turbo and t_cfg == "Sequencial") else 1.00
+    tcfg_hp = 0.985 if (has_multi_turbo and t_cfg == "Sequencial") else 1.00
 
     if admissao_valida == "Atmosférico":
         adm_mb, adm_mp = 1.00, 1.00
@@ -664,6 +704,23 @@ def processar_combustao(
     }
     p_pis = perfis_pistao.get(piston_material, perfis_pistao["Alumínio"])
 
+    perfis_flywheel = {
+        "Monomassa Aço": {"tq": 1.000, "hp": 1.000, "tol": 0.0},
+        "Dupla Massa": {"tq": 1.015, "hp": 0.985, "tol": -0.8},
+        "Aligeirado Cromoly": {"tq": 1.000, "hp": 1.015, "tol": 1.0},
+        "Alumínio Billet": {"tq": 0.995, "hp": 1.022, "tol": 1.5},
+        "Carbono Multi-Disco": {"tq": 0.990, "hp": 1.032, "tol": 2.5},
+    }
+    p_fw = perfis_flywheel.get(flywheel, perfis_flywheel["Monomassa Aço"])
+
+    perfis_damper = {
+        "Elastómero OEM": {"tq": 1.000, "hp": 1.000, "tol": 0.0},
+        "Fluido Viscoso": {"tq": 1.005, "hp": 1.010, "tol": 2.0},
+        "ATI Super Damper": {"tq": 1.005, "hp": 1.020, "tol": 3.5},
+        "Polia Sólida": {"tq": 1.000, "hp": 1.006, "tol": -2.5},
+    }
+    p_dmp = perfis_damper.get(damper, perfis_damper["Elastómero OEM"])
+
     is_wankel = formato_valido == "WANKEL"
     n_val = 2 if int(num_valvulas) == 2 else 4
     val_tq = 1.00 if is_wankel else (1.02 if n_val == 2 else 1.00)
@@ -689,22 +746,28 @@ def processar_combustao(
         * perfil_comb["torque"]
         * fator_ciclo_tq
         * adm_mb
+        * tcfg_tq
         * p_cam["tq"]
         * p_val["tq"]
         * val_tq
         * p_pis["tq"]
+        * p_fw["tq"]
+        * p_dmp["tq"]
     ))
 
     fator_rpm_potencia = 0.93 if is_wankel else (0.88 if ciclo == "4T" else 0.94)
     potencia_cv = (
         ((torque_nm * max_rpm * fator_rpm_potencia) / 7121.0)
         * (adm_mp / adm_mb)
+        * (tcfg_hp / tcfg_tq)
         * (perfil_comb["power"] / perfil_comb["torque"])
         * (p_cam["hp"] / p_cam["tq"])
         * (p_val["hp"] / p_val["tq"])
         * (val_hp / val_tq)
         * p_mat["hp"]
         * (p_pis["hp"] / p_pis["tq"])
+        * (p_fw["hp"] / p_fw["tq"])
+        * (p_dmp["hp"] / p_dmp["tq"])
         * 1.01387
     )
     potencia_kw = int(round(potencia_cv * 0.73549875))
@@ -714,7 +777,7 @@ def processar_combustao(
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * (max_rpm / 3.0) * 1.55) / 60.0
     else:
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * max_rpm) / 60.0
-    limite_vm = 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"]
+    limite_vm = 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"] + p_fw["tol"] + p_dmp["tol"]
     limite_cr = (22.0 if combustivel == "Diesel" else 15.0) + p_pis["cr_tol"]
     motivos_alerta = []
     if velocidade_pistao_mps > limite_vm:
@@ -723,8 +786,10 @@ def processar_combustao(
         motivos_alerta.append(f"Taxa de compressão > {limite_cr:.0f}:1")
     alerta_rpm = len(motivos_alerta) > 0
 
+    adm_desc = f"{admissao_valida} {t_cfg}" if has_multi_turbo else admissao_valida
+
     return {
-        "tipo_motor": f"{formato_valido}{num_cilindros} · {admissao_valida} ({ciclo})",
+        "tipo_motor": f"{formato_valido}{num_cilindros} · {adm_desc} ({ciclo})",
         "cilindrada_litros": f"{cilindrada_litros:.2f} L",
         "pressao_bar": pressao_str,
         "torque_nm": f"{torque_nm} Nm",
@@ -773,6 +838,7 @@ def widget_3_modular(
         for a in PERFIS_ADMISSAO.keys()
     )
     has_turbo = admissao in ("Turbo", "Biturbo", "Quad Turbo", "Twincharge")
+    has_multi_turbo = admissao in ("Biturbo", "Quad Turbo")
     has_sc = admissao in ("Supercompressor", "Twincharge")
     turbo_init = PERFIS_ADMISSAO.get(admissao, {}).get("turbo_bar", 0.0) if has_turbo else 0.0
     sc_init = PERFIS_ADMISSAO.get(admissao, {}).get("sc_bar", 0.0) if has_sc else 0.0
@@ -854,9 +920,9 @@ def widget_3_modular(
                 </div>
             </div>
 
-            <!-- Página 2: Distribuição & Válvulas -->
+            <!-- Página 2: Distribuição, Válvulas, Volante & Damper -->
             <div class="config-page" id="cfg-page-1" data-page="1">
-                <div class="config-page-grid grid-cols-4">
+                <div class="config-page-grid grid-cols-6">
                     <div class="campo-grupo">
                         <label for="select-camshaft" id="lbl-camshaft">CAMSHAFT</label>
                         <select id="select-camshaft" class="input-cyber">
@@ -890,16 +956,42 @@ def widget_3_modular(
                             <option value="2T">2T</option>
                         </select>
                     </div>
+                    <div class="campo-grupo">
+                        <label for="select-flywheel" id="lbl-flywheel">VOLANTE (FLYWHEEL)</label>
+                        <select id="select-flywheel" class="input-cyber">
+                            <option value="Monomassa Aço" selected>Monomassa (Aço)</option>
+                            <option value="Dupla Massa">Dupla Massa (DMF)</option>
+                            <option value="Aligeirado Cromoly">Aligeirado (Cromoly)</option>
+                            <option value="Alumínio Billet">Alumínio Billet</option>
+                            <option value="Carbono Multi-Disco">Carbono Multi-Disco</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-damper" id="lbl-damper">HARMONIC DAMPER</label>
+                        <select id="select-damper" class="input-cyber">
+                            <option value="Elastómero OEM" selected>Elastómero OEM</option>
+                            <option value="Fluido Viscoso">Fluido Viscoso (Fluidampr)</option>
+                            <option value="ATI Super Damper">ATI Super Damper</option>
+                            <option value="Polia Sólida">Polia Sólida (Sem Damper)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <!-- Página 3: Admissão & Combustão -->
             <div class="config-page" id="cfg-page-2" data-page="2">
-                <div class="config-page-grid grid-cols-6">
+                <div class="config-page-grid grid-cols-7">
                     <div class="campo-grupo">
                         <label for="select-admissao" id="lbl-admissao">TIPO DE ADMISSÃO</label>
                         <select id="select-admissao" class="input-cyber">
                             {options_adm_html}
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-turbo-config" id="lbl-turbo-config">MULTI-TURBO</label>
+                        <select id="select-turbo-config" class="input-cyber" {"" if has_multi_turbo else "disabled"}>
+                            <option value="Paralelo" selected>Paralelo</option>
+                            <option value="Sequencial">Sequencial</option>
                         </select>
                     </div>
                     <div class="campo-grupo">
@@ -961,7 +1053,7 @@ def widget_3_modular(
                     <div class="summary-pill">
                         <span id="lbl-sum-build">BLOCO &amp; COMBUSTÍVEL</span>
                         <strong id="sum-build-val">Alumínio</strong>
-                        <small id="sum-build-sub">Pistão: Alumínio · Gasolina</small>
+                        <small id="sum-build-sub">Pistão: Alumínio · Gasolina · Monomassa · Damper OEM</small>
                     </div>
                 </div>
             </div>
@@ -1222,6 +1314,9 @@ def gerar_dashboard_html(
             justify-content: center;
             gap: 7px;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
         }}
 
         .btn-engine-ctrl .dot-ind {{
@@ -1243,11 +1338,13 @@ def gerar_dashboard_html(
             box-shadow: 0 0 8px rgba(74, 222, 128, 0.75);
         }}
 
-        .btn-engine-ctrl.acelerando {{
-            background: var(--btn-hover-grad);
-            border-color: #ef4444;
+        .btn-engine-ctrl.acelerando,
+        .btn-engine-ctrl.acelerando:not(:disabled):hover {{
+            background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+            border-color: #fca5a5;
             color: #ffffff;
-            box-shadow: 0 6px 18px -4px rgba(220, 38, 38, 0.65);
+            transform: translateY(1px) scale(0.985);
+            box-shadow: 0 0 18px rgba(239, 68, 68, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.24);
         }}
 
         .btn-engine-ctrl.slow-ativo {{
@@ -1262,17 +1359,17 @@ def gerar_dashboard_html(
             cursor: not-allowed;
         }}
 
-        .btn-engine-ctrl:not(:disabled):hover,
-        .btn-engine-ctrl.ligado:not(:disabled):hover,
-        .btn-engine-ctrl.slow-ativo:not(:disabled):hover {{
-            background: var(--btn-hover-grad);
-            border-color: #ef4444;
+        .btn-engine-ctrl:not(:disabled):not(.acelerando):hover,
+        .btn-engine-ctrl.ligado:not(:disabled):not(.acelerando):hover,
+        .btn-engine-ctrl.slow-ativo:not(:disabled):not(.acelerando):hover {{
+            background: rgba(127, 29, 29, 0.26);
+            border-color: rgba(239, 68, 68, 0.68);
             color: #ffffff;
             transform: translateY(-1px);
-            box-shadow: 0 6px 18px -6px rgba(220, 38, 38, 0.65);
+            box-shadow: 0 4px 14px -6px rgba(220, 38, 38, 0.45);
         }}
 
-        .btn-engine-ctrl:not(:disabled):active {{
+        .btn-engine-ctrl:not(:disabled):not(.acelerando):active {{
             transform: translateY(0);
         }}
 
@@ -1922,6 +2019,9 @@ def gerar_dashboard_html(
         const selectCamshaft = document.getElementById('select-camshaft');
         const selectValveType = document.getElementById('select-valve-type');
         const selectValves = document.getElementById('select-valves');
+        const selectFlywheel = document.getElementById('select-flywheel');
+        const selectDamper = document.getElementById('select-damper');
+        const selectTurboConfig = document.getElementById('select-turbo-config');
         const inputTurboBoost = document.getElementById('input-turbo-boost');
         const inputScBoost = document.getElementById('input-sc-boost');
         const rpmAlertaMsg = document.getElementById('rpm-alerta-msg');
@@ -2023,7 +2123,10 @@ def gerar_dashboard_html(
                 lblValveType: 'TIPO DE VÁLVULAS',
                 lblValves: 'VÁLVULAS / CIL.',
                 lblCiclo: 'CICLO (2T / 4T)',
+                lblFlywheel: 'VOLANTE (FLYWHEEL)',
+                lblDamper: 'HARMONIC DAMPER',
                 lblAdmissao: 'TIPO DE ADMISSÃO',
+                lblTurboConfig: 'MULTI-TURBO',
                 lblCombustivel: 'COMBUSTÍVEL',
                 lblTurboBoost: 'PRESSÃO TURBO (bar)',
                 lblScBoost: 'PRESSÃO SUPERCHARGER (bar)',
@@ -2054,7 +2157,34 @@ def gerar_dashboard_html(
                 }},
                 camOpts: {{ 'DOHC': 'DOHC (Dupla)', 'SOHC': 'SOHC (Simples)', 'OHV': 'OHV (Varetas)', 'Freevalve': 'Freevalve (Sem Cames)' }},
                 vTypeOpts: {{ 'Molas': 'Molas Helicoidais', 'VVT': 'VVT (Variável)', 'Desmodrómico': 'Desmodrómico', 'Pneumático': 'Pneumático', 'Freevalve': 'Freevalve (Eletropneumático)' }},
+                flywheelOpts: {{
+                    'Monomassa Aço': 'Monomassa (Aço)',
+                    'Dupla Massa': 'Dupla Massa (DMF)',
+                    'Aligeirado Cromoly': 'Aligeirado (Cromoly)',
+                    'Alumínio Billet': 'Alumínio Billet',
+                    'Carbono Multi-Disco': 'Carbono Multi-Disco'
+                }},
+                flywheelShort: {{
+                    'Monomassa Aço': 'Monomassa',
+                    'Dupla Massa': 'DMF',
+                    'Aligeirado Cromoly': 'Cromoly',
+                    'Alumínio Billet': 'Alum. Billet',
+                    'Carbono Multi-Disco': 'Carbono'
+                }},
+                damperOpts: {{
+                    'Elastómero OEM': 'Elastómero OEM',
+                    'Fluido Viscoso': 'Fluido Viscoso (Fluidampr)',
+                    'ATI Super Damper': 'ATI Super Damper',
+                    'Polia Sólida': 'Polia Sólida (Sem Damper)'
+                }},
+                damperShort: {{
+                    'Elastómero OEM': 'Damper OEM',
+                    'Fluido Viscoso': 'Fluidampr',
+                    'ATI Super Damper': 'ATI Damper',
+                    'Polia Sólida': 'Sem Damper'
+                }},
                 admOpts: {{ 'Atmosférico': 'Atmosférico', 'Turbo': 'Turbo', 'Supercompressor': 'Supercompressor', 'Biturbo': 'Biturbo', 'Quad Turbo': 'Quad Turbo', 'Twincharge': 'Twincharge' }},
+                turboCfgOpts: {{ 'Paralelo': 'Paralelo', 'Sequencial': 'Sequencial' }},
                 fuelOpts: {{ 'Gasolina': 'Gasolina', 'Etanol (E85)': 'Etanol (E85)', 'Metanol': 'Metanol', 'Diesel': 'Diesel' }},
                 warnPiston: (v, lim) => `Vel. média do pistão elevada (${{v}} m/s > ${{lim}} m/s)`,
                 warnCr: lim => `Taxa de compressão > ${{lim}}:1`
@@ -2118,7 +2248,10 @@ def gerar_dashboard_html(
                 lblValveType: 'VALVE TYPE',
                 lblValves: 'VALVES / CYL.',
                 lblCiclo: 'CYCLE (2T / 4T)',
+                lblFlywheel: 'FLYWHEEL',
+                lblDamper: 'HARMONIC DAMPER',
                 lblAdmissao: 'INDUCTION',
+                lblTurboConfig: 'TURBO LAYOUT',
                 lblCombustivel: 'FUEL',
                 lblTurboBoost: 'TURBO BOOST (bar)',
                 lblScBoost: 'SUPERCHARGER BOOST (bar)',
@@ -2149,7 +2282,34 @@ def gerar_dashboard_html(
                 }},
                 camOpts: {{ 'DOHC': 'DOHC (Dual Cam)', 'SOHC': 'SOHC (Single Cam)', 'OHV': 'OHV (Pushrod)', 'Freevalve': 'Freevalve (Camless)' }},
                 vTypeOpts: {{ 'Molas': 'Coil Springs', 'VVT': 'VVT (Variable)', 'Desmodrómico': 'Desmodromic', 'Pneumático': 'Pneumatic', 'Freevalve': 'Freevalve (Electro-Pneumatic)' }},
+                flywheelOpts: {{
+                    'Monomassa Aço': 'Single-Mass (Steel)',
+                    'Dupla Massa': 'Dual-Mass (DMF)',
+                    'Aligeirado Cromoly': 'Lightweight Chromoly',
+                    'Alumínio Billet': 'Billet Aluminum',
+                    'Carbono Multi-Disco': 'Carbon Multi-Plate'
+                }},
+                flywheelShort: {{
+                    'Monomassa Aço': 'Single-Mass',
+                    'Dupla Massa': 'DMF',
+                    'Aligeirado Cromoly': 'Chromoly',
+                    'Alumínio Billet': 'Billet Alu',
+                    'Carbono Multi-Disco': 'Carbon'
+                }},
+                damperOpts: {{
+                    'Elastómero OEM': 'OEM Elastomer',
+                    'Fluido Viscoso': 'Viscous Fluid (Fluidampr)',
+                    'ATI Super Damper': 'ATI Super Damper',
+                    'Polia Sólida': 'Solid Pulley (Undamped)'
+                }},
+                damperShort: {{
+                    'Elastómero OEM': 'OEM Damper',
+                    'Fluido Viscoso': 'Fluidampr',
+                    'ATI Super Damper': 'ATI Damper',
+                    'Polia Sólida': 'No Damper'
+                }},
                 admOpts: {{ 'Atmosférico': 'Nat. Aspirated', 'Turbo': 'Turbocharged', 'Supercompressor': 'Supercharged', 'Biturbo': 'Twin-Turbo', 'Quad Turbo': 'Quad-Turbo', 'Twincharge': 'Twincharged' }},
+                turboCfgOpts: {{ 'Paralelo': 'Parallel', 'Sequencial': 'Sequential' }},
                 fuelOpts: {{ 'Gasolina': 'Gasoline', 'Etanol (E85)': 'Ethanol (E85)', 'Metanol': 'Methanol', 'Diesel': 'Diesel' }},
                 warnPiston: (v, lim) => `High mean piston speed (${{v}} m/s > ${{lim}} m/s)`,
                 warnCr: lim => `Compression ratio > ${{lim}}:1`
@@ -2166,6 +2326,7 @@ def gerar_dashboard_html(
             currentRpm: 0,
             idleRpm: 950,
             maxRpm: 7500,
+            inertiaFactor: 1.0,
             slowMo: 1,
             unitMode: 'metric',
             dynoPoints: [],
@@ -2287,8 +2448,12 @@ def gerar_dashboard_html(
             if (!selectAdmissao) return;
             const adm = selectAdmissao.value || 'Atmosférico';
             const hasTurbo = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(adm);
+            const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
             const hasSc = ['Supercompressor', 'Twincharge'].includes(adm);
             const defs = DEFAULT_BOOST_BY_ADM[adm] || DEFAULT_BOOST_BY_ADM['Atmosférico'];
+            if (selectTurboConfig) {{
+                selectTurboConfig.disabled = !hasMultiTurbo;
+            }}
             if (inputTurboBoost) {{
                 inputTurboBoost.disabled = !hasTurbo;
                 if (!hasTurbo) {{
@@ -2373,7 +2538,10 @@ def gerar_dashboard_html(
             setTxt('lbl-valve-type', t.lblValveType);
             setTxt('lbl-valves', t.lblValves);
             setTxt('lbl-ciclo', t.lblCiclo);
+            setTxt('lbl-flywheel', t.lblFlywheel);
+            setTxt('lbl-damper', t.lblDamper);
             setTxt('lbl-admissao', t.lblAdmissao);
+            setTxt('lbl-turbo-config', t.lblTurboConfig);
             setTxt('lbl-combustivel', t.lblCombustivel);
             setTxt('lbl-turbo-boost', t.lblTurboBoost);
             setTxt('lbl-sc-boost', t.lblScBoost);
@@ -2411,7 +2579,10 @@ def gerar_dashboard_html(
             mapOpts(selectPistonMaterial, t.pistonMatOpts);
             mapOpts(selectCamshaft, t.camOpts);
             mapOpts(selectValveType, t.vTypeOpts);
+            mapOpts(selectFlywheel, t.flywheelOpts);
+            mapOpts(selectDamper, t.damperOpts);
             mapOpts(selectAdmissao, t.admOpts);
+            mapOpts(selectTurboConfig, t.turboCfgOpts);
             mapOpts(selectCombustivel, t.fuelOpts);
             syncCylinderOptionsForFormat();
             if (selectValves) {{
@@ -2467,6 +2638,10 @@ def gerar_dashboard_html(
                 : 'Atmosférico';
             const turboBar = Math.max(0, Math.min(6, Number(params.turbo_bar) || 0));
             const scBar = Math.max(0, Math.min(4, Number(params.sc_bar) || 0));
+            const hasMultiTurbo = admKey === 'Biturbo' || admKey === 'Quad Turbo';
+            const turboCfg = (hasMultiTurbo && params.turbo_config === 'Sequencial') ? 'Sequencial' : 'Paralelo';
+            const tcfgTq = (hasMultiTurbo && turboCfg === 'Sequencial') ? 1.025 : 1.00;
+            const tcfgHp = (hasMultiTurbo && turboCfg === 'Sequencial') ? 0.985 : 1.00;
             let admMb = 1.0, admMp = 1.0;
             if (admKey === 'Turbo') {{
                 admMb = 1.0 + turboBar * 0.40;
@@ -2519,19 +2694,35 @@ def gerar_dashboard_html(
                 'Forged Heavy': {{ tq: 1.03, hp: 0.98 }},
                 'Titânio': {{ tq: 1.00, hp: 1.05 }}
             }};
+            const fwMap = {{
+                'Monomassa Aço': {{ tq: 1.000, hp: 1.000, in: 1.00 }},
+                'Dupla Massa': {{ tq: 1.015, hp: 0.985, in: 1.38 }},
+                'Aligeirado Cromoly': {{ tq: 1.000, hp: 1.015, in: 0.70 }},
+                'Alumínio Billet': {{ tq: 0.995, hp: 1.022, in: 0.58 }},
+                'Carbono Multi-Disco': {{ tq: 0.990, hp: 1.032, in: 0.42 }}
+            }};
+            const dmpMap = {{
+                'Elastómero OEM': {{ tq: 1.000, hp: 1.000, in: 1.00 }},
+                'Fluido Viscoso': {{ tq: 1.005, hp: 1.010, in: 1.04 }},
+                'ATI Super Damper': {{ tq: 1.005, hp: 1.020, in: 0.85 }},
+                'Polia Sólida': {{ tq: 1.000, hp: 1.006, in: 0.80 }}
+            }};
             const pCam = isWankel ? {{ tq: 1.00, hp: 1.00 }} : (isFreevalve ? camMap['Freevalve'] : (camMap[params.camshaft] || camMap['DOHC']));
             const pVal = isWankel ? {{ tq: 1.00, hp: 1.00 }} : (isFreevalve ? valMap['Freevalve'] : (valMap[params.valve_type] || valMap['Molas']));
             const pMatHp = matHpMap[params.material] || 1.00;
             const pPis = pisMap[params.piston_material] || pisMap['Alumínio'];
+            const pFw = fwMap[params.flywheel] || fwMap['Monomassa Aço'];
+            const pDmp = dmpMap[params.damper] || dmpMap['Elastómero OEM'];
+            engineSim.inertiaFactor = pFw.in * pDmp.in;
             const nVal = parseInt(params.num_valvulas, 10) === 2 ? 2 : 4;
             const valTq = isWankel ? 1.00 : (nVal === 2 ? 1.02 : 1.00);
             const valHp = isWankel ? 1.00 : (nVal === 2 ? 0.93 : 1.00);
 
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (params.ciclo === '2T' ? 1.25 : 1.00);
-            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * pCam.tq * pVal.tq * valTq * pPis.tq);
+            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq);
             const fatorRpmHp = isWankel ? 0.93 : (params.ciclo === '4T' ? 0.88 : 0.94);
-            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * 1.01387;
+            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * 1.01387;
             const peakPowerKw = Math.round(peakPowerCv * 0.73549875);
 
             const maxRpm = Math.max(1500, params.max_rpm);
@@ -2557,12 +2748,24 @@ def gerar_dashboard_html(
                     tShape = ((isDiesel ? 0.56 : 0.46) + (isDiesel ? 0.44 : 0.54) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.62 : 0.78)) * (isDiesel ? 0.78 : 0.54));
                 }} else if (admKey === 'Biturbo') {{
                     const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.30 : 0.40), (isDiesel ? 1850 : 2500) + turboBar * 180);
-                    const spool = smoothstep(spoolRpm * 0.40, spoolRpm * 1.02, rpm);
-                    tShape = ((isDiesel ? 0.60 : 0.50) + (isDiesel ? 0.40 : 0.50) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.68 : 0.82)) * (isDiesel ? 0.62 : 0.42));
+                    if (turboCfg === 'Sequencial') {{
+                        const s1 = smoothstep(spoolRpm * 0.18, spoolRpm * 0.62, rpm);
+                        const s2 = smoothstep(maxRpm * 0.36, maxRpm * 0.62, rpm);
+                        tShape = ((isDiesel ? 0.68 : 0.60) + (isDiesel ? 0.24 : 0.30) * s1 + (isDiesel ? 0.08 : 0.10) * s2) * (1.0 - Math.max(0, u - (isDiesel ? 0.68 : 0.80)) * (isDiesel ? 0.68 : 0.48));
+                    }} else {{
+                        const spool = smoothstep(spoolRpm * 0.40, spoolRpm * 1.02, rpm);
+                        tShape = ((isDiesel ? 0.60 : 0.50) + (isDiesel ? 0.40 : 0.50) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.68 : 0.82)) * (isDiesel ? 0.62 : 0.42));
+                    }}
                 }} else if (admKey === 'Quad Turbo') {{
                     const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.28 : 0.38), (isDiesel ? 1750 : 2400) + turboBar * 160);
-                    const spool = smoothstep(spoolRpm * 0.36, spoolRpm * 0.98, rpm);
-                    tShape = ((isDiesel ? 0.62 : 0.52) + (isDiesel ? 0.38 : 0.48) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.72 : 0.86)) * (isDiesel ? 0.54 : 0.32));
+                    if (turboCfg === 'Sequencial') {{
+                        const s1 = smoothstep(spoolRpm * 0.16, spoolRpm * 0.56, rpm);
+                        const s2 = smoothstep(maxRpm * 0.38, maxRpm * 0.64, rpm);
+                        tShape = ((isDiesel ? 0.70 : 0.62) + (isDiesel ? 0.22 : 0.28) * s1 + (isDiesel ? 0.08 : 0.10) * s2) * (1.0 - Math.max(0, u - (isDiesel ? 0.70 : 0.82)) * (isDiesel ? 0.60 : 0.40));
+                    }} else {{
+                        const spool = smoothstep(spoolRpm * 0.36, spoolRpm * 0.98, rpm);
+                        tShape = ((isDiesel ? 0.62 : 0.52) + (isDiesel ? 0.38 : 0.48) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.72 : 0.86)) * (isDiesel ? 0.54 : 0.32));
+                    }}
                 }} else if (admKey === 'Supercompressor') {{
                     const rise = Math.sin(Math.min(1, u / 0.62) * (Math.PI * 0.5));
                     tShape = (0.83 + lowEndBias * 0.5) + 0.17 * rise - Math.max(0, u - (isDiesel ? 0.60 : 0.72)) * (isDiesel ? 0.72 : 0.50);
@@ -2839,6 +3042,9 @@ def gerar_dashboard_html(
                     camshaft: 'DOHC',
                     valveType: 'Molas',
                     numValvulas: 4,
+                    turboConfig: 'Paralelo',
+                    flywheel: 'Monomassa Aço',
+                    damper: 'Elastómero OEM',
                     turboBar: 0.0,
                     scBar: 0.0
                 }};
@@ -3499,20 +3705,22 @@ def gerar_dashboard_html(
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z - 0.16, Math.PI * 0.5, 0, 0, 0.045, 0.07, 0.045), [0.76, 0.62, 0.28, 1.0], [0.7, 56]);
             }}
 
-            addTurboUnit(cx, cy, cz, scale, flipZ = 1) {{
+            addTurboUnit(cx, cy, cz, scale, flipZ = 1, stage = 'all') {{
                 const s = scale;
                 const C_COMP = [0.78, 0.82, 0.87, 1.0];
                 const C_TURB = [0.50, 0.36, 0.28, 1.0];
                 const C_CART = [0.34, 0.38, 0.44, 1.0];
-                const C_HUB  = [0.24, 0.41, 0.60, 1.0];
+                const C_HUB  = stage === 'primary'
+                    ? [0.80, 0.58, 0.22, 1.0]
+                    : (stage === 'secondary' ? [0.74, 0.24, 0.26, 1.0] : [0.24, 0.41, 0.60, 1.0]);
                 const C_BLADE = [0.90, 0.93, 0.96, 1.0];
-                const C_WASTE = [0.58, 0.62, 0.68, 1.0];
+                const C_WASTE = stage === 'primary' ? [0.80, 0.62, 0.26, 1.0] : [0.58, 0.62, 0.68, 1.0];
 
                 // Center bearing housing (CHRA) + oil feed/drain bosses + V-band clamp rings
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy, cz, 0, 0, Math.PI * 0.5, 0.14 * s, 0.32 * s, 0.14 * s), C_CART, [0.55, 40]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + 0.17 * s, cz, 0, 0, 0, 0.038 * s, 0.14 * s, 0.038 * s), [0.72, 0.60, 0.32, 1.0], [0.65, 52]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy - 0.16 * s, cz, 0, 0, 0, 0.042 * s, 0.12 * s, 0.042 * s), C_CART, [0.5, 36]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.21 * s, 0.03 * s, 0.21 * s), C_COMP, [0.75, 62]);
+                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.21 * s, 0.03 * s, 0.21 * s), stage === 'primary' ? C_WASTE : C_COMP, [0.75, 62]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + 0.09 * s, cy, cz, 0, 0, Math.PI * 0.5, 0.19 * s, 0.03 * s, 0.19 * s), C_WASTE, [0.65, 52]);
                 // Compressor snail + intake bellmouth + blow-off valve (BOV)
                 this.addPart(this.staticOpaque, 'torus', this.matTRS(cx - 0.17 * s, cy, cz, 0, Math.PI * 0.5, 0, 0.25 * s, 0.25 * s, 0.25 * s), C_COMP, [0.78, 68]);
@@ -3530,6 +3738,7 @@ def gerar_dashboard_html(
 
                 this.dynamicRotors.push({{
                     type: 'impeller',
+                    stage: stage || 'all',
                     cx: cx - 0.35 * s, cy, cz,
                     r: 0.145 * s,
                     speedMult: 2.2,
@@ -3540,8 +3749,19 @@ def gerar_dashboard_html(
                 return {{
                     inlet: [cx - 0.36 * s, cy, cz],
                     compOut: [cx - 0.17 * s, cy + 0.25 * s, cz],
-                    turbOut: [cx + 0.34 * s, cy, cz]
+                    turbOut: [cx + 0.34 * s, cy, cz],
+                    chra: [cx, cy, cz]
                 }};
+            }}
+
+            addSequentialCrossover(pA, pB, dropY = -0.14, rad = 0.052) {{
+                const mx = (pA[0] + pB[0]) * 0.5;
+                const my = (pA[1] + pB[1]) * 0.5 + dropY;
+                const mz = (pA[2] + pB[2]) * 0.5;
+                this.addPipe(this.staticOpaque, [pA, [mx, my, mz], pB], rad, [0.76, 0.54, 0.22, 1.0], [0.62, 48]);
+                // Válvula de derivação sequencial (flapper + atuador)
+                this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, my + 0.08, mz, 0, 0, 0, rad * 1.65, 0.14, rad * 1.65), [0.80, 0.62, 0.24, 1.0], [0.74, 58]);
+                this.addPart(this.staticOpaque, 'box', this.matTRS(mx, my, mz, 0, 0, 0, rad * 2.2, rad * 2.2, rad * 2.2), [0.22, 0.25, 0.30, 1.0], [0.55, 40]);
             }}
 
             addSuperchargerUnit(x, y, z, lenX, widthZ, pulleyX) {{
@@ -3668,6 +3888,10 @@ def gerar_dashboard_html(
                 const vType = this.config.valveType || 'Molas';
                 const isFreevalve = fmt !== 'WANKEL' && (camMode === 'Freevalve' || vType === 'Freevalve');
                 const valvesCount = parseInt(this.config.numValvulas, 10) === 2 ? 2 : 4;
+                const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
+                const turboCfg = (hasMultiTurbo && this.config.turboConfig === 'Sequencial') ? 'Sequencial' : 'Paralelo';
+                const fwType = this.config.flywheel || 'Monomassa Aço';
+                const dmpType = this.config.damper || 'Elastómero OEM';
                 const turboBar = Math.max(0, Number(this.config.turboBar) || 0);
                 const turboImpMult = 1.0 + Math.min(2.0, turboBar * 0.25);
 
@@ -3982,21 +4206,37 @@ def gerar_dashboard_html(
                         this.addConeFilter(halfLenX + 0.50, deckDist + 0.68, 0.05, 1);
                     }} else if (adm === 'Biturbo') {{
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, portY + 0.02, intZ + 0.10, 0, 0, Math.PI * 0.5, 0.19, plenumW, 0.19), C_INTAKE, [0.55, 48]);
-                        const t1 = this.addTurboUnit(-halfLenX * 0.45, portY - 0.45, exhZ - 0.44, 0.92, -1);
-                        const t2 = this.addTurboUnit(halfLenX * 0.45, portY - 0.45, exhZ - 0.44, 0.92, -1);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const t1 = this.addTurboUnit(-halfLenX * 0.45, portY - 0.45, exhZ - 0.44, isSeq ? 0.78 : 0.92, -1, isSeq ? 'primary' : 'all');
+                        const t2 = this.addTurboUnit(halfLenX * 0.45, portY - 0.45, exhZ - 0.44, isSeq ? 1.12 : 0.92, -1, isSeq ? 'secondary' : 'all');
                         const icX = -halfLenX - 1.15;
                         this.addIntercooler(icX, 0.05, 0, 0.24, 0.74, 1.35);
-                        this.addPipe(this.staticOpaque, [t1.compOut, [icX + 0.35, 0.18, exhZ - 0.35], [icX, 0.15, -0.62]], 0.068, C_PIPE, [0.62, 52], [0, 1]);
-                        this.addPipe(this.staticOpaque, [t2.compOut, [t1.compOut[0], 0.35, exhZ - 0.55], [icX, 0.25, -0.62]], 0.064, C_PIPE, [0.62, 52], [0, 1]);
+                        if (isSeq) {{
+                            this.addSequentialCrossover(t1.turbOut, [t2.chra[0] - 0.12, t2.chra[1], t2.chra[2] + 0.08], -0.14, 0.056);
+                            this.addPipe(this.staticOpaque, [t1.compOut, [icX + 0.35, 0.18, exhZ - 0.35], [icX, 0.15, -0.62]], 0.064, C_PIPE, [0.62, 52], [0, 1]);
+                            this.addPipe(this.staticOpaque, [t2.compOut, [t1.compOut[0], 0.32, exhZ - 0.56], [icX, 0.25, -0.62]], 0.072, C_PIPE, [0.62, 52], [0, 1]);
+                        }} else {{
+                            this.addPipe(this.staticOpaque, [t1.compOut, [icX + 0.35, 0.18, exhZ - 0.35], [icX, 0.15, -0.62]], 0.068, C_PIPE, [0.62, 52], [0, 1]);
+                            this.addPipe(this.staticOpaque, [t2.compOut, [t1.compOut[0], 0.35, exhZ - 0.55], [icX, 0.25, -0.62]], 0.064, C_PIPE, [0.62, 52], [0, 1]);
+                        }}
                         this.addPipe(this.staticOpaque, [[icX, 0.15, 0.62], [icX + 0.3, portY + 0.02, intZ + 0.10], [-halfLenX * 0.94, portY + 0.02, intZ + 0.10]], 0.082, C_PIPE, [0.62, 52], [0, 1]);
                     }} else if (adm === 'Quad Turbo') {{
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, portY + 0.02, intZ + 0.10, 0, 0, Math.PI * 0.5, 0.19, plenumW, 0.19), C_INTAKE, [0.55, 48]);
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.05, 0, 0.26, 0.78, 1.48);
+                        const isSeq = turboCfg === 'Sequencial';
                         const qXs = [-0.72 * halfLenX, -0.24 * halfLenX, 0.24 * halfLenX, 0.72 * halfLenX];
+                        const qUnits = [];
                         for (let qi = 0; qi < qXs.length; qi++) {{
-                            const qt = this.addTurboUnit(qXs[qi], portY - 0.45, exhZ - 0.42, 0.72, -1);
+                            const stg = isSeq ? (qi % 2 === 0 ? 'primary' : 'secondary') : 'all';
+                            const qScale = isSeq ? (qi % 2 === 0 ? 0.60 : 0.86) : 0.72;
+                            const qt = this.addTurboUnit(qXs[qi], portY - 0.45, exhZ - 0.42, qScale, -1, stg);
+                            qUnits.push(qt);
                             this.addPipe(this.staticOpaque, [qt.compOut, [icX + 0.36, 0.15 + qi * 0.05, exhZ - 0.46], [icX, 0.15 + qi * 0.04, -0.64]], 0.048, C_PIPE, [0.62, 52], [0, 1]);
+                        }}
+                        if (isSeq) {{
+                            this.addSequentialCrossover(qUnits[0].turbOut, qUnits[1].chra, -0.10, 0.040);
+                            this.addSequentialCrossover(qUnits[2].turbOut, qUnits[3].chra, -0.10, 0.040);
                         }}
                         this.addPipe(this.staticOpaque, [[icX, 0.15, 0.64], [icX + 0.3, portY + 0.02, intZ + 0.10], [-halfLenX * 0.94, portY + 0.02, intZ + 0.10]], 0.088, C_PIPE, [0.62, 52], [0, 1]);
                     }} else {{
@@ -4193,10 +4433,14 @@ def gerar_dashboard_html(
                         this.addConeFilter(halfLenX + 0.52, intTopY + 0.28, 0, 1);
                     }} else if (adm === 'Biturbo') {{
                         this.addPart(this.staticOpaque, 'box', this.matTRS(0, intTopY + 0.12, 0, 0, 0, 0, plenumW, 0.26, 0.52), C_INTAKE, [0.55, 48]);
-                        const tL = this.addTurboUnit(0, exhY - 0.04, -exhZOut - 0.34, 0.94, -1);
-                        const tR = this.addTurboUnit(0, exhY - 0.04,  exhZOut + 0.34, 0.94,  1);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const tL = this.addTurboUnit(0, exhY - 0.04, -exhZOut - 0.34, isSeq ? 0.80 : 0.94, -1, isSeq ? 'primary' : 'all');
+                        const tR = this.addTurboUnit(0, exhY - 0.04,  exhZOut + 0.34, isSeq ? 1.12 : 0.94,  1, isSeq ? 'secondary' : 'all');
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.08, 0, 0.24, 0.74, 1.48);
+                        if (isSeq) {{
+                            this.addSequentialCrossover(tL.turbOut, tR.chra, -0.26, 0.054);
+                        }}
                         this.addPipe(this.staticOpaque, [tL.compOut, [icX + 0.32, 0.12, -exhZOut - 0.20], [icX, 0.12, -0.68]], 0.070, C_PIPE, [0.62, 52], [0, 1]);
                         this.addPipe(this.staticOpaque, [tR.compOut, [icX + 0.32, 0.12,  exhZOut + 0.20], [icX, 0.12,  0.68]], 0.070, C_PIPE, [0.62, 52], [0, 1]);
                         this.addPipe(this.staticOpaque, [[icX, 0.26, 0], [-halfLenX * 0.90, intTopY + 0.12, 0]], 0.085, C_PIPE, [0.62, 52], [0]);
@@ -4204,11 +4448,22 @@ def gerar_dashboard_html(
                         this.addPart(this.staticOpaque, 'box', this.matTRS(0, intTopY + 0.12, 0, 0, 0, 0, plenumW, 0.26, 0.52), C_INTAKE, [0.55, 48]);
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.08, 0, 0.26, 0.78, 1.56);
-                        for (const qx of [-halfLenX * 0.46, halfLenX * 0.46]) {{
-                            const tL = this.addTurboUnit(qx, exhY - 0.04, -exhZOut - 0.34, 0.74, -1);
-                            const tR = this.addTurboUnit(qx, exhY - 0.04,  exhZOut + 0.34, 0.74,  1);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const qPos = [-halfLenX * 0.46, halfLenX * 0.46];
+                        const lPair = [], rPair = [];
+                        for (let qi = 0; qi < 2; qi++) {{
+                            const qx = qPos[qi];
+                            const stg = isSeq ? (qi === 0 ? 'primary' : 'secondary') : 'all';
+                            const qScale = isSeq ? (qi === 0 ? 0.62 : 0.88) : 0.74;
+                            const tL = this.addTurboUnit(qx, exhY - 0.04, -exhZOut - 0.34, qScale, -1, stg);
+                            const tR = this.addTurboUnit(qx, exhY - 0.04,  exhZOut + 0.34, qScale,  1, stg);
+                            lPair.push(tL); rPair.push(tR);
                             this.addPipe(this.staticOpaque, [tL.compOut, [icX + 0.34, 0.12, -exhZOut - 0.24], [icX, 0.12, -0.72]], 0.052, C_PIPE, [0.62, 52], [0, 1]);
                             this.addPipe(this.staticOpaque, [tR.compOut, [icX + 0.34, 0.12,  exhZOut + 0.24], [icX, 0.12,  0.72]], 0.052, C_PIPE, [0.62, 52], [0, 1]);
+                        }}
+                        if (isSeq) {{
+                            this.addSequentialCrossover(lPair[0].turbOut, lPair[1].chra, -0.10, 0.042);
+                            this.addSequentialCrossover(rPair[0].turbOut, rPair[1].chra, -0.10, 0.042);
                         }}
                         this.addPipe(this.staticOpaque, [[icX, 0.26, 0], [-halfLenX * 0.90, intTopY + 0.12, 0]], 0.088, C_PIPE, [0.62, 52], [0]);
                     }} else {{
@@ -4421,10 +4676,14 @@ def gerar_dashboard_html(
                         this.addConeFilter(halfLenX + 0.52, valleyY + 0.30, 0, 1);
                     }} else if (adm === 'Biturbo') {{
                         this.addPart(this.staticOpaque, 'box', this.matTRS(0, valleyY + 0.14, 0, 0, 0, 0, plenumW, 0.28, 0.52), C_INTAKE, [0.55, 48]);
-                        const tL = this.addTurboUnit(-0.1, exhY - 0.20, -exhZOut - 0.40, 0.96, -1);
-                        const tR = this.addTurboUnit(-0.1, exhY - 0.20,  exhZOut + 0.40, 0.96,  1);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const tL = this.addTurboUnit(-0.1, exhY - 0.20, -exhZOut - 0.40, isSeq ? 0.80 : 0.96, -1, isSeq ? 'primary' : 'all');
+                        const tR = this.addTurboUnit(-0.1, exhY - 0.20,  exhZOut + 0.40, isSeq ? 1.15 : 0.96,  1, isSeq ? 'secondary' : 'all');
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.06, 0, 0.24, 0.76, 1.55);
+                        if (isSeq) {{
+                            this.addSequentialCrossover(tL.turbOut, tR.chra, -0.28, 0.056);
+                        }}
                         this.addPipe(this.staticOpaque, [tL.compOut, [icX + 0.30, 0.18, -exhZOut - 0.2], [icX, 0.15, -0.72]], 0.07, C_PIPE, [0.62, 52], [0, 1]);
                         this.addPipe(this.staticOpaque, [tR.compOut, [icX + 0.30, 0.18,  exhZOut + 0.2], [icX, 0.15,  0.72]], 0.07, C_PIPE, [0.62, 52], [0, 1]);
                         this.addPipe(this.staticOpaque, [[icX, 0.30, 0], [-halfLenX * 0.90, valleyY + 0.14, 0]], 0.085, C_PIPE, [0.62, 52], [0]);
@@ -4432,11 +4691,22 @@ def gerar_dashboard_html(
                         this.addPart(this.staticOpaque, 'box', this.matTRS(0, valleyY + 0.14, 0, 0, 0, 0, plenumW, 0.28, 0.52), C_INTAKE, [0.55, 48]);
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.06, 0, 0.26, 0.80, 1.62);
-                        for (const qx of [-halfLenX * 0.46, halfLenX * 0.46]) {{
-                            const tL = this.addTurboUnit(qx, exhY - 0.20, -exhZOut - 0.40, 0.76, -1);
-                            const tR = this.addTurboUnit(qx, exhY - 0.20,  exhZOut + 0.40, 0.76,  1);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const qPos = [-halfLenX * 0.46, halfLenX * 0.46];
+                        const lPair = [], rPair = [];
+                        for (let qi = 0; qi < 2; qi++) {{
+                            const qx = qPos[qi];
+                            const stg = isSeq ? (qi === 0 ? 'primary' : 'secondary') : 'all';
+                            const qScale = isSeq ? (qi === 0 ? 0.64 : 0.90) : 0.76;
+                            const tL = this.addTurboUnit(qx, exhY - 0.20, -exhZOut - 0.40, qScale, -1, stg);
+                            const tR = this.addTurboUnit(qx, exhY - 0.20,  exhZOut + 0.40, qScale,  1, stg);
+                            lPair.push(tL); rPair.push(tR);
                             this.addPipe(this.staticOpaque, [tL.compOut, [icX + 0.32, 0.18, -exhZOut - 0.22], [icX, 0.15, -0.74]], 0.052, C_PIPE, [0.62, 52], [0, 1]);
                             this.addPipe(this.staticOpaque, [tR.compOut, [icX + 0.32, 0.18,  exhZOut + 0.22], [icX, 0.15,  0.74]], 0.052, C_PIPE, [0.62, 52], [0, 1]);
+                        }}
+                        if (isSeq) {{
+                            this.addSequentialCrossover(lPair[0].turbOut, lPair[1].chra, -0.10, 0.044);
+                            this.addSequentialCrossover(rPair[0].turbOut, rPair[1].chra, -0.10, 0.044);
                         }}
                         this.addPipe(this.staticOpaque, [[icX, 0.30, 0], [-halfLenX * 0.90, valleyY + 0.14, 0]], 0.088, C_PIPE, [0.62, 52], [0]);
                     }} else {{
@@ -4560,10 +4830,14 @@ def gerar_dashboard_html(
                         this.addConeFilter(halfLenX + 0.52, intY + 0.24, intZ, 1);
                     }} else if (adm === 'Biturbo') {{
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, intY, intZ, 0, 0, Math.PI * 0.5, 0.19, plenW, 0.19), C_INTAKE, [0.55, 48]);
-                        const t1 = this.addTurboUnit(-halfLenX * 0.40, exhY, exhZ - 0.42, 0.92, -1);
-                        const t2 = this.addTurboUnit( halfLenX * 0.40, exhY, exhZ - 0.42, 0.92, -1);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const t1 = this.addTurboUnit(-halfLenX * 0.40, exhY, exhZ - 0.42, isSeq ? 0.76 : 0.92, -1, isSeq ? 'primary' : 'all');
+                        const t2 = this.addTurboUnit( halfLenX * 0.40, exhY, exhZ - 0.42, isSeq ? 1.10 : 0.92, -1, isSeq ? 'secondary' : 'all');
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.06, 0, 0.24, 0.74, 1.42);
+                        if (isSeq) {{
+                            this.addSequentialCrossover(t1.turbOut, t2.chra, -0.14, 0.052);
+                        }}
                         this.addPipe(this.staticOpaque, [t1.compOut, [icX + 0.34, 0.18, exhZ - 0.32], [icX, 0.15, -0.64]], 0.068, C_PIPE, [0.62, 52], [0, 1]);
                         this.addPipe(this.staticOpaque, [t2.compOut, [t1.compOut[0], 0.30, exhZ - 0.52], [icX, 0.24, -0.64]], 0.064, C_PIPE, [0.62, 52], [0, 1]);
                         this.addPipe(this.staticOpaque, [[icX, 0.15, 0.64], [icX + 0.32, intY, intZ], [-halfLenX * 0.90, intY, intZ]], 0.084, C_PIPE, [0.62, 52], [0, 1]);
@@ -4571,10 +4845,19 @@ def gerar_dashboard_html(
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, intY, intZ, 0, 0, Math.PI * 0.5, 0.19, plenW, 0.19), C_INTAKE, [0.55, 48]);
                         const icX = -halfLenX - 1.18;
                         this.addIntercooler(icX, 0.06, 0, 0.26, 0.78, 1.50);
+                        const isSeq = turboCfg === 'Sequencial';
+                        const qUnits = [];
                         for (let qi = 0; qi < 4; qi++) {{
                             const qx = -0.66 * halfLenX + qi * (0.44 * halfLenX);
-                            const qt = this.addTurboUnit(qx, exhY, exhZ - 0.42, 0.70, -1);
+                            const stg = isSeq ? (qi % 2 === 0 ? 'primary' : 'secondary') : 'all';
+                            const qScale = isSeq ? (qi % 2 === 0 ? 0.58 : 0.84) : 0.70;
+                            const qt = this.addTurboUnit(qx, exhY, exhZ - 0.42, qScale, -1, stg);
+                            qUnits.push(qt);
                             this.addPipe(this.staticOpaque, [qt.compOut, [icX + 0.36, 0.14 + qi * 0.05, exhZ - 0.46], [icX, 0.14 + qi * 0.04, -0.66]], 0.048, C_PIPE, [0.62, 52], [0, 1]);
+                        }}
+                        if (isSeq) {{
+                            this.addSequentialCrossover(qUnits[0].turbOut, qUnits[1].chra, -0.10, 0.040);
+                            this.addSequentialCrossover(qUnits[2].turbOut, qUnits[3].chra, -0.10, 0.040);
                         }}
                         this.addPipe(this.staticOpaque, [[icX, 0.15, 0.66], [icX + 0.32, intY, intZ], [-halfLenX * 0.90, intY, intZ]], 0.088, C_PIPE, [0.62, 52], [0, 1]);
                     }} else {{
@@ -4593,19 +4876,36 @@ def gerar_dashboard_html(
                 }}
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(halfLenX + 0.08, 0, 0, 0, 0, Math.PI * 0.5, 0.42, 0.06, 0.42), C_SUMP, [0.42, 30]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, 0, 0, 0, 0, Math.PI * 0.5, 0.11, halfLenX * 2.24, 0.11), C_CRANK, [0.65, 56]);
+                const damperProfiles = {{
+                    'Elastómero OEM':   {{ r: 0.28, thick: 0.105, rim: [0.30, 0.35, 0.42, 1.0], hub: [0.26, 0.44, 0.64, 1.0] }},
+                    'Fluido Viscoso':   {{ r: 0.30, thick: 0.130, rim: [0.20, 0.23, 0.28, 1.0], hub: [0.76, 0.80, 0.86, 1.0] }},
+                    'ATI Super Damper': {{ r: 0.29, thick: 0.120, rim: [0.15, 0.17, 0.21, 1.0], hub: [0.82, 0.64, 0.28, 1.0] }},
+                    'Polia Sólida':     {{ r: 0.23, thick: 0.075, rim: [0.74, 0.78, 0.84, 1.0], hub: [0.72, 0.24, 0.24, 1.0] }}
+                }};
+                const dProf = damperProfiles[dmpType] || damperProfiles['Elastómero OEM'];
                 this.dynamicRotors.push({{
                     type: 'pulley',
+                    damperStyle: dmpType,
                     cx: -halfLenX - 0.24, cy: 0, cz: 0,
-                    r: 0.28, thick: 0.105, speedMult: 1.0,
-                    colorRim: [0.30, 0.35, 0.42, 1.0],
-                    colorHub: [0.26, 0.44, 0.64, 1.0]
+                    r: dProf.r, thick: dProf.thick, speedMult: 1.0,
+                    colorRim: dProf.rim,
+                    colorHub: dProf.hub
                 }});
+                const flywheelProfiles = {{
+                    'Monomassa Aço':       {{ r: 0.50, thick: 0.110, rim: [0.40, 0.44, 0.50, 1.0], hub: [0.68, 0.72, 0.78, 1.0] }},
+                    'Dupla Massa':         {{ r: 0.52, thick: 0.170, rim: [0.32, 0.36, 0.42, 1.0], hub: [0.54, 0.58, 0.65, 1.0] }},
+                    'Aligeirado Cromoly':  {{ r: 0.48, thick: 0.082, rim: [0.50, 0.56, 0.64, 1.0], hub: [0.74, 0.64, 0.34, 1.0] }},
+                    'Alumínio Billet':     {{ r: 0.49, thick: 0.080, rim: [0.82, 0.86, 0.92, 1.0], hub: [0.66, 0.72, 0.78, 1.0] }},
+                    'Carbono Multi-Disco': {{ r: 0.42, thick: 0.075, rim: [0.16, 0.18, 0.21, 1.0], hub: [0.78, 0.60, 0.24, 1.0] }}
+                }};
+                const fwProf = flywheelProfiles[fwType] || flywheelProfiles['Monomassa Aço'];
                 this.dynamicRotors.push({{
                     type: 'flywheel',
+                    flywheelStyle: fwType,
                     cx: halfLenX + 0.22, cy: 0, cz: 0,
-                    r: 0.50, thick: 0.11, speedMult: 1.0,
-                    colorRim: [0.40, 0.44, 0.50, 1.0],
-                    colorHub: [0.68, 0.72, 0.78, 1.0]
+                    r: fwProf.r, thick: fwProf.thick, speedMult: 1.0,
+                    colorRim: fwProf.rim,
+                    colorHub: fwProf.hub
                 }});
 
                 for (let ci = 0; ci < cylSpecs.length; ci++) {{
@@ -4799,17 +5099,16 @@ def gerar_dashboard_html(
                 const dt = Math.min(0.033, Math.max(0.001, (now - this.lastTime) * 0.001));
                 this.lastTime = now;
 
-                // Dinâmica de rotação do motor (Ligar/Desligar + Acelerar)
-                if (engineSim.blipTimer > 0) {{
-                    engineSim.blipTimer = Math.max(0, engineSim.blipTimer - dt);
-                }}
-                const revActive = engineSim.on && (engineSim.throttleHeld || engineSim.blipTimer > 0);
+                // Dinâmica de rotação do motor (resposta imediata ao premir/soltar + inércia do volante/damper)
+                const inertiaMult = Math.max(0.40, Math.min(1.55, engineSim.inertiaFactor || 1.0));
+                const revActive = engineSim.on && engineSim.throttleHeld;
                 if (!engineSim.on) {{
-                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 4.2);
+                    engineSim.throttleHeld = false;
+                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 5.2 / inertiaMult);
                     if (engineSim.currentRpm < 15) engineSim.currentRpm = 0;
                 }} else if (revActive) {{
                     const target = engineSim.maxRpm;
-                    const rate = Math.max(2500, (target - engineSim.idleRpm) * 1.35);
+                    const rate = Math.max(2800, (target - engineSim.idleRpm) * 1.65) / inertiaMult;
                     engineSim.currentRpm = Math.min(target, engineSim.currentRpm + rate * dt);
                     if (engineSim.currentRpm >= target * 0.985) {{
                         // Oscilação realista de corte de rotação
@@ -4817,7 +5116,11 @@ def gerar_dashboard_html(
                     }}
                 }} else {{
                     const idleJitter = engineSim.idleRpm + Math.sin(now * 0.008) * 18;
-                    engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 3.8);
+                    const invInertia = 1.0 / inertiaMult;
+                    engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 6.2 * invInertia);
+                    if (engineSim.currentRpm > engineSim.idleRpm + 25) {{
+                        engineSim.currentRpm = Math.max(idleJitter, engineSim.currentRpm - dt * 1100 * invInertia);
+                    }}
                 }}
 
                 // Velocidade angular proporcional às RPM reais configuradas (com divisor Slow Mo 1x/2x/5x/10x),
@@ -4829,10 +5132,17 @@ def gerar_dashboard_html(
                     const crankStep = Math.min(0.62, (dt * omega) / slowDiv);
                     this.crankAngle += crankStep;
                     const impMult = 1.0 + Math.min(2.0, Math.max(0, Number(this.config.turboBar) || 0) * 0.25);
+                    const uRpm = rpm / Math.max(1, engineSim.maxRpm || 7500);
                     for (const r of this.dynamicRotors) {{
                         const sym = r.symmetry || (r.type === 'impeller' ? 5 : 1);
                         const maxSafeStep = (Math.PI * 0.56) / sym;
-                        const mult = r.type === 'impeller' ? r.speedMult * impMult : r.speedMult;
+                        let mult = r.speedMult;
+                        if (r.type === 'impeller') {{
+                            let stageFactor = impMult;
+                            if (r.stage === 'primary') stageFactor *= 1.18;
+                            else if (r.stage === 'secondary') stageFactor *= (0.24 + 0.86 * smoothstep(0.32, 0.58, uRpm));
+                            mult = r.speedMult * stageFactor;
+                        }}
                         const rotorStep = Math.min(maxSafeStep, crankStep * mult);
                         r.angle = ((r.angle || 0) + rotorStep) % (Math.PI * 2);
                     }}
@@ -5041,7 +5351,27 @@ def gerar_dashboard_html(
                     const ang = r.angle !== undefined ? r.angle : this.crankAngle * r.speedMult;
                     if (r.type === 'pulley') {{
                         const rimM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r, r.thick, r.r);
-                        this.drawItem(this.meshes.cyl, rimM, r.colorRim, [0.6, 48], viewProj);
+                        this.drawItem(this.meshes.cyl, rimM, r.colorRim, r.damperStyle === 'Fluido Viscoso' ? [0.76, 68] : [0.6, 48], viewProj);
+                        if (r.damperStyle === 'Elastómero OEM') {{
+                            const elastM = this.matSpinX(r.cx - r.thick * 0.28, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.72, r.thick * 0.56, r.r * 0.72);
+                            this.drawItem(this.meshes.cyl, elastM, [0.09, 0.10, 0.12, 1.0], [0.15, 10], viewProj);
+                        }} else if (r.damperStyle === 'Fluido Viscoso') {{
+                            const sealRingM = this.matSpinX(r.cx - r.thick * 0.42, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.88, r.thick * 0.26, r.r * 0.88);
+                            this.drawItem(this.meshes.cyl, sealRingM, [0.78, 0.82, 0.87, 1.0], [0.85, 72], viewProj);
+                        }} else if (r.damperStyle === 'ATI Super Damper') {{
+                            for (let b = 0; b < 6; b++) {{
+                                const ba = ang + (b * Math.PI * 2) / 6;
+                                const bRad = r.r * 0.68;
+                                const boltM = this.matSpinX(r.cx - r.thick * 0.52, r.cy + Math.cos(ba) * bRad, r.cz + Math.sin(ba) * bRad, ba, 0, 0, Math.PI * 0.5, 0.022, 0.028, 0.022);
+                                this.drawItem(this.meshes.hex, boltM, [0.86, 0.89, 0.94, 1.0], [0.84, 64], viewProj);
+                            }}
+                        }} else if (r.damperStyle === 'Polia Sólida') {{
+                            for (let s = 0; s < 3; s++) {{
+                                const sa = ang + (s * Math.PI * 2) / 3;
+                                const spM = this.matTRS(r.cx - r.thick * 0.44, r.cy + Math.cos(sa) * (r.r * 0.44), r.cz + Math.sin(sa) * (r.r * 0.44), sa, 0, 0, 0.024, r.r * 0.76, 0.032);
+                                this.drawItem(this.meshes.box, spM, [0.20, 0.23, 0.28, 1.0], [0.55, 42], viewProj);
+                            }}
+                        }}
                         const hubM = this.matSpinX(r.cx - r.thick * 0.35, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.52, r.thick * 0.6, r.r * 0.52);
                         this.drawItem(this.meshes.cyl, hubM, r.colorHub, [0.75, 64], viewProj);
                         const timingBarM = this.matTRS(r.cx - r.thick * 0.54, r.cy + Math.cos(ang) * (r.r * 0.40), r.cz + Math.sin(ang) * (r.r * 0.40), ang, 0, 0, 0.026, r.r * 0.78, 0.044);
@@ -5051,20 +5381,44 @@ def gerar_dashboard_html(
                         const boltCenterM = this.matSpinX(r.cx - r.thick * 0.62, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.22, r.thick * 0.45, r.r * 0.22);
                         this.drawItem(this.meshes.cyl, boltCenterM, [0.80, 0.84, 0.89, 1.0], [0.82, 68], viewProj);
                     }} else if (r.type === 'flywheel') {{
+                        const fwS = r.flywheelStyle || 'Monomassa Aço';
                         const ringM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r, r.thick, r.r);
-                        this.drawItem(this.meshes.cyl, ringM, r.colorRim, [0.55, 44], viewProj);
+                        this.drawItem(this.meshes.cyl, ringM, r.colorRim, fwS === 'Carbono Multi-Disco' ? [0.24, 18] : [0.58, 48], viewProj);
                         const gDelta = this.crankAngle - (r.lastGearCrank !== undefined ? r.lastGearCrank : this.crankAngle);
                         r.lastGearCrank = this.crankAngle;
                         const gStep = gDelta >= 0 ? gDelta : 0;
                         r.gearAngle = ((r.gearAngle || 0) + Math.min(0.11, gStep * (r.speedMult || 1))) % (Math.PI * 2);
                         const teethRingM = this.matSpinX(r.cx - r.thick * 0.25, r.cy, r.cz, r.gearAngle, 0, 0, Math.PI * 0.5, r.r * 1.03, r.thick * 0.30, r.r * 1.03);
                         this.drawItem(this.meshes.gear, teethRingM, [0.56, 0.60, 0.66, 1.0], [0.72, 56], viewProj);
+                        const frictionRingM = this.matSpinX(r.cx - r.thick * 0.38, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.78, r.thick * 0.18, r.r * 0.78);
+                        this.drawItem(this.meshes.cyl, frictionRingM, fwS === 'Alumínio Billet' ? [0.30, 0.34, 0.40, 1.0] : [0.22, 0.25, 0.30, 1.0], [0.42, 32], viewProj);
+                        if (fwS === 'Dupla Massa') {{
+                            const dmfCoreM = this.matSpinX(r.cx + r.thick * 0.04, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.86, r.thick * 0.46, r.r * 0.86);
+                            this.drawItem(this.meshes.cyl, dmfCoreM, [0.12, 0.14, 0.18, 1.0], [0.22, 16], viewProj);
+                            for (let k = 0; k < 4; k++) {{
+                                const ka = ang + (k * Math.PI) / 2;
+                                const sprM = this.matTRS(r.cx + r.thick * 0.48, r.cy + Math.cos(ka) * (r.r * 0.56), r.cz + Math.sin(ka) * (r.r * 0.56), ka, 0, 0, 0.025, r.r * 0.26, 0.065);
+                                this.drawItem(this.meshes.box, sprM, [0.76, 0.56, 0.22, 1.0], [0.70, 54], viewProj);
+                            }}
+                        }} else if (fwS === 'Aligeirado Cromoly') {{
+                            for (let k = 0; k < 4; k++) {{
+                                const ka = ang + (k * Math.PI) / 2;
+                                const cutM = this.matTRS(r.cx + r.thick * 0.48, r.cy + Math.cos(ka) * (r.r * 0.56), r.cz + Math.sin(ka) * (r.r * 0.56), ka, 0, 0, 0.028, r.r * 0.34, 0.070);
+                                this.drawItem(this.meshes.box, cutM, [0.16, 0.19, 0.24, 1.0], [0.35, 22], viewProj);
+                            }}
+                        }} else if (fwS === 'Alumínio Billet') {{
+                            for (let k = 0; k < 8; k++) {{
+                                const ka = ang + (k * Math.PI * 2) / 8;
+                                const rPos = r.r * 0.72;
+                                const rivM = this.matSpinX(r.cx + r.thick * 0.46, r.cy + Math.cos(ka) * rPos, r.cz + Math.sin(ka) * rPos, ka, 0, 0, Math.PI * 0.5, 0.026, 0.030, 0.026);
+                                this.drawItem(this.meshes.hex, rivM, [0.80, 0.62, 0.26, 1.0], [0.80, 62], viewProj);
+                            }}
+                        }} else if (fwS === 'Carbono Multi-Disco') {{
+                            const coverM = this.matSpinX(r.cx + r.thick * 0.42, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.84, r.thick * 0.42, r.r * 0.84);
+                            this.drawItem(this.meshes.cyl, coverM, [0.78, 0.60, 0.24, 1.0], [0.80, 64], viewProj);
+                        }}
                         const hexNutM = this.matSpinX(r.cx + r.thick * 0.56, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.18, r.thick * 0.42, r.r * 0.18);
                         this.drawItem(this.meshes.hex, hexNutM, [0.84, 0.87, 0.92, 1.0], [0.84, 66], viewProj);
-                        if (r.type === 'flywheel') {{
-                            const frictionRingM = this.matSpinX(r.cx - r.thick * 0.38, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.78, r.thick * 0.18, r.r * 0.78);
-                            this.drawItem(this.meshes.cyl, frictionRingM, [0.22, 0.25, 0.30, 1.0], [0.42, 32], viewProj);
-                        }}
                         const faceM = this.matSpinX(r.cx + r.thick * 0.32, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.78, r.thick * 0.55, r.r * 0.78);
                         this.drawItem(this.meshes.cyl, faceM, r.colorHub, [0.72, 60], viewProj);
                         const bossM = this.matSpinX(r.cx + r.thick * 0.60, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.26, r.thick * 0.35, r.r * 0.26);
@@ -5241,22 +5595,56 @@ def gerar_dashboard_html(
             syncEnginePowerUI();
         }});
 
+        let activeThrottlePointerId = null;
         const startThrottle = e => {{
             if (!engineSim.on) return;
             if (e && e.cancelable) e.preventDefault();
             engineSim.throttleHeld = true;
-            engineSim.blipTimer = 0.55;
+            engineSim.blipTimer = 0;
             btnEngineThrottle.classList.add('acelerando');
         }};
         const stopThrottle = () => {{
+            activeThrottlePointerId = null;
             engineSim.throttleHeld = false;
+            engineSim.blipTimer = 0;
             btnEngineThrottle.classList.remove('acelerando');
         }};
 
-        btnEngineThrottle.addEventListener('pointerdown', startThrottle);
+        btnEngineThrottle.addEventListener('pointerdown', e => {{
+            if (e && e.pointerType === 'mouse' && e.button !== undefined && e.button !== 0) return;
+            activeThrottlePointerId = e && e.pointerId !== undefined ? e.pointerId : null;
+            if (activeThrottlePointerId !== null && typeof btnEngineThrottle.setPointerCapture === 'function') {{
+                try {{ btnEngineThrottle.setPointerCapture(activeThrottlePointerId); }} catch (_) {{}}
+            }}
+            startThrottle(e);
+        }});
+        btnEngineThrottle.addEventListener('pointerup', e => {{
+            if (activeThrottlePointerId !== null && typeof btnEngineThrottle.releasePointerCapture === 'function') {{
+                try {{ btnEngineThrottle.releasePointerCapture(activeThrottlePointerId); }} catch (_) {{}}
+            }}
+            stopThrottle();
+        }});
+        btnEngineThrottle.addEventListener('pointercancel', stopThrottle);
+        btnEngineThrottle.addEventListener('lostpointercapture', stopThrottle);
+        btnEngineThrottle.addEventListener('pointerleave', e => {{
+            if (!e || !(e.buttons & 1)) stopThrottle();
+        }});
+        btnEngineThrottle.addEventListener('mouseup', stopThrottle);
+        btnEngineThrottle.addEventListener('touchend', stopThrottle);
+        btnEngineThrottle.addEventListener('touchcancel', stopThrottle);
+        btnEngineThrottle.addEventListener('blur', stopThrottle);
         window.addEventListener('pointerup', stopThrottle);
         window.addEventListener('pointercancel', stopThrottle);
+        window.addEventListener('mouseup', stopThrottle);
+        window.addEventListener('touchend', stopThrottle);
+        window.addEventListener('touchcancel', stopThrottle);
+        window.addEventListener('contextmenu', stopThrottle);
         window.addEventListener('blur', stopThrottle);
+        if (typeof document.addEventListener === 'function') {{
+            document.addEventListener('visibilitychange', () => {{
+                if (document.hidden) stopThrottle();
+            }});
+        }}
         btnEngineThrottle.addEventListener('keydown', e => {{
             if (e.code === 'Space' || e.code === 'Enter') startThrottle(e);
         }});
@@ -5281,6 +5669,8 @@ def gerar_dashboard_html(
             const rawRpm = parseInt(inputRpm.value, 10);
             const rawTurbo = inputTurboBoost ? parseFloat(inputTurboBoost.value) : 0;
             const rawSc = inputScBoost ? parseFloat(inputScBoost.value) : 0;
+            const adm = selectAdmissao.value || 'Atmosférico';
+            const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
             return {{
                 bore: Number.isFinite(rawBore) && rawBore > 0 ? Math.max(10.0, rawBore) : 86.0,
                 stroke: Number.isFinite(rawStroke) && rawStroke > 0 ? Math.max(10.0, rawStroke) : 86.0,
@@ -5289,7 +5679,10 @@ def gerar_dashboard_html(
                 combustivel: selectCombustivel.value || 'Gasolina',
                 ciclo: selectCiclo.value || '4T',
                 cilindros: parseInt(selectCilindros.value, 10) || 4,
-                admissao: selectAdmissao.value || 'Atmosférico',
+                admissao: adm,
+                turbo_config: (hasMultiTurbo && selectTurboConfig && selectTurboConfig.value === 'Sequencial') ? 'Sequencial' : 'Paralelo',
+                flywheel: selectFlywheel ? selectFlywheel.value : 'Monomassa Aço',
+                damper: selectDamper ? selectDamper.value : 'Elastómero OEM',
                 formato: selectFormato.value || 'I',
                 v_angle: selectVAngle ? selectVAngle.value : '60',
                 material: selectMaterial ? selectMaterial.value : 'Alumínio',
@@ -5306,6 +5699,9 @@ def gerar_dashboard_html(
             const p = readEnginePayload();
             const t = I18N[currentLang];
             const admLabel = (t.admOpts && t.admOpts[p.admissao]) ? t.admOpts[p.admissao] : p.admissao;
+            const hasMultiTurbo = p.admissao === 'Biturbo' || p.admissao === 'Quad Turbo';
+            const turboCfgLabel = (t.turboCfgOpts && t.turboCfgOpts[p.turbo_config]) ? t.turboCfgOpts[p.turbo_config] : p.turbo_config;
+            const fullAdmLabel = hasMultiTurbo ? `${{admLabel}} · ${{turboCfgLabel}}` : admLabel;
             const isWankel = p.formato === 'WANKEL';
             const fmtDisplay = isWankel
                 ? `WANKEL ${{p.cilindros}}R`
@@ -5315,7 +5711,7 @@ def gerar_dashboard_html(
 
             motorNumCilindros.textContent = p.cilindros;
             if (motor3dBadge) {{
-                motor3dBadge.textContent = `${{fmtDisplay}} · ${{admLabel.toUpperCase()}}`;
+                motor3dBadge.textContent = `${{fmtDisplay}} · ${{fullAdmLabel.toUpperCase()}}`;
             }}
             if (motor3dSpec) {{
                 motor3dSpec.textContent = isWankel
@@ -5326,6 +5722,8 @@ def gerar_dashboard_html(
             const matLabel = (t.matOpts && t.matOpts[p.material]) ? t.matOpts[p.material] : p.material;
             const pMatLabel = (t.pistonMatOpts && t.pistonMatOpts[p.piston_material]) ? t.pistonMatOpts[p.piston_material] : p.piston_material;
             const fuelLabel = (t.fuelOpts && t.fuelOpts[p.combustivel]) ? t.fuelOpts[p.combustivel] : p.combustivel;
+            const fwShort = (t.flywheelShort && t.flywheelShort[p.flywheel]) ? t.flywheelShort[p.flywheel] : p.flywheel;
+            const dmpShort = (t.damperShort && t.damperShort[p.damper]) ? t.damperShort[p.damper] : p.damper;
             if (sumArchVal) {{
                 if (isWankel) {{
                     sumArchVal.textContent = `${{fmtDisplay}} · ${{t.rotaryWord}}`;
@@ -5339,7 +5737,7 @@ def gerar_dashboard_html(
             }}
             if (sumDispVal) sumDispVal.textContent = `${{litros}} L`;
             if (sumGeoSub) sumGeoSub.textContent = `${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm · ${{p.max_rpm}} RPM`;
-            if (sumAdmVal) sumAdmVal.textContent = admLabel;
+            if (sumAdmVal) sumAdmVal.textContent = fullAdmLabel;
             if (sumAdmSub) {{
                 if (p.admissao === 'Atmosférico') sumAdmSub.textContent = '0.0 bar';
                 else if (p.admissao === 'Supercompressor') sumAdmSub.textContent = `+${{p.sc_bar.toFixed(1)}} bar`;
@@ -5349,13 +5747,16 @@ def gerar_dashboard_html(
             if (sumBuildVal) sumBuildVal.textContent = matLabel;
             if (sumBuildSub) {{
                 const pWord = isWankel ? t.rotorMatWord : t.pistonWord;
-                sumBuildSub.textContent = `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}}`;
+                sumBuildSub.textContent = `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}} · ${{fwShort}} · ${{dmpShort}}`;
             }}
             if (motor3D) {{
                 motor3D.setConfig({{
                     cilindros: p.cilindros,
                     formato: p.formato,
                     admissao: p.admissao,
+                    turboConfig: p.turbo_config,
+                    flywheel: p.flywheel,
+                    damper: p.damper,
                     bore: p.bore,
                     stroke: p.stroke,
                     maxRpm: p.max_rpm,
@@ -5419,6 +5820,8 @@ def gerar_dashboard_html(
             const valTol = {{ 'Molas': 0.0, 'VVT': 0.5, 'Desmodrómico': 2.0, 'Pneumático': 4.0, 'Freevalve': 4.5 }};
             const pisTol = {{ 'Alumínio': 0.0, 'Forged': 2.5, 'Forged Heavy': 1.5, 'Titânio': 5.0 }};
             const pisCrTol = {{ 'Alumínio': 0.0, 'Forged': 1.0, 'Forged Heavy': 3.0, 'Titânio': 2.0 }};
+            const fwTol = {{ 'Monomassa Aço': 0.0, 'Dupla Massa': -0.8, 'Aligeirado Cromoly': 1.0, 'Alumínio Billet': 1.5, 'Carbono Multi-Disco': 2.5 }};
+            const dmpTol = {{ 'Elastómero OEM': 0.0, 'Fluido Viscoso': 2.0, 'ATI Super Damper': 3.5, 'Polia Sólida': -2.5 }};
             const isWankel = payload.formato === 'WANKEL';
             const isFreevalve = !isWankel && (payload.camshaft === 'Freevalve' || payload.valve_type === 'Freevalve');
             const velMediaPistao = isWankel
@@ -5427,7 +5830,9 @@ def gerar_dashboard_html(
             const matTVal = matTol[payload.material] !== undefined ? matTol[payload.material] : 0.5;
             const valTVal = isWankel ? 6.0 : (isFreevalve ? 4.5 : (valTol[payload.valve_type] || 0.0));
             const pisTVal = pisTol[payload.piston_material] || 0.0;
-            const limiteVm = 25.0 + matTVal + valTVal + pisTVal;
+            const fwTVal = fwTol[payload.flywheel] !== undefined ? fwTol[payload.flywheel] : 0.0;
+            const dmpTVal = dmpTol[payload.damper] !== undefined ? dmpTol[payload.damper] : 0.0;
+            const limiteVm = 25.0 + matTVal + valTVal + pisTVal + fwTVal + dmpTVal;
             const motivosAlerta = [];
             if (velMediaPistao > limiteVm) {{
                 motivosAlerta.push(t.warnPiston(velMediaPistao.toFixed(1), limiteVm.toFixed(1)));
@@ -5443,6 +5848,9 @@ def gerar_dashboard_html(
             const cilindros = parseInt(selectCilindros.value, 10) || 4;
             const formato = selectFormato.value || 'I';
             const admissao = selectAdmissao.value || 'Atmosférico';
+            const turbo_config = (admissao === 'Biturbo' || admissao === 'Quad Turbo') && selectTurboConfig
+                ? (selectTurboConfig.value || 'Paralelo')
+                : 'Paralelo';
 
             atualizarMotor3D();
 
@@ -5451,7 +5859,7 @@ def gerar_dashboard_html(
                     const res = await fetch('/api/ficha', {{
                         method: 'POST',
                         headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify({{ cilindros, formato, admissao }})
+                        body: JSON.stringify({{ cilindros, formato, admissao, turbo_config }})
                     }});
                     if (res.ok) {{
                         const data = await res.json();
@@ -5480,6 +5888,9 @@ def gerar_dashboard_html(
                 atualizarDados();
             }});
         }}
+        if (selectTurboConfig) {{
+            selectTurboConfig.addEventListener('change', () => atualizarDados());
+        }}
         if (selectCamshaft) {{
             selectCamshaft.addEventListener('change', () => {{
                 if (selectCamshaft.value === 'Freevalve' && selectValveType) {{
@@ -5499,7 +5910,7 @@ def gerar_dashboard_html(
             }});
         }}
 
-        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectCiclo, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves].forEach(el => {{
+        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectCiclo, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper].forEach(el => {{
             if (!el) return;
             el.addEventListener('input', () => {{
                 atualizarMotor3D();
@@ -5590,12 +6001,14 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 fmt = "I"
             cil = clamp_cilindros_formato(fmt, int(dados.get("cilindros") or 4))
             adm = str(dados.get("admissao") or "Atmosférico")
+            t_cfg = str(dados.get("turbo_config") or "Paralelo")
 
             resposta = json.dumps({
                 "cilindros": cil,
                 "formato": fmt,
                 "admissao": adm,
-                "motor_svg": gerar_svg_motor_inline(cil, fmt, adm),
+                "turbo_config": t_cfg,
+                "motor_svg": gerar_svg_motor_inline(cil, fmt, adm, t_cfg),
             }).encode("utf-8")
 
             self.send_response(200)
@@ -5624,6 +6037,9 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 num_valvulas=int(dados.get("num_valvulas") or 4),
                 turbo_bar=float(dados.get("turbo_bar") if dados.get("turbo_bar") is not None else 1.5),
                 sc_bar=float(dados.get("sc_bar") if dados.get("sc_bar") is not None else 0.8),
+                turbo_config=str(dados.get("turbo_config") or "Paralelo"),
+                flywheel=str(dados.get("flywheel") or "Monomassa Aço"),
+                damper=str(dados.get("damper") or "Elastómero OEM"),
             )
             resposta = json.dumps({
                 "torque_nm_val": resultado["torque_nm_val"],
