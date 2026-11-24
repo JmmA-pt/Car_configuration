@@ -373,15 +373,6 @@
             box-shadow: 0 0 8px rgba(74, 222, 128, 0.75);
         }
 
-        .btn-engine-ctrl.acelerando,
-        .btn-engine-ctrl.acelerando:not(:disabled):hover {
-            background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
-            border-color: #fca5a5;
-            color: #ffffff;
-            transform: translateY(1px) scale(0.985);
-            box-shadow: 0 0 18px rgba(239, 68, 68, 0.78), inset 0 1px 0 rgba(255, 255, 255, 0.24);
-        }
-
         .btn-engine-ctrl.slow-ativo {
             background: rgba(110, 168, 166, 0.16);
             border-color: rgba(110, 168, 166, 0.62);
@@ -394,9 +385,9 @@
             cursor: not-allowed;
         }
 
-        .btn-engine-ctrl:not(:disabled):not(.acelerando):hover,
-        .btn-engine-ctrl.ligado:not(:disabled):not(.acelerando):hover,
-        .btn-engine-ctrl.slow-ativo:not(:disabled):not(.acelerando):hover {
+        .btn-engine-ctrl:not(:disabled):hover,
+        .btn-engine-ctrl.ligado:not(:disabled):hover,
+        .btn-engine-ctrl.slow-ativo:not(:disabled):hover {
             background: rgba(127, 29, 29, 0.26);
             border-color: rgba(239, 68, 68, 0.68);
             color: #ffffff;
@@ -404,8 +395,132 @@
             box-shadow: 0 4px 14px -6px rgba(220, 38, 38, 0.45);
         }
 
-        .btn-engine-ctrl:not(:disabled):not(.acelerando):active {
+        .btn-engine-ctrl:not(:disabled):active {
             transform: translateY(0);
+        }
+
+        .throttle-bar-control {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+            min-width: 185px;
+            flex: 1 1 200px;
+            max-width: 245px;
+            padding: 6px 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            transition: border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.15s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .throttle-bar-control.ativo {
+            border-color: rgba(239, 68, 68, 0.58);
+            box-shadow: 0 0 14px -4px rgba(239, 68, 68, 0.45);
+        }
+
+        .throttle-bar-control.disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .throttle-bar-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .throttle-bar-header label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
+        .throttle-bar-control.disabled .throttle-bar-header label {
+            cursor: not-allowed;
+        }
+
+        .throttle-bar-header strong {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            line-height: 1;
+        }
+
+        .throttle-bar-control.ativo .throttle-bar-header strong {
+            color: #fca5a5;
+        }
+
+        #range-throttle {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            outline: none;
+            cursor: pointer;
+            margin: 0;
+            touch-action: none;
+        }
+
+        #range-throttle:disabled {
+            cursor: not-allowed;
+        }
+
+        #range-throttle::-webkit-slider-runnable-track {
+            height: 8px;
+            background: transparent;
+            border-radius: 999px;
+        }
+
+        #range-throttle::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
+            margin-top: -3px;
+            cursor: grab;
+        }
+
+        #range-throttle:disabled::-webkit-slider-thumb {
+            background: #9ca3af;
+            border-color: #6b7280;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        #range-throttle::-moz-range-track {
+            height: 8px;
+            background: transparent;
+            border-radius: 999px;
+        }
+
+        #range-throttle::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
+            cursor: grab;
+        }
+
+        #range-throttle:focus-visible {
+            outline: 2px solid #ef4444;
+            outline-offset: 3px;
         }
 
         .engine-dock-telemetry {
@@ -419,6 +534,15 @@
             flex-direction: column;
             align-items: flex-end;
             gap: 1px;
+        }
+
+        #telemetry-rpm-pill {
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+            min-width: 112px;
+            transition: border-color 0.08s linear, box-shadow 0.08s linear;
         }
 
         .telemetry-pill span {
@@ -1008,6 +1132,11 @@
             .engine-action-dock {
                 padding: 10px 12px;
             }
+            .throttle-bar-control {
+                min-width: 150px;
+                flex: 1 1 160px;
+                max-width: none;
+            }
             .config-page-grid.grid-cols-7,
             .config-page-grid.grid-cols-6,
             .config-page-grid.grid-cols-5-intake,
@@ -1047,6 +1176,7 @@
                             <label for="select-gearbox-type" id="lbl-gb-type">TIPO DE CAIXA</label>
                             <select id="select-gearbox-type" class="input-cyber">
                                 <option value="Manual" selected>Manual (Sincronizada)</option>
+                                <option value="Gated Manual">Manual Gated (Grelha H)</option>
                                 <option value="Sequencial">Sequencial (Dog-Box)</option>
                                 <option value="DCT">Dupla Embraiagem (DCT)</option>
                                 <option value="Automática">Automática (Epicíclica)</option>
@@ -1060,6 +1190,7 @@
                                 <option value="6" selected>6 Mudanças</option>
                                 <option value="7">7 Mudanças</option>
                                 <option value="8">8 Mudanças</option>
+                                <option value="9">9 Mudanças</option>
                             </select>
                         </div>
                         <div class="campo-grupo">
@@ -1114,6 +1245,16 @@
                             </select>
                         </div>
                         <div class="campo-grupo campo-span-2">
+                            <label for="select-exhaust-junction" id="lbl-exh-junction">UNIÃO / JUNÇÃO DO ESCAPE</label>
+                            <select id="select-exhaust-junction" class="input-cyber">
+                                <option value="X-Pipe" selected>X-Pipe Junction (Cruzado)</option>
+                                <option value="H-Pipe">H-Pipe (Tubo Compensador)</option>
+                                <option value="Y-Pipe">Y-Pipe (Junção 2-em-1)</option>
+                                <option value="Coletor Merge">Coletor Merge (Cone Venturi)</option>
+                                <option value="Sem União">Direto / Dual Independente</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo campo-span-2">
                             <label for="input-exhaust-diameter" id="lbl-exh-diam">DIÂMETRO DO TUBO (mm)</label>
                             <div class="diam-control-row">
                                 <input type="range" id="range-exhaust-diameter" min="35" max="140" step="1" value="63" aria-label="Tamanho do tubo de escape em milímetros">
@@ -1154,15 +1295,19 @@
                             <span class="dot-ind" aria-hidden="true"></span>
                             <span id="btn-engine-power-label">Ligar Motor</span>
                         </button>
-                        <button type="button" class="btn-engine-ctrl" id="btn-engine-throttle" disabled title="Manter premido (ou barra de espaço) para acelerar">
-                            <span id="btn-engine-throttle-label">Acelerar</span>
-                        </button>
+                        <div class="throttle-bar-control disabled" id="throttle-control-wrap" title="Posição do acelerador (0% – 100%) · Arraste ou prima Espaço para 100%">
+                            <div class="throttle-bar-header">
+                                <label for="range-throttle" id="lbl-throttle-pos">ACELERADOR</label>
+                                <strong id="throttle-pct-value">0%</strong>
+                            </div>
+                            <input type="range" id="range-throttle" min="0" max="100" step="1" value="0" disabled aria-label="Posição do acelerador em percentagem">
+                        </div>
                         <button type="button" class="btn-engine-ctrl" id="btn-slow-mo" aria-pressed="false" title="Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado">
                             <span id="btn-slow-mo-label">Slow Mo</span>
                         </button>
                     </div>
                     <div class="engine-dock-telemetry">
-                        <div class="telemetry-pill">
+                        <div class="telemetry-pill" id="telemetry-rpm-pill">
                             <span id="lbl-tel-rpm">ROTAÇÃO ATUAL</span>
                             <strong id="live-rpm-value">0 RPM</strong>
                         </div>
@@ -1508,6 +1653,9 @@
         const gearboxSummaryInfo = document.getElementById('gearbox-summary-info');
         const selectExhaustType = document.getElementById('select-exhaust-type');
         const selectExhaustTips = document.getElementById('select-exhaust-tips');
+        const selectExhaustJunction = document.getElementById('select-exhaust-junction');
+        const EXHAUST_JUNCTION_FORMATS = ['B', 'VR', 'V', 'W'];
+        let savedDualExhaustJunction = 'X-Pipe';
         const rangeExhaustDiameter = document.getElementById('range-exhaust-diameter');
         const inputExhaustDiameter = document.getElementById('input-exhaust-diameter');
         const exhaustSoundNote = document.getElementById('exhaust-sound-note');
@@ -1519,13 +1667,17 @@
 
         const btnEnginePower = document.getElementById('btn-engine-power');
         const btnEnginePowerLabel = document.getElementById('btn-engine-power-label');
-        const btnEngineThrottle = document.getElementById('btn-engine-throttle');
+        const throttleControlWrap = document.getElementById('throttle-control-wrap');
+        const rangeThrottle = document.getElementById('range-throttle');
+        const throttlePctValue = document.getElementById('throttle-pct-value');
         const btnSlowMo = document.getElementById('btn-slow-mo');
         const btnSlowMoLabel = document.getElementById('btn-slow-mo-label');
         const btnLangToggle = document.getElementById('btn-lang-toggle');
         const btnCutaway = document.getElementById('btn-3d-cutaway');
         const btnAutoRotate3D = document.getElementById('btn-3d-autorotate');
         const btnReset3D = document.getElementById('btn-3d-reset');
+        const telemetryRpmPill = document.getElementById('telemetry-rpm-pill');
+        const lblTelRpm = document.getElementById('lbl-tel-rpm');
         const liveRpmValue = document.getElementById('live-rpm-value');
         const dynoCanvas = document.getElementById('dyno-canvas');
         const dynoPeakBadge = document.getElementById('dyno-peak-badge');
@@ -1568,8 +1720,9 @@
                 hint: 'Arrastar fundo: rodar · Scroll: zoom · Botão dir.: mover',
                 startEngine: 'Ligar Motor',
                 stopEngine: 'Desligar Motor',
-                throttle: 'Acelerar',
-                throttleTitle: 'Manter premido (ou barra de espaço) para acelerar',
+                throttleLabel: 'ACELERADOR',
+                throttleTitle: 'Posição do acelerador (0% – 100%) · Arraste ou prima Espaço para 100%',
+                throttleAria: 'Posição do acelerador em percentagem',
                 slowMo: 'Slow Mo',
                 slowMoTitle: 'Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado',
                 unitBtnTitle: 'Alternar unidades entre kW / Nm e hp / lb-ft',
@@ -1610,9 +1763,13 @@
                 exhPanelTitle: 'PERCURSO & ESCAPE',
                 lblExhType: 'TIPO DE ESCAPE',
                 lblExhTips: 'SAÍDA / PONTEIRAS',
+                lblExhJunction: 'UNIÃO / JUNÇÃO (B · VR · V · W)',
+                exhJuncTitle: 'Disponível para motores Boxer (B), VR, V e W',
+                exhSingleBankLabel: 'Bancada única',
                 lblExhDiam: 'DIÂMETRO DO TUBO (mm)',
                 gbTypeOpts: {
                     'Manual': 'Manual (Sincronizada)',
+                    'Gated Manual': 'Manual Gated (Grelha H)',
                     'Sequencial': 'Sequencial (Dog-Box)',
                     'DCT': 'Dupla Embraiagem (DCT)',
                     'Automática': 'Automática (Epicíclica)'
@@ -1622,7 +1779,8 @@
                     '5': '5 Mudanças',
                     '6': '6 Mudanças',
                     '7': '7 Mudanças',
-                    '8': '8 Mudanças'
+                    '8': '8 Mudanças',
+                    '9': '9 Mudanças'
                 },
                 clutchOpts: {
                     'Monodisco Orgânica': 'Monodisco Orgânica',
@@ -1656,6 +1814,20 @@
                     'Simples': 'Simples',
                     'Dupla': 'Dupla',
                     'Quádrupla': 'Quádrupla'
+                },
+                exhJunctionOpts: {
+                    'X-Pipe': 'X-Pipe Junction (Cruzado)',
+                    'H-Pipe': 'H-Pipe (Tubo Compensador)',
+                    'Y-Pipe': 'Y-Pipe (Junção 2-em-1)',
+                    'Coletor Merge': 'Coletor Merge (Cone Venturi)',
+                    'Sem União': 'Direto / Dual Independente'
+                },
+                exhJunctionShort: {
+                    'X-Pipe': 'X-Pipe',
+                    'H-Pipe': 'H-Pipe',
+                    'Y-Pipe': 'Y-Pipe 2-1',
+                    'Coletor Merge': 'Merge Cone',
+                    'Sem União': 'Direto'
                 },
                 exhFlowNotes: {
                     'OEM Catalisador': 'Fluxo OEM c/ catalisador',
@@ -1807,8 +1979,9 @@
                 hint: 'Drag background: orbit · Scroll: zoom · Right-click: pan',
                 startEngine: 'Start Engine',
                 stopEngine: 'Stop Engine',
-                throttle: 'Throttle',
-                throttleTitle: 'Hold down (or Spacebar) to throttle',
+                throttleLabel: 'THROTTLE',
+                throttleTitle: 'Throttle position (0% – 100%) · Drag or hold Spacebar for 100%',
+                throttleAria: 'Throttle position percentage',
                 slowMo: 'Slow Mo',
                 slowMoTitle: 'Toggle slow motion: 1x -> 2x -> 5x -> 10x -> Off',
                 unitBtnTitle: 'Switch units between kW / Nm and hp / lb-ft',
@@ -1849,9 +2022,13 @@
                 exhPanelTitle: 'EXHAUST GAS PATH',
                 lblExhType: 'EXHAUST TYPE',
                 lblExhTips: 'TIPS / OUTLET',
+                lblExhJunction: 'EXHAUST JUNCTION (B · VR · V · W)',
+                exhJuncTitle: 'Available only for Boxer (B), VR, V, and W engines',
+                exhSingleBankLabel: 'Single bank',
                 lblExhDiam: 'PIPE DIAMETER (mm)',
                 gbTypeOpts: {
                     'Manual': 'Manual (Synchromesh)',
+                    'Gated Manual': 'Gated Manual (Open-Gate H)',
                     'Sequencial': 'Sequential (Dog-Box)',
                     'DCT': 'Dual-Clutch (DCT)',
                     'Automática': 'Automatic (Planetary)'
@@ -1861,7 +2038,8 @@
                     '5': '5-Speed',
                     '6': '6-Speed',
                     '7': '7-Speed',
-                    '8': '8-Speed'
+                    '8': '8-Speed',
+                    '9': '9-Speed'
                 },
                 clutchOpts: {
                     'Monodisco Orgânica': 'Single-Disc Organic',
@@ -1895,6 +2073,20 @@
                     'Simples': 'Single',
                     'Dupla': 'Dual',
                     'Quádrupla': 'Quad'
+                },
+                exhJunctionOpts: {
+                    'X-Pipe': 'X-Pipe Junction (Scavenging)',
+                    'H-Pipe': 'H-Pipe (Balance Tube)',
+                    'Y-Pipe': 'Y-Pipe (2-into-1 Merge)',
+                    'Coletor Merge': 'Merge Collector (Venturi Cone)',
+                    'Sem União': 'True Dual (No Crossover)'
+                },
+                exhJunctionShort: {
+                    'X-Pipe': 'X-Pipe',
+                    'H-Pipe': 'H-Pipe',
+                    'Y-Pipe': 'Y-Pipe 2-1',
+                    'Coletor Merge': 'Merge Cone',
+                    'Sem União': 'No Merge'
                 },
                 exhFlowNotes: {
                     'OEM Catalisador': 'OEM catalytic flow',
@@ -2040,12 +2232,14 @@
            ---------------------------------------------------------------------- */
         const engineSim = {
             on: false,
-            throttleHeld: false,
-            blipTimer: 0,
+            throttlePct: 0,
+            spaceHeld: false,
+            preSpaceThrottlePct: 0,
             currentRpm: 0,
             idleRpm: 950,
             maxRpm: 7500,
             inertiaFactor: 1.0,
+            rotInertia: 0.15,
             slowMo: 1,
             unitMode: 'metric',
             dynoPoints: [],
@@ -2226,7 +2420,7 @@
             setTxt('btn-3d-autorotate', t.autoRotate);
             setTxt('btn-3d-reset', t.resetView);
             setTxt('motor-3d-hint', t.hint);
-            setTxt('btn-engine-throttle-label', t.throttle);
+            setTxt('lbl-throttle-pos', t.throttleLabel);
             setTxt('lbl-tel-rpm', t.telRpm);
             setTxt('lbl-tel-geo', t.telGeo);
             setTxt('dyno-title', t.dynoTitle);
@@ -2282,7 +2476,8 @@
             }
             if (btnAutoRotate3D) btnAutoRotate3D.title = t.autoRotateTitle;
             if (btnReset3D) btnReset3D.title = t.resetViewTitle;
-            if (btnEngineThrottle) btnEngineThrottle.title = t.throttleTitle;
+            if (throttleControlWrap) throttleControlWrap.title = t.throttleTitle;
+            if (rangeThrottle) rangeThrottle.setAttribute('aria-label', t.throttleAria);
             if (btnUnitToggle) btnUnitToggle.title = t.unitBtnTitle;
             if (btnSlowMo) {
                 btnSlowMo.title = t.slowMoTitle;
@@ -2313,6 +2508,7 @@
             mapOpts(selectFinalDrive, t.finalDriveOpts);
             mapOpts(selectExhaustType, t.exhTypeOpts);
             mapOpts(selectExhaustTips, t.exhTipsOpts);
+            mapOpts(selectExhaustJunction, t.exhJunctionOpts);
             setTxt('gb-panel-title', t.gbPanelTitle);
             setTxt('lbl-gb-type', t.lblGbType);
             setTxt('lbl-gb-speeds', t.lblGbSpeeds);
@@ -2321,6 +2517,8 @@
             setTxt('exh-panel-title', t.exhPanelTitle);
             setTxt('lbl-exh-type', t.lblExhType);
             setTxt('lbl-exh-tips', t.lblExhTips);
+            setTxt('lbl-exh-junction', t.lblExhJunction);
+            if (selectExhaustJunction) selectExhaustJunction.title = t.exhJuncTitle;
             setTxt('lbl-exh-diam', t.lblExhDiam);
             setTxt('btn-top-engine', t.topEngine);
             setTxt('btn-top-all', t.topAll);
@@ -2480,6 +2678,7 @@
             };
             const gbMap = {
                 'Manual':     { tq: 1.000, hp: 1.000, in: 1.00 },
+                'Gated Manual': { tq: 1.005, hp: 1.012, in: 0.90 },
                 'Manual 6V':  { tq: 1.000, hp: 1.000, in: 1.00 },
                 'Manual 5V':  { tq: 1.005, hp: 1.005, in: 0.98 },
                 'Sequencial': { tq: 1.010, hp: 1.025, in: 0.78 },
@@ -2503,6 +2702,13 @@
                 'Titânio Valvetronic': { tq: 1.020, hp: 1.038 },
                 'Straight Pipe':       { tq: 0.990, hp: 1.055 }
             };
+            const juncMap = {
+                'Sem União':     { tq: 1.000, hp: 1.000 },
+                'X-Pipe':        { tq: 1.005, hp: 1.022 },
+                'H-Pipe':        { tq: 1.018, hp: 1.005 },
+                'Y-Pipe':        { tq: 1.012, hp: 1.010 },
+                'Coletor Merge': { tq: 1.008, hp: 1.018 }
+            };
             const pCam = isWankel ? { tq: 1.00, hp: 1.00 } : (isFreevalve ? camMap['Freevalve'] : (camMap[params.camshaft] || camMap['DOHC']));
             const pVal = isWankel ? { tq: 1.00, hp: 1.00 } : (isFreevalve ? valMap['Freevalve'] : (valMap[params.valve_type] || valMap['Molas']));
             const pMatHp = matHpMap[params.material] || 1.00;
@@ -2510,10 +2716,12 @@
             const pFw = fwMap[params.flywheel] || fwMap['Monomassa Aço'];
             const pDmp = dmpMap[params.damper] || dmpMap['Elastómero OEM'];
             const pGb = gbMap[params.gearbox_type] || gbMap['Manual'];
-            const gbSpds = Math.max(4, Math.min(8, parseInt(params.gearbox_speeds, 10) || 6));
+            const gbSpds = Math.max(4, Math.min(9, parseInt(params.gearbox_speeds, 10) || 6));
             const gbSpdHp = 1.0 + (gbSpds - 6) * 0.004;
             const pCl = clutchMap[params.clutch_type] || clutchMap['Monodisco Orgânica'];
             const pExh = exhMap[params.exhaust_type] || exhMap['OEM Catalisador'];
+            const supportsExhJunc = EXHAUST_JUNCTION_FORMATS.includes(params.formato);
+            const pJunc = supportsExhJunc ? (juncMap[params.exhaust_junction] || juncMap['X-Pipe']) : juncMap['Sem União'];
             const exhD = Math.max(35, Math.min(140, Number(params.exhaust_diameter) || 63));
             const dDelta = (exhD - 63.0) / 63.0;
             const pEDiam = {
@@ -2527,9 +2735,9 @@
 
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (params.ciclo === '2T' ? 1.25 : 1.00);
-            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pEDiam.tq);
+            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq);
             const fatorRpmHp = isWankel ? 0.93 : (params.ciclo === '4T' ? 0.88 : 0.94);
-            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pEDiam.hp / pEDiam.tq) * 1.01387;
+            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * 1.01387;
             const peakPowerKw = Math.round(peakPowerCv * 0.73549875);
 
             const maxRpm = Math.max(1500, params.max_rpm);
@@ -2604,6 +2812,9 @@
                 return { rpm: p.rpm, torqueNm: p.torqueNm, powerKw };
             });
 
+            const pisInMap = { 'Alumínio': 1.00, 'Forged': 1.08, 'Forged Heavy': 1.24, 'Titânio': 0.82 };
+            const pisInertia = isWankel ? 0.92 : (pisInMap[params.piston_material] || 1.00);
+            engineSim.rotInertia = Math.max(0.055, (0.088 + Math.max(0.4, litros) * 0.032) * pisInertia * Math.max(0.32, engineSim.inertiaFactor || 1.0));
             engineSim.maxRpm = maxRpm;
             engineSim.idleRpm = Math.min(1150, Math.max(750, Math.round(maxRpm * 0.13)));
             engineSim.dynoPoints = points;
@@ -2613,6 +2824,7 @@
             engineSim.peakTorqueRpm = Math.round(bestT.rpm);
 
             syncUnitDisplays();
+            updateRpmRedlineVisual(engineSim.currentRpm);
         }
 
         function sampleDynoAtRpm(rpm) {
@@ -2862,6 +3074,7 @@
                     finalDrive: 3.73,
                     exhaustType: 'OEM Catalisador',
                     exhaustTips: 'Dupla',
+                    exhaustJunction: 'X-Pipe',
                     exhaustDiameter: 63,
                     turboBar: 0.0,
                     scBar: 0.0
@@ -3821,15 +4034,16 @@
 
             addGearboxModel(xFront, bellR = 0.68) {
                 const gbType = this.config.gearboxType || 'Manual';
-                const speeds = Math.max(4, Math.min(8, parseInt(this.config.gearboxSpeeds, 10) || 6));
+                const speeds = Math.max(4, Math.min(9, parseInt(this.config.gearboxSpeeds, 10) || 6));
                 const clutchType = this.config.clutchType || 'Monodisco Orgânica';
                 const finalDrive = Number(this.config.finalDrive) || 3.73;
 
                 const styles = {
-                    'Manual':     { caseCol: [0.50, 0.54, 0.60, 1.0], ribCol: [0.36, 0.40, 0.47, 1.0], turretCol: [0.24, 0.27, 0.33, 1.0], spec: [0.48, 38] },
-                    'Sequencial': { caseCol: [0.24, 0.27, 0.33, 1.0], ribCol: [0.76, 0.22, 0.22, 1.0], turretCol: [0.78, 0.60, 0.24, 1.0], spec: [0.68, 56] },
-                    'DCT':        { caseCol: [0.40, 0.45, 0.52, 1.0], ribCol: [0.72, 0.58, 0.26, 1.0], turretCol: [0.18, 0.22, 0.28, 1.0], spec: [0.58, 46] },
-                    'Automática': { caseCol: [0.34, 0.37, 0.43, 1.0], ribCol: [0.48, 0.52, 0.58, 1.0], turretCol: [0.16, 0.18, 0.22, 1.0], spec: [0.46, 36] }
+                    'Manual':       { caseCol: [0.50, 0.54, 0.60, 1.0], ribCol: [0.36, 0.40, 0.47, 1.0], turretCol: [0.24, 0.27, 0.33, 1.0], spec: [0.48, 38] },
+                    'Gated Manual': { caseCol: [0.56, 0.60, 0.68, 1.0], ribCol: [0.80, 0.64, 0.24, 1.0], turretCol: [0.76, 0.80, 0.86, 1.0], spec: [0.74, 58] },
+                    'Sequencial':   { caseCol: [0.24, 0.27, 0.33, 1.0], ribCol: [0.76, 0.22, 0.22, 1.0], turretCol: [0.78, 0.60, 0.24, 1.0], spec: [0.68, 56] },
+                    'DCT':          { caseCol: [0.40, 0.45, 0.52, 1.0], ribCol: [0.72, 0.58, 0.26, 1.0], turretCol: [0.18, 0.22, 0.28, 1.0], spec: [0.58, 46] },
+                    'Automática':   { caseCol: [0.34, 0.37, 0.43, 1.0], ribCol: [0.48, 0.52, 0.58, 1.0], turretCol: [0.16, 0.18, 0.22, 1.0], spec: [0.46, 36] }
                 };
                 const st = styles[gbType] || styles['Manual'];
 
@@ -3881,13 +4095,30 @@
                     this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xCase, 0.31, 0, 0, 0, 0, caseLen * 0.68, 0.12, 0.40), st.ribCol, [0.66, 52]);
                     this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xCase - 0.05, -0.10, -0.40, 0, 0, 0, 0.54, 0.32, 0.11), st.ribCol, [0.72, 56]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCase - 0.05, 0.14, -0.40, 0, 0, 0, 0.045, 0.16, 0.045), [0.20, 0.23, 0.28, 1.0], [0.5, 36]);
+                } else if (gbType === 'Gated Manual') {
+                    // Torre aberta estilo Gated Manual: placa maquinada em H com canais marcados e punho metálico esférico
+                    const gX = xCase + 0.14;
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(gX, 0.31, 0, 0, 0, 0, 0.42, 0.15, 0.34), [0.22, 0.25, 0.31, 1.0], [0.58, 44]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(gX, 0.44, 0, 0, 0, 0, 0.44, 0.036, 0.38), [0.84, 0.88, 0.94, 1.0], [0.86, 72]);
+                    for (const sx of [-0.17, 0.17]) {
+                        for (const sz of [-0.14, 0.14]) {
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(gX + sx, 0.415, sz, 0, 0, 0, 0.018, 0.08, 0.018), st.ribCol, [0.78, 60]);
+                        }
+                    }
+                    for (const gz of [-0.10, 0.0, 0.10]) {
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(gX, 0.460, gz, 0, 0, 0, 0.26, 0.014, 0.026), [0.06, 0.07, 0.10, 1.0], [0.15, 10]);
+                    }
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(gX, 0.460, 0, 0, 0, 0, 0.034, 0.014, 0.226), [0.06, 0.07, 0.10, 1.0], [0.15, 10]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(gX + 0.05, 0.55, -0.05, -0.14, 0, -0.18, 0.026, 0.22, 0.026), [0.90, 0.94, 0.98, 1.0], [0.88, 74]);
+                    this.addPart(this.staticOpaque, 'sphere', this.matTRS(gX + 0.07, 0.66, -0.07, 0, 0, 0, 0.072, 0.072, 0.072), [0.92, 0.95, 0.99, 1.0], [0.90, 76]);
+                    this.addPipe(this.staticOpaque, [[gX - 0.16, 0.34, 0.18], [xCase - 0.20, 0.26, 0.26], [xCase - 0.20, 0.06, 0.32]], 0.020, st.ribCol, [0.76, 60]);
                 } else {
                     this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xCase + 0.16, 0.31, 0, 0, 0, 0, 0.36, 0.16, 0.28), st.turretCol, [0.60, 48]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCase + 0.16, 0.45, 0, 0.26, 0, 0, 0.036, 0.24, 0.036), [0.84, 0.88, 0.92, 1.0], [0.8, 64]);
                     this.addPart(this.staticOpaque, 'sphere', this.matTRS(xCase + 0.16, 0.56, 0.06, 0, 0, 0, 0.068, 0.068, 0.068), [0.74, 0.22, 0.22, 1.0], [0.65, 52]);
                 }
 
-                // Veios internos + N pares de carretos dentados (4 a 8 mudanças)
+                // Veios internos + N pares de carretos dentados (4 a 9 mudanças)
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(xFront + 0.64 + caseLen * 0.45, 0.02, 0, 0, 0, Math.PI * 0.5, 0.055, caseLen + 0.66, 0.055), [0.74, 0.78, 0.84, 1.0], [0.78, 64]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCase, -0.27, 0, 0, 0, Math.PI * 0.5, 0.048, caseLen * 0.90, 0.048), [0.62, 0.66, 0.72, 1.0], [0.72, 58]);
 
@@ -3929,6 +4160,7 @@
             getExhaustParams() {
                 const exType = this.config.exhaustType || 'OEM Catalisador';
                 const tipsMode = this.config.exhaustTips || 'Dupla';
+                const exJunc = this.config.exhaustJunction || 'X-Pipe';
                 const diamMm = Math.max(35, Math.min(140, Number(this.config.exhaustDiameter) || 63));
                 const pipeR = (diamMm / 63.0) * 0.082;
                 const styles = {
@@ -3938,11 +4170,28 @@
                     'Titânio Valvetronic': { col: [0.64, 0.62, 0.58, 1.0], spec: [0.78, 64], catCol: [0.58, 0.56, 0.54, 1.0], mufCol: [0.52, 0.56, 0.74, 1.0], tipCol: [0.34, 0.44, 0.86, 1.0], hasCat: true, hasMuf: true, valved: true },
                     'Straight Pipe':       { col: [0.70, 0.62, 0.52, 1.0], spec: [0.72, 56], catCol: [0.62, 0.54, 0.44, 1.0], mufCol: [0.58, 0.48, 0.40, 1.0], tipCol: [0.36, 0.46, 0.86, 1.0], hasCat: false, hasMuf: false, valved: false }
                 };
-                return { exType, tipsMode, diamMm, pipeR, st: styles[exType] || styles['OEM Catalisador'] };
+                return { exType, tipsMode, exJunc, diamMm, pipeR, st: styles[exType] || styles['OEM Catalisador'] };
             }
 
-            addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xCat, xXpipe, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode }) {
+            addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xJunc, xCat, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode, exJunc = 'X-Pipe', placeCatBeforeJunc = false }) {
                 const hasDualLanes = lanesZ.length >= 2;
+                const zMid = hasDualLanes ? (lanesZ[0] + lanesZ[1]) * 0.5 : lanesZ[0];
+                const isMergedJunc = exJunc === 'Y-Pipe' || exJunc === 'Coletor Merge';
+                const outLanesZ = (hasDualLanes && isMergedJunc) ? [zMid] : lanesZ;
+                const trunkR = (hasDualLanes && isMergedJunc) ? pipeR * 1.18 : pipeR;
+                const jX = (xJunc !== undefined && xJunc !== null) ? xJunc : ((xMid + xCat) * 0.5);
+                const splitJunction = hasDualLanes && exJunc !== 'H-Pipe' && exJunc !== 'Sem União';
+                const preEnd = splitJunction ? (jX - 0.24) : (jX + 0.02);
+                const postStart = splitJunction ? (jX + 0.24) : (jX + 0.02);
+
+                const drawCatAt = (lzCat, rCatBase) => {
+                    const catR = Math.max(0.14, rCatBase * 1.90);
+                    this.addPart(this.staticTrans, 'cyl', this.matTRS(xCat, yLine, lzCat, 0, 0, Math.PI * 0.5, catR, 0.46, catR), st.catCol, [0.58, 44]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCat, yLine, lzCat, 0, 0, Math.PI * 0.5, catR * 0.78, 0.34, catR * 0.78), [0.76, 0.54, 0.26, 1.0], [0.30, 18]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(xCat - 0.20, yLine + catR * 1.02, lzCat, 0, 0, 0, 0.026, 0.09, 0.026), [0.82, 0.64, 0.24, 1.0], [0.78, 62]);
+                };
+
+                // Troço a montante (coletor -> fole flexível -> junção)
                 for (let bi = 0; bi < lanesZ.length; bi++) {
                     const lz = lanesZ[bi];
                     const startPt = (xStartPipe && xStartPipe[bi]) ? xStartPipe[bi] : [xMid - 0.30, yLine, lz];
@@ -3950,59 +4199,89 @@
                     if (Math.abs(startPt[0] - xMid) > 0.45) {
                         pipePts.push([Math.min(startPt[0] + 0.24, xMid - 0.22), yLine, lz]);
                     }
-                    pipePts.push([xMid - 0.14, yLine, lz], [xMid, yLine, lz], [xTip - 0.06, yLine, lz]);
+                    pipePts.push([xMid - 0.14, yLine, lz], [xMid, yLine, lz], [preEnd, yLine, lz]);
                     this.addPipe(this.staticOpaque, pipePts, pipeR, st.col, st.spec);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMid - 0.08, yLine, lz, 0, 0, Math.PI * 0.5, pipeR * 1.30, 0.18, pipeR * 1.30), [0.34, 0.37, 0.43, 1.0], [0.4, 28]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMid + 0.10, yLine, lz, 0, 0, Math.PI * 0.5, pipeR * 1.24, 0.04, pipeR * 1.24), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
-
-                    if (st.hasCat) {
-                        const catR = Math.max(0.14, pipeR * 1.90);
-                        this.addPart(this.staticTrans, 'cyl', this.matTRS(xCat, yLine, lz, 0, 0, Math.PI * 0.5, catR, 0.46, catR), st.catCol, [0.58, 44]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCat, yLine, lz, 0, 0, Math.PI * 0.5, catR * 0.78, 0.34, catR * 0.78), [0.76, 0.54, 0.26, 1.0], [0.30, 18]);
-                        this.addPart(this.staticOpaque, 'hex', this.matTRS(xCat - 0.20, yLine + catR * 1.02, lz, 0, 0, 0, 0.026, 0.09, 0.026), [0.82, 0.64, 0.24, 1.0], [0.78, 62]);
+                    if (st.hasCat && placeCatBeforeJunc) {
+                        drawCatAt(lz, pipeR);
                     }
+                }
 
+                // Geometria da forma de união / junção (X-Pipe, H-Pipe, Y-Pipe, Coletor Merge, Sem União)
+                if (hasDualLanes) {
+                    const zL = lanesZ[0], zR = lanesZ[1];
+                    if (exJunc === 'X-Pipe') {
+                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zL], [jX, yLine, zMid], [postStart, yLine, zR]], pipeR * 0.94, st.col, st.spec);
+                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zR], [jX, yLine, zMid], [postStart, yLine, zL]], pipeR * 0.94, st.col, st.spec);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(jX, yLine, zMid, 0, 0, 0, 0.24, pipeR * 2.15, Math.min(0.42, Math.abs(zR - zL) * 0.46)), st.catCol, [0.74, 56]);
+                        this.addPart(this.staticOpaque, 'hex', this.matTRS(jX, yLine + pipeR * 1.18, zMid, 0, 0, 0, 0.024, 0.05, 0.024), [0.82, 0.64, 0.24, 1.0], [0.78, 60]);
+                    } else if (exJunc === 'H-Pipe') {
+                        this.addPipe(this.staticOpaque, [[jX, yLine, zL], [jX, yLine, zR]], pipeR * 0.84, st.col, st.spec, [], false);
+                        for (const lz of lanesZ) {
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(jX, yLine, lz, 0, 0, Math.PI * 0.5, pipeR * 1.26, 0.14, pipeR * 1.26), st.catCol, [0.72, 54]);
+                        }
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(jX, yLine, zMid, Math.PI * 0.5, 0, 0, pipeR * 1.08, 0.06, pipeR * 1.08), [0.84, 0.88, 0.92, 1.0], [0.80, 64]);
+                    } else if (exJunc === 'Y-Pipe') {
+                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zL], [jX - 0.06, yLine, (zL + zMid) * 0.5], [jX + 0.10, yLine, zMid]], pipeR * 0.96, st.col, st.spec);
+                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zR], [jX - 0.06, yLine, (zR + zMid) * 0.5], [jX + 0.10, yLine, zMid]], pipeR * 0.96, st.col, st.spec);
+                        this.addPart(this.staticOpaque, 'cone', this.matTRS(jX + 0.12, yLine, zMid, 0, 0, -Math.PI * 0.5, trunkR * 1.34, 0.28, trunkR * 1.34), st.catCol, st.spec);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(postStart, yLine, zMid, 0, 0, Math.PI * 0.5, trunkR * 1.22, 0.05, trunkR * 1.22), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
+                    } else if (exJunc === 'Coletor Merge') {
+                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zL], [jX - 0.05, yLine, zMid]], pipeR * 0.95, st.col, st.spec);
+                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zR], [jX - 0.05, yLine, zMid]], pipeR * 0.95, st.col, st.spec);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(jX - 0.08, yLine, zMid, 0, 0, 0, 0.16, pipeR * 2.2, Math.abs(zR - zL) * 0.65), [0.28, 0.32, 0.38, 1.0], [0.64, 48]);
+                        this.addPart(this.staticOpaque, 'cone', this.matTRS(jX + 0.08, yLine, zMid, 0, 0, -Math.PI * 0.5, trunkR * 1.56, 0.30, trunkR * 1.56), [0.76, 0.58, 0.28, 1.0], [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(postStart, yLine, zMid, 0, 0, Math.PI * 0.5, trunkR * 1.25, 0.05, trunkR * 1.25), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
+                    }
+                } else if (exJunc === 'Coletor Merge' || exJunc === 'Y-Pipe') {
+                    this.addPart(this.staticOpaque, 'cone', this.matTRS(jX, yLine, lanesZ[0], 0, 0, -Math.PI * 0.5, pipeR * 1.65, 0.28, pipeR * 1.65), [0.76, 0.58, 0.28, 1.0], [0.74, 58]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(jX + 0.15, yLine, lanesZ[0], 0, 0, Math.PI * 0.5, pipeR * 1.28, 0.05, pipeR * 1.28), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
+                }
+
+                // Troço a jusante (junção -> catalisador opcional -> panela -> ponteiras)
+                for (let oi = 0; oi < outLanesZ.length; oi++) {
+                    const lzOut = outLanesZ[oi];
+                    this.addPipe(this.staticOpaque, [[postStart, yLine, lzOut], [xTip - 0.06, yLine, lzOut]], trunkR, st.col, st.spec);
+                    if (st.hasCat && !placeCatBeforeJunc) {
+                        drawCatAt(lzOut, trunkR);
+                    }
                     if (st.hasMuf) {
-                        const mufR = Math.max(0.15, pipeR * 1.80);
+                        const mufR = Math.max(0.15, trunkR * 1.75);
                         const mufLen = exType === 'Inconel 4-1' ? 0.42 : 0.56;
-                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xMuf, yLine, lz, 0, 0, 0, mufLen, mufR * 1.45, mufR * 1.90), st.mufCol, st.spec);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMuf, yLine, lz, 0, 0, Math.PI * 0.5, pipeR * 0.88, mufLen * 0.92, pipeR * 0.88), [0.78, 0.82, 0.88, 1.0], [0.65, 52]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(xMuf - 0.09, yLine, lz, 0, 0, 0, 0.024, mufR * 1.32, mufR * 1.70), st.col, [0.5, 36]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(xMuf + 0.09, yLine, lz, 0, 0, 0, 0.024, mufR * 1.32, mufR * 1.70), st.col, [0.5, 36]);
+                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xMuf, yLine, lzOut, 0, 0, 0, mufLen, mufR * 1.45, mufR * 1.90), st.mufCol, st.spec);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMuf, yLine, lzOut, 0, 0, Math.PI * 0.5, trunkR * 0.88, mufLen * 0.92, trunkR * 0.88), [0.78, 0.82, 0.88, 1.0], [0.65, 52]);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(xMuf - 0.09, yLine, lzOut, 0, 0, 0, 0.024, mufR * 1.32, mufR * 1.70), st.col, [0.5, 36]);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(xMuf + 0.09, yLine, lzOut, 0, 0, 0, 0.024, mufR * 1.32, mufR * 1.70), st.col, [0.5, 36]);
                         if (st.valved) {
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMuf + 0.16, yLine + mufR * 1.05, lz, 0, 0, 0, 0.056, 0.12, 0.056), [0.84, 0.64, 0.24, 1.0], [0.78, 62]);
-                            this.addPipe(this.staticOpaque, [[xMuf - 0.34, yLine, lz], [xMuf, yLine, lz + (lz <= 0 ? -mufR * 1.12 : mufR * 1.12)], [xTip - 0.28, yLine, lz]], pipeR * 0.72, st.tipCol, [0.80, 64]);
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMuf + 0.16, yLine + mufR * 1.05, lzOut, 0, 0, 0, 0.056, 0.12, 0.056), [0.84, 0.64, 0.24, 1.0], [0.78, 62]);
+                            this.addPipe(this.staticOpaque, [[xMuf - 0.34, yLine, lzOut], [xMuf, yLine, lzOut + (lzOut <= 0 ? -mufR * 1.12 : mufR * 1.12)], [xTip - 0.28, yLine, lzOut]], trunkR * 0.72, st.tipCol, [0.80, 64]);
                         }
                     }
                 }
 
-                if (hasDualLanes) {
-                    const xpMidZ = (lanesZ[0] + lanesZ[1]) * 0.5;
-                    this.addPipe(this.staticOpaque, [[xXpipe - 0.16, yLine, lanesZ[0]], [xXpipe, yLine, xpMidZ], [xXpipe + 0.16, yLine, lanesZ[1]]], pipeR * 0.86, st.col, st.spec);
-                    this.addPipe(this.staticOpaque, [[xXpipe - 0.16, yLine, lanesZ[1]], [xXpipe, yLine, xpMidZ], [xXpipe + 0.16, yLine, lanesZ[0]]], pipeR * 0.86, st.col, st.spec);
-                }
-
+                const hasOutDual = outLanesZ.length >= 2;
                 const tipPositions = [];
                 if (tipsMode === 'Simples') {
-                    const cZ = hasDualLanes ? (lanesZ[0] + lanesZ[1]) * 0.5 : lanesZ[0];
-                    if (hasDualLanes) {
-                        this.addPipe(this.staticOpaque, [[xTip - 0.42, yLine, lanesZ[0]], [xTip - 0.10, yLine, cZ]], pipeR * 0.92, st.col, st.spec);
-                        this.addPipe(this.staticOpaque, [[xTip - 0.42, yLine, lanesZ[1]], [xTip - 0.10, yLine, cZ]], pipeR * 0.92, st.col, st.spec);
+                    const cZ = hasOutDual ? (outLanesZ[0] + outLanesZ[1]) * 0.5 : outLanesZ[0];
+                    if (hasOutDual) {
+                        this.addPipe(this.staticOpaque, [[xTip - 0.42, yLine, outLanesZ[0]], [xTip - 0.10, yLine, cZ]], trunkR * 0.92, st.col, st.spec);
+                        this.addPipe(this.staticOpaque, [[xTip - 0.42, yLine, outLanesZ[1]], [xTip - 0.10, yLine, cZ]], trunkR * 0.92, st.col, st.spec);
                     }
-                    tipPositions.push({ lz: lanesZ[0], tz: cZ });
+                    tipPositions.push({ lz: outLanesZ[0], tz: cZ });
                 } else if (tipsMode === 'Dupla') {
-                    if (hasDualLanes) {
-                        tipPositions.push({ lz: lanesZ[0], tz: lanesZ[0] }, { lz: lanesZ[1], tz: lanesZ[1] });
+                    if (hasOutDual) {
+                        tipPositions.push({ lz: outLanesZ[0], tz: outLanesZ[0] }, { lz: outLanesZ[1], tz: outLanesZ[1] });
                     } else {
                         for (const s of [-1, 1]) {
-                            const tz = lanesZ[0] + s * Math.max(0.14, pipeR * 1.38);
-                            this.addPipe(this.staticOpaque, [[xTip - 0.30, yLine, lanesZ[0]], [xTip - 0.08, yLine, tz]], pipeR * 0.85, st.col, st.spec);
-                            tipPositions.push({ lz: lanesZ[0], tz });
+                            const tz = outLanesZ[0] + s * Math.max(0.14, pipeR * 1.38);
+                            this.addPipe(this.staticOpaque, [[xTip - 0.30, yLine, outLanesZ[0]], [xTip - 0.08, yLine, tz]], pipeR * 0.85, st.col, st.spec);
+                            tipPositions.push({ lz: outLanesZ[0], tz });
                         }
                     }
                 } else {
-                    if (hasDualLanes) {
-                        for (const bZ of lanesZ) {
+                    if (hasOutDual) {
+                        for (const bZ of outLanesZ) {
                             const off = Math.max(0.11, pipeR * 1.28);
                             for (const s of [-1, 1]) {
                                 const tz = bZ + s * off;
@@ -4013,9 +4292,9 @@
                     } else {
                         const stepZ = Math.max(0.13, pipeR * 1.50);
                         for (let qi = -1.5; qi <= 1.5; qi += 1.0) {
-                            const tz = lanesZ[0] + qi * stepZ;
-                            this.addPipe(this.staticOpaque, [[xTip - 0.32, yLine, lanesZ[0]], [xTip - 0.08, yLine, tz]], pipeR * 0.78, st.col, st.spec);
-                            tipPositions.push({ lz: lanesZ[0], tz });
+                            const tz = outLanesZ[0] + qi * stepZ;
+                            this.addPipe(this.staticOpaque, [[xTip - 0.32, yLine, outLanesZ[0]], [xTip - 0.08, yLine, tz]], pipeR * 0.78, st.col, st.spec);
+                            tipPositions.push({ lz: outLanesZ[0], tz });
                         }
                     }
                 }
@@ -4029,13 +4308,27 @@
 
                 for (let pi = 0; pi < pathItems.length; pi++) {
                     const pItem = pathItems[pi];
-                    const matchTips = tipPositions.filter(tp => tp.lz === pItem.lz);
+                    let postLz = pItem.lz;
+                    const jPts = [];
+                    if (hasDualLanes && exJunc === 'X-Pipe') {
+                        const otherLz = pItem.lz === lanesZ[0] ? lanesZ[1] : lanesZ[0];
+                        jPts.push([preEnd, yLine, pItem.lz], [jX, yLine, zMid], [postStart, yLine, otherLz]);
+                        postLz = otherLz;
+                    } else if (hasDualLanes && isMergedJunc) {
+                        jPts.push([preEnd, yLine, pItem.lz], [jX + 0.08, yLine, zMid]);
+                        postLz = zMid;
+                    } else {
+                        jPts.push([jX, yLine, pItem.lz]);
+                    }
+                    const matchTips = tipPositions.filter(tp => tp.lz === postLz);
                     const chosenTip = matchTips.length ? matchTips[pi % matchTips.length] : tipPositions[pi % tipPositions.length];
+                    const midAndCat = placeCatBeforeJunc
+                        ? [[xMid, yLine, pItem.lz], [xCat, yLine, pItem.lz], ...jPts]
+                        : [[xMid, yLine, pItem.lz], ...jPts, [xCat, yLine, postLz]];
                     const fullPath = [
                         ...pItem.prefixPts,
-                        [xMid, yLine, pItem.lz],
-                        [xCat, yLine, pItem.lz],
-                        [xMuf, yLine, pItem.lz],
+                        ...midAndCat,
+                        [xMuf, yLine, postLz],
                         [xTip - 0.12, yLine, chosenTip.tz],
                         [xTip + 0.32, yLine, chosenTip.tz]
                     ];
@@ -4045,7 +4338,7 @@
 
             buildStandaloneGearboxScene() {
                 this.sceneCenterX = 0;
-                const speeds = Math.max(4, Math.min(8, parseInt(this.config.gearboxSpeeds, 10) || 6));
+                const speeds = Math.max(4, Math.min(9, parseInt(this.config.gearboxSpeeds, 10) || 6));
                 const extraLen = (speeds - 6) * 0.14;
                 this.addGearboxModel(-1.45 - extraLen * 0.3, 0.68);
                 this.baseDist = 5.4 + Math.max(0, speeds - 6) * 0.25;
@@ -4055,16 +4348,18 @@
                 this.sceneCenterX = 0;
                 const n = Math.max(1, Math.min(16, parseInt(this.config.cilindros, 10) || 4));
                 const fmt = ['I', 'V', 'VR', 'W', 'B', 'WANKEL'].includes(this.config.formato) ? this.config.formato : 'I';
-                const adm = this.config.admissao || 'Atmosférico';
-                const hasTurbo = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(adm);
-                const isDualBank = fmt === 'V' || fmt === 'W' || fmt === 'B';
-                const { exType, tipsMode, pipeR, st } = this.getExhaustParams();
+                const supportsJunc = EXHAUST_JUNCTION_FORMATS.includes(fmt);
+                const { exType, tipsMode, exJunc, pipeR, st } = this.getExhaustParams();
+                const effJunc = supportsJunc ? exJunc : 'Sem União';
                 const runnerR = Math.max(0.036, Math.min(0.095, pipeR * 0.66));
 
-                const lanesZ = isDualBank ? [-0.46, 0.46] : [0.0];
-                const portsPerBank = isDualBank ? Math.min(5, Math.ceil(n / 2)) : Math.min(6, n);
+                const useDualHeaders = supportsJunc;
+                const lanesZ = useDualHeaders ? [-0.46, 0.46] : [0.0];
+                const portCounts = useDualHeaders
+                    ? [Math.max(1, Math.min(5, Math.ceil(n / 2))), Math.max(1, Math.min(5, Math.floor(n / 2)))]
+                    : [Math.min(6, n)];
                 const xPortStart = -1.78, xPortEnd = -1.04;
-                const xCol = -0.68, xTurb = -0.44, xMid = -0.10, xCat = 0.34, xXpipe = 0.04, xMuf = 1.02, xTip = 1.72;
+                const xCol = -0.82, xMid = -0.44, xJunc = 0.00, xCat = 0.54, xMuf = 1.14, xTip = 1.80;
                 const yLine = -0.06;
                 const pathItems = [];
                 const xStartPipe = [];
@@ -4073,12 +4368,13 @@
                     const lz = lanesZ[bi];
                     const collPt = [xCol, yLine, lz];
                     xStartPipe.push(collPt);
+                    const pCount = portCounts[bi];
 
-                    for (let pi = 0; pi < portsPerBank; pi++) {
-                        const frac = portsPerBank > 1 ? pi / (portsPerBank - 1) : 0.5;
+                    for (let pi = 0; pi < pCount; pi++) {
+                        const frac = pCount > 1 ? pi / (pCount - 1) : 0.5;
                         const px = xPortStart + frac * (xPortEnd - xPortStart);
                         const py = 0.24;
-                        const pz = lz * 1.15;
+                        const pz = useDualHeaders ? (lz * 1.15) : ((pi % 2 === 0 ? -0.10 : 0.10));
                         this.addPart(this.staticTrans, 'cyl', this.matTRS(px, py + 0.14, pz, 0, 0, 0, 0.10, 0.26, 0.10), [0.56, 0.60, 0.66, 1.0], [0.46, 36]);
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(px, py + 0.04, pz, 0, 0, 0, 0.072, 0.025, 0.072), [0.95, 0.46, 0.18, 1.0], [0.7, 50]);
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(px, py + 0.17, pz, 0, 0, 0, 0.016, 0.22, 0.016), [0.80, 0.84, 0.88, 1.0], [0.8, 64]);
@@ -4086,20 +4382,13 @@
 
                         const midRun = [px + 0.18, 0.08 + (pi % 2) * 0.05, lz * (1.12 + 0.08 * (1 - frac))];
                         this.addPipe(this.staticOpaque, [[px, py, pz], midRun, collPt], runnerR, st.col, st.spec);
-                        pathItems.push({ lz, prefixPts: [[px, py, pz], midRun, collPt, [xTurb, yLine, lz]] });
+                        pathItems.push({ lz, prefixPts: [[px, py, pz], midRun, collPt] });
                     }
 
                     this.addPart(this.staticOpaque, 'cone', this.matTRS(xCol + 0.08, yLine, lz, 0, 0, -Math.PI * 0.5, runnerR * 1.85, 0.22, runnerR * 1.85), st.catCol, st.spec);
-
-                    if (hasTurbo && (bi === 0 || adm === 'Biturbo' || adm === 'Quad Turbo')) {
-                        this.addPart(this.staticTrans, 'torus', this.matTRS(xTurb, yLine, lz, 0, Math.PI * 0.5, 0, 0.22, 0.22, 0.22), [0.64, 0.42, 0.28, 1.0], [0.55, 42]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xTurb + 0.16, yLine, lz, 0, 0, Math.PI * 0.5, 0.13, 0.16, 0.13), [0.52, 0.36, 0.26, 1.0], [0.50, 36]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xTurb - 0.12, 0.12, lz, 0, 0, 0, 0.055, 0.12, 0.055), [0.80, 0.62, 0.24, 1.0], [0.76, 60]);
-                        this.dynamicRotors.push({ type: 'impeller', symmetry: 7, cx: xTurb - 0.01, cy: yLine, cz: lz, r: 0.145, speedMult: 2.2, colorHub: [0.80, 0.58, 0.22, 1.0], colorBlade: [0.88, 0.92, 0.96, 1.0] });
-                    }
                 }
 
-                this.addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xCat, xXpipe, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode });
+                this.addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xJunc, xCat, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode, exJunc: effJunc, placeCatBeforeJunc: false });
                 this.baseDist = 5.4;
             }
 
@@ -4717,7 +5006,15 @@
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, portY - 0.44, exhZ, 0, 0, Math.PI * 0.5, 0.115, halfLenX * 1.92, 0.115), C_EXHAUST, [0.4, 28]);
                     this.addPart(this.staticOpaque, 'cone', this.matTRS(halfLenX * 0.96, portY - 0.44, exhZ, 0, 0, -Math.PI * 0.5, 0.145, 0.18, 0.145), C_EXHAUST, [0.48, 36]);
                     this.addPipe(this.staticOpaque, [[halfLenX * 1.02, portY - 0.44, exhZ], [halfLenX + 0.38, portY - 0.58, exhZ], [halfLenX + 0.65, -0.15, exhZ * 0.9]], 0.10, C_EXHAUST, [0.4, 28]);
-                    exhaustAnchors = [[halfLenX + 0.65, -0.15, exhZ * 0.9]];
+                    if (isVR && viewMode === 'all' && (adm === 'Atmosférico' || adm === 'Supercompressor')) {
+                        this.addPipe(this.staticOpaque, [[halfLenX * 0.65, portY - 0.44, exhZ], [halfLenX + 0.30, -0.36, -0.88], [halfLenX + 0.65, -0.36, -0.88]], 0.085, C_EXHAUST, [0.4, 28]);
+                        exhaustAnchors = [
+                            [halfLenX + 0.65, -0.36, -0.88],
+                            [halfLenX + 0.65, -0.15, exhZ * 0.9]
+                        ];
+                    } else {
+                        exhaustAnchors = [[halfLenX + 0.65, -0.15, exhZ * 0.9]];
+                    }
 
                     const plenumW = halfLenX * 1.88;
                     const runnersX = cylSpecs.map(c => c.x);
@@ -4936,12 +5233,16 @@
                     }
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, exhY, -exhZOut, 0, 0, Math.PI * 0.5, 0.105, halfLenX * 1.9, 0.105), C_EXHAUST, [0.4, 28]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, exhY,  exhZOut, 0, 0, Math.PI * 0.5, 0.105, halfLenX * 1.9, 0.105), C_EXHAUST, [0.4, 28]);
-                    this.addPipe(this.staticOpaque, [
-                        [halfLenX * 0.90, exhY, -exhZOut],
-                        [halfLenX + 0.35, exhY - 0.05, 0],
-                        [halfLenX * 0.90, exhY, exhZOut]
-                    ], 0.095, C_EXHAUST, [0.4, 28]);
-                    exhaustAnchors = [[halfLenX + 0.35, exhY - 0.05, 0]];
+                    if (viewMode === 'all' && (adm === 'Atmosférico' || adm === 'Supercompressor')) {
+                        exhaustAnchors = [[halfLenX * 0.90, exhY, -exhZOut], [halfLenX * 0.90, exhY, exhZOut]];
+                    } else {
+                        this.addPipe(this.staticOpaque, [
+                            [halfLenX * 0.90, exhY, -exhZOut],
+                            [halfLenX + 0.35, exhY - 0.05, 0],
+                            [halfLenX * 0.90, exhY, exhZOut]
+                        ], 0.095, C_EXHAUST, [0.4, 28]);
+                        exhaustAnchors = [[halfLenX + 0.35, exhY - 0.05, 0]];
+                    }
 
                     // Admissão superior aranha (spider) + rampas de injeção
                     const intTopY = bankH * 0.52 + 0.46;
@@ -5558,15 +5859,19 @@
                     const gbStartX = halfLenX + 0.22 + fwProf.thick * 0.5 + 0.04;
                     const gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
 
-                    const { exType, tipsMode, pipeR, st } = this.getExhaustParams();
+                    const { exType, tipsMode, exJunc, pipeR, st } = this.getExhaustParams();
+                    const supportsExhJunc = EXHAUST_JUNCTION_FORMATS.includes(fmt);
+                    const effExJunc = supportsExhJunc ? exJunc : 'Sem União';
                     const isDualExhaust = exhaustAnchors.length >= 2;
                     const yLine = -0.36;
-                    const lanesZ = isDualExhaust ? [-0.66, 0.66] : [-0.64];
+                    const lanesZ = isDualExhaust
+                        ? ((fmt === 'VR' && adm !== 'Biturbo' && adm !== 'Quad Turbo') ? [-0.88, -0.48] : [-0.66, 0.66])
+                        : [-0.64];
                     const xMid = gbStartX + 0.28;
                     const xCat = gbStartX + 0.82;
-                    const xXpipe = gbInfo.xTailEnd + 0.08;
-                    const xMuf = gbInfo.xTailEnd + 0.56;
-                    const xTip = gbInfo.xTailEnd + 1.18;
+                    const xJunc = gbInfo.xTailEnd + 0.18;
+                    const xMuf = xJunc + 0.58;
+                    const xTip = xJunc + 1.22;
                     const xStartPipe = [];
                     const pathItems = [];
                     for (let li = 0; li < lanesZ.length; li++) {
@@ -5576,7 +5881,7 @@
                         xStartPipe.push(src);
                         pathItems.push({ lz, prefixPts: [src, elbow] });
                     }
-                    this.addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xCat, xXpipe, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode });
+                    this.addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xJunc, xCat, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode, exJunc: effExJunc, placeCatBeforeJunc: true });
 
                     const xMinAll = -halfLenX - 1.25;
                     const xMaxAll = xTip + 0.38;
@@ -5707,27 +6012,53 @@
                 const dt = Math.min(0.033, Math.max(0.001, (now - this.lastTime) * 0.001));
                 this.lastTime = now;
 
-                // Dinâmica de rotação do motor (resposta imediata ao premir/soltar + inércia do volante/damper)
-                const inertiaMult = Math.max(0.40, Math.min(1.55, engineSim.inertiaFactor || 1.0));
-                const revActive = engineSim.on && engineSim.throttleHeld;
+                // Dinâmica de rotação do motor acoplada à curva real de potência/binário, inércia e barra de acelerador (%)
+                const inertiaMult = Math.max(0.35, Math.min(1.55, engineSim.inertiaFactor || 1.0));
+                const invInertia = 1.0 / inertiaMult;
                 if (!engineSim.on) {
-                    engineSim.throttleHeld = false;
-                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 5.2 / inertiaMult);
-                    if (engineSim.currentRpm < 15) engineSim.currentRpm = 0;
-                } else if (revActive) {
-                    const target = engineSim.maxRpm;
-                    const rate = Math.max(2800, (target - engineSim.idleRpm) * 1.65) / inertiaMult;
-                    engineSim.currentRpm = Math.min(target, engineSim.currentRpm + rate * dt);
-                    if (engineSim.currentRpm >= target * 0.985) {
-                        // Oscilação realista de corte de rotação
-                        engineSim.currentRpm = target * (0.975 + 0.025 * Math.sin(now * 0.045));
+                    if (engineSim.throttlePct !== 0 || engineSim.spaceHeld) {
+                        engineSim.spaceHeld = false;
+                        engineSim.preSpaceThrottlePct = 0;
+                        setThrottlePercent(0);
                     }
+                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 5.2 * invInertia);
+                    if (engineSim.currentRpm < 15) engineSim.currentRpm = 0;
                 } else {
-                    const idleJitter = engineSim.idleRpm + Math.sin(now * 0.008) * 18;
-                    const invInertia = 1.0 / inertiaMult;
-                    engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 6.2 * invInertia);
-                    if (engineSim.currentRpm > engineSim.idleRpm + 25) {
-                        engineSim.currentRpm = Math.max(idleJitter, engineSim.currentRpm - dt * 1100 * invInertia);
+                    const thr = Math.max(0, Math.min(1, (engineSim.throttlePct || 0) / 100));
+                    const maxR = Math.max(1500, engineSim.maxRpm || 7500);
+                    const idle = Math.min(maxR - 200, Math.max(600, engineSim.idleRpm || 950));
+                    const idleJitter = idle + Math.sin(now * 0.008) * 18;
+                    if (thr <= 0.005) {
+                        if (engineSim.currentRpm > idle + 25) {
+                            const decayFactor = Math.min(1, dt * 5.6 * invInertia);
+                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.14) * invInertia * 0.55;
+                            const expDrop = engineSim.currentRpm - (engineSim.currentRpm - idleJitter) * decayFactor;
+                            engineSim.currentRpm = Math.max(idleJitter, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                        } else {
+                            engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 6.2 * invInertia);
+                        }
+                    } else {
+                        const targetRpm = idle + (maxR - idle) * Math.pow(thr, 0.85);
+                        if (engineSim.currentRpm < targetRpm) {
+                            const inst = sampleDynoAtRpm(Math.max(engineSim.currentRpm, idle));
+                            const rotJ = Math.max(0.055, engineSim.rotInertia || (0.15 * inertiaMult));
+                            const rawDrive = (inst.torqueNm * 2.15 + inst.powerKw * 3.35) / rotJ;
+                            const thrGain = 0.18 + 0.82 * thr;
+                            const climbRate = Math.max(420, Math.min(22000, rawDrive)) * thrGain;
+                            const gap = targetRpm - engineSim.currentRpm;
+                            const rawStep = Math.min(gap, climbRate * dt);
+                            const step = thr >= 0.98 ? rawStep : Math.min(rawStep, gap * Math.min(1, dt * 11.0));
+                            engineSim.currentRpm += step;
+                        } else if (engineSim.currentRpm > targetRpm) {
+                            const decayFactor = Math.min(1, dt * 4.4 * invInertia);
+                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.14) * invInertia * 0.55;
+                            const expDrop = engineSim.currentRpm - (engineSim.currentRpm - targetRpm) * decayFactor;
+                            engineSim.currentRpm = Math.max(targetRpm, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                        }
+                        if (thr >= 0.98 && engineSim.currentRpm >= maxR * 0.985) {
+                            // Oscilação realista de corte de rotação proporcional ao volante e potência
+                            engineSim.currentRpm = maxR * (0.975 + 0.025 * Math.sin(now * 0.045));
+                        }
                     }
                 }
 
@@ -5763,6 +6094,7 @@
                 if (liveRpmValue) {
                     liveRpmValue.textContent = `${Math.round(engineSim.currentRpm)} RPM`;
                 }
+                updateRpmRedlineVisual(engineSim.currentRpm);
                 if (dynoLiveReadout) {
                     const lt = I18N[currentLang];
                     if (!engineSim.on && engineSim.currentRpm < 20) {
@@ -6323,17 +6655,92 @@
         }
 
         // Controlos de Ligar/Desligar e Acelerar
+        function updateRpmRedlineVisual(rpm) {
+            if (!telemetryRpmPill || !liveRpmValue) return;
+            const maxR = Math.max(1000, engineSim.maxRpm || 7500);
+            const ratio = engineSim.on && rpm > 20 ? Math.max(0, Math.min(1, rpm / maxR)) : 0;
+            const heat = smoothstep(0.35, 0.96, ratio);
+            const redline = smoothstep(0.84, 0.99, ratio);
+
+            if (heat <= 0.01) {
+                if (telemetryRpmPill.dataset.heated === '1') {
+                    telemetryRpmPill.dataset.heated = '0';
+                    telemetryRpmPill.style.background = '';
+                    telemetryRpmPill.style.borderColor = '';
+                    telemetryRpmPill.style.boxShadow = '';
+                    if (lblTelRpm) lblTelRpm.style.color = '';
+                    liveRpmValue.style.color = '';
+                    liveRpmValue.style.backgroundImage = '';
+                    liveRpmValue.style.webkitBackgroundClip = '';
+                    liveRpmValue.style.backgroundClip = '';
+                    liveRpmValue.style.webkitTextFillColor = '';
+                }
+                return;
+            }
+
+            telemetryRpmPill.dataset.heated = '1';
+            const pct = Math.round(ratio * 100);
+            const pMid = Math.max(10, pct);
+            const pTail = Math.min(100, pMid + 14);
+            const aStart = (0.06 + 0.16 * heat).toFixed(3);
+            const aFill = (0.14 + 0.34 * heat + 0.14 * redline).toFixed(3);
+            const aTail = (0.02 + 0.08 * heat).toFixed(3);
+            telemetryRpmPill.style.background = `linear-gradient(90deg, rgba(127, 29, 29, ${aStart}) 0%, rgba(220, 38, 38, ${aFill}) ${pMid}%, rgba(28, 10, 12, ${aTail}) ${pTail}%, rgba(255, 255, 255, 0.02) 100%)`;
+            telemetryRpmPill.style.borderColor = `rgba(239, 68, 68, ${(0.20 + 0.68 * heat).toFixed(3)})`;
+            telemetryRpmPill.style.boxShadow = `0 0 ${(6 + 16 * heat + 8 * redline).toFixed(1)}px rgba(239, 68, 68, ${(0.10 + 0.42 * heat + 0.18 * redline).toFixed(3)})`;
+
+            if (lblTelRpm) {
+                const lr = Math.min(255, Math.round(156 + 96 * heat));
+                const lg = Math.max(60, Math.round(163 - 68 * heat - 15 * redline));
+                const lb = Math.max(60, Math.round(175 - 78 * heat - 15 * redline));
+                lblTelRpm.style.color = `rgb(${lr}, ${lg}, ${lb})`;
+            }
+
+            const g1 = Math.max(70, Math.round(255 - 110 * heat - 35 * redline));
+            const r2 = Math.round(255 - 12 * redline);
+            const g2 = Math.max(45, Math.round(250 - 175 * heat - 25 * redline));
+            const r3 = Math.round(248 - 28 * redline);
+            const g3 = Math.max(30, Math.round(220 - 182 * heat));
+            liveRpmValue.style.color = `rgb(${r2}, ${g2}, ${g2})`;
+            liveRpmValue.style.backgroundImage = `linear-gradient(90deg, rgb(255, ${g1}, ${g1}) 0%, rgb(${r2}, ${g2}, ${g2}) 52%, rgb(${r3}, ${g3}, ${g3}) 100%)`;
+            liveRpmValue.style.webkitBackgroundClip = 'text';
+            liveRpmValue.style.backgroundClip = 'text';
+            liveRpmValue.style.webkitTextFillColor = 'transparent';
+        }
+
+        function setThrottlePercent(rawPct) {
+            const clamped = engineSim.on ? Math.max(0, Math.min(100, Math.round(Number(rawPct) || 0))) : 0;
+            engineSim.throttlePct = clamped;
+            if (rangeThrottle) {
+                rangeThrottle.value = String(clamped);
+                rangeThrottle.style.setProperty('--thr-pct', `${clamped}%`);
+                rangeThrottle.style.background = clamped > 0
+                    ? `linear-gradient(90deg, #fca5a5 0%, #ef4444 ${Math.max(12, clamped * 0.55)}%, #dc2626 ${clamped}%, rgba(255, 255, 255, 0.12) ${clamped}%, rgba(255, 255, 255, 0.12) 100%)`
+                    : 'rgba(255, 255, 255, 0.12)';
+            }
+            if (throttlePctValue) {
+                throttlePctValue.textContent = `${clamped}%`;
+            }
+            if (throttleControlWrap) {
+                throttleControlWrap.classList.toggle('ativo', engineSim.on && clamped > 0);
+            }
+        }
+
         function syncEnginePowerUI() {
             const t = I18N[currentLang];
             btnEnginePower.classList.toggle('ligado', engineSim.on);
             btnEnginePower.setAttribute('aria-pressed', engineSim.on ? 'true' : 'false');
             btnEnginePowerLabel.textContent = engineSim.on ? t.stopEngine : t.startEngine;
-            btnEngineThrottle.disabled = !engineSim.on;
+            if (rangeThrottle) rangeThrottle.disabled = !engineSim.on;
+            if (throttleControlWrap) throttleControlWrap.classList.toggle('disabled', !engineSim.on);
             if (!engineSim.on) {
-                engineSim.throttleHeld = false;
-                engineSim.blipTimer = 0;
-                btnEngineThrottle.classList.remove('acelerando');
+                engineSim.spaceHeld = false;
+                engineSim.preSpaceThrottlePct = 0;
+                setThrottlePercent(0);
+            } else {
+                setThrottlePercent(engineSim.throttlePct);
             }
+            updateRpmRedlineVisual(engineSim.currentRpm);
             drawDynoChart();
         }
 
@@ -6345,71 +6752,45 @@
             syncEnginePowerUI();
         });
 
-        let activeThrottlePointerId = null;
-        const startThrottle = e => {
-            if (!engineSim.on) return;
-            if (e && e.cancelable) e.preventDefault();
-            engineSim.throttleHeld = true;
-            engineSim.blipTimer = 0;
-            btnEngineThrottle.classList.add('acelerando');
-        };
-        const stopThrottle = () => {
-            activeThrottlePointerId = null;
-            engineSim.throttleHeld = false;
-            engineSim.blipTimer = 0;
-            btnEngineThrottle.classList.remove('acelerando');
+        const releaseSpaceThrottle = () => {
+            if (!engineSim.spaceHeld) return;
+            engineSim.spaceHeld = false;
+            setThrottlePercent(engineSim.on ? (engineSim.preSpaceThrottlePct || 0) : 0);
         };
 
-        btnEngineThrottle.addEventListener('pointerdown', e => {
-            if (e && e.pointerType === 'mouse' && e.button !== undefined && e.button !== 0) return;
-            activeThrottlePointerId = e && e.pointerId !== undefined ? e.pointerId : null;
-            if (activeThrottlePointerId !== null && typeof btnEngineThrottle.setPointerCapture === 'function') {
-                try { btnEngineThrottle.setPointerCapture(activeThrottlePointerId); } catch (_) {}
-            }
-            startThrottle(e);
-        });
-        btnEngineThrottle.addEventListener('pointerup', e => {
-            if (activeThrottlePointerId !== null && typeof btnEngineThrottle.releasePointerCapture === 'function') {
-                try { btnEngineThrottle.releasePointerCapture(activeThrottlePointerId); } catch (_) {}
-            }
-            stopThrottle();
-        });
-        btnEngineThrottle.addEventListener('pointercancel', stopThrottle);
-        btnEngineThrottle.addEventListener('lostpointercapture', stopThrottle);
-        btnEngineThrottle.addEventListener('pointerleave', e => {
-            if (!e || !(e.buttons & 1)) stopThrottle();
-        });
-        btnEngineThrottle.addEventListener('mouseup', stopThrottle);
-        btnEngineThrottle.addEventListener('touchend', stopThrottle);
-        btnEngineThrottle.addEventListener('touchcancel', stopThrottle);
-        btnEngineThrottle.addEventListener('blur', stopThrottle);
-        window.addEventListener('pointerup', stopThrottle);
-        window.addEventListener('pointercancel', stopThrottle);
-        window.addEventListener('mouseup', stopThrottle);
-        window.addEventListener('touchend', stopThrottle);
-        window.addEventListener('touchcancel', stopThrottle);
-        window.addEventListener('contextmenu', stopThrottle);
-        window.addEventListener('blur', stopThrottle);
+        if (rangeThrottle) {
+            const onThrottleInput = () => {
+                if (!engineSim.on) {
+                    setThrottlePercent(0);
+                    return;
+                }
+                engineSim.spaceHeld = false;
+                setThrottlePercent(rangeThrottle.value);
+            };
+            rangeThrottle.addEventListener('input', onThrottleInput);
+            rangeThrottle.addEventListener('change', onThrottleInput);
+        }
+
+        window.addEventListener('blur', releaseSpaceThrottle);
         if (typeof document.addEventListener === 'function') {
             document.addEventListener('visibilitychange', () => {
-                if (document.hidden) stopThrottle();
+                if (document.hidden) releaseSpaceThrottle();
             });
         }
-        btnEngineThrottle.addEventListener('keydown', e => {
-            if (e.code === 'Space' || e.code === 'Enter') startThrottle(e);
-        });
-        btnEngineThrottle.addEventListener('keyup', e => {
-            if (e.code === 'Space' || e.code === 'Enter') stopThrottle();
-        });
         window.addEventListener('keydown', e => {
             if (e.code !== 'Space' || !engineSim.on) return;
             const active = document.activeElement;
-            if (active && active !== document.body && active !== btnEngineThrottle && active !== motorCanvas && active.id !== 'motor-bg-stage') return;
-            startThrottle(e);
+            if (active && active !== document.body && active !== rangeThrottle && active !== motorCanvas && active.id !== 'motor-bg-stage') return;
+            if (e.cancelable) e.preventDefault();
+            if (!engineSim.spaceHeld) {
+                engineSim.preSpaceThrottlePct = engineSim.throttlePct || 0;
+                engineSim.spaceHeld = true;
+            }
+            setThrottlePercent(100);
         });
         window.addEventListener('keyup', e => {
             if (e.code !== 'Space') return;
-            if (engineSim.throttleHeld) stopThrottle();
+            releaseSpaceThrottle();
         });
 
         function readEnginePayload() {
@@ -6441,6 +6822,7 @@
                 final_drive: selectFinalDrive ? (parseFloat(selectFinalDrive.value) || 3.73) : 3.73,
                 exhaust_type: selectExhaustType ? selectExhaustType.value : 'OEM Catalisador',
                 exhaust_tips: selectExhaustTips ? selectExhaustTips.value : 'Dupla',
+                exhaust_junction: (EXHAUST_JUNCTION_FORMATS.includes(selectFormato.value || 'I') && selectExhaustJunction) ? selectExhaustJunction.value : 'Sem União',
                 exhaust_diameter: inputExhaustDiameter ? Math.max(35, Math.min(140, parseFloat(inputExhaustDiameter.value) || 63)) : 63,
                 formato: selectFormato.value || 'I',
                 v_angle: selectVAngle ? selectVAngle.value : '60',
@@ -6528,6 +6910,7 @@
                     finalDrive: p.final_drive,
                     exhaustType: p.exhaust_type,
                     exhaustTips: p.exhaust_tips,
+                    exhaustJunction: p.exhaust_junction,
                     exhaustDiameter: p.exhaust_diameter,
                     bore: p.bore,
                     stroke: p.stroke,
@@ -6604,7 +6987,7 @@
             const pisTVal = pisTol[payload.piston_material] || 0.0;
             const fwTVal = fwTol[payload.flywheel] !== undefined ? fwTol[payload.flywheel] : 0.0;
             const dmpTVal = dmpTol[payload.damper] !== undefined ? dmpTol[payload.damper] : 0.0;
-            const limiteVm = 25.0 + matTVal + valTVal + pisTVal + fwTVal + dmpTVal;
+            const limiteVm = Math.min(30.0, 25.0 + matTVal + valTVal + pisTVal + fwTVal + dmpTVal);
             const motivosAlerta = [];
             if (velMediaPistao > limiteVm) {
                 motivosAlerta.push(t.warnPiston(velMediaPistao.toFixed(1), limiteVm.toFixed(1)));
@@ -6655,6 +7038,7 @@
         if (selectFormato) {
             selectFormato.addEventListener('change', () => {
                 syncCylinderOptionsForFormat();
+                syncSubsystemUI();
                 atualizarDados();
             });
         }
@@ -6699,11 +7083,34 @@
                 gearboxSummaryInfo.textContent = `${gb} · ${spds}M · ${clShort}`;
             }
 
+            const fmtCur = selectFormato ? (selectFormato.value || 'I') : 'I';
+            const supportsJunc = EXHAUST_JUNCTION_FORMATS.includes(fmtCur);
+            if (selectExhaustJunction) {
+                if (supportsJunc) {
+                    if (selectExhaustJunction.disabled) {
+                        selectExhaustJunction.value = savedDualExhaustJunction || 'X-Pipe';
+                        selectExhaustJunction.disabled = false;
+                    } else if (selectExhaustJunction.value) {
+                        savedDualExhaustJunction = selectExhaustJunction.value;
+                    }
+                } else {
+                    if (!selectExhaustJunction.disabled && selectExhaustJunction.value) {
+                        savedDualExhaustJunction = selectExhaustJunction.value;
+                    }
+                    selectExhaustJunction.value = 'Sem União';
+                    selectExhaustJunction.disabled = true;
+                }
+            }
+
             const exType = selectExhaustType ? selectExhaustType.value : 'OEM Catalisador';
+            const exJunc = (supportsJunc && selectExhaustJunction) ? selectExhaustJunction.value : 'Sem União';
+            const juncShort = supportsJunc
+                ? ((t.exhJunctionShort && t.exhJunctionShort[exJunc]) ? t.exhJunctionShort[exJunc] : exJunc)
+                : t.exhSingleBankLabel;
             const exDiam = inputExhaustDiameter ? Math.max(35, Math.min(140, Math.round(parseFloat(inputExhaustDiameter.value) || 63))) : 63;
             const noteTxt = (t.exhFlowNotes && t.exhFlowNotes[exType]) ? t.exhFlowNotes[exType] : exType;
             if (exhaustSoundNote) {
-                exhaustSoundNote.textContent = `${noteTxt} · ${exDiam} mm`;
+                exhaustSoundNote.textContent = `${noteTxt} · ${juncShort} · ${exDiam} mm`;
             }
 
             if (btnTopEngine) {
@@ -6793,7 +7200,7 @@
             });
         }
 
-        [selectGearboxType, selectGearboxSpeeds, selectClutchType, selectFinalDrive, selectExhaustType, selectExhaustTips].forEach(el => {
+        [selectGearboxType, selectGearboxSpeeds, selectClutchType, selectFinalDrive, selectExhaustType, selectExhaustTips, selectExhaustJunction].forEach(el => {
             if (!el) return;
             el.addEventListener('change', () => {
                 syncSubsystemUI();
