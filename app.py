@@ -529,7 +529,7 @@ PERFIS_ADMISSAO = {
 def widget_dyno_modular(potencia_txt: str = "146 kW", torque_txt: str = "212 Nm") -> str:
     """
     Widget Dyno Curves: gráfico em tempo real das curvas de potência (kW / hp)
-    e binário (Nm / lb-ft), estimativas instantâneas e seletor de unidades.
+    e binário (Nm / lb-ft), leitura instantânea no cursor e seletor de unidades.
     """
     return f"""
                 <section class="widget-card widget-dyno" id="widget-dyno">
@@ -538,16 +538,6 @@ def widget_dyno_modular(potencia_txt: str = "146 kW", torque_txt: str = "212 Nm"
                         <div class="dyno-header-actions">
                             <span class="widget-badge" id="dyno-peak-badge">{potencia_txt} · {torque_txt}</span>
                             <button type="button" class="btn-3d-ctrl btn-unit-toggle" id="btn-unit-toggle" aria-pressed="false" title="Alternar unidades entre kW / Nm e hp / lb-ft">kW / Nm</button>
-                        </div>
-                    </div>
-                    <div class="dyno-est-stats">
-                        <div class="dyno-est-pill dyno-est-power">
-                            <span id="lbl-est-power">POTÊNCIA EST.</span>
-                            <strong id="dyno-est-power-val">{potencia_txt}</strong>
-                        </div>
-                        <div class="dyno-est-pill dyno-est-torque">
-                            <span id="lbl-est-torque">BINÁRIO EST.</span>
-                            <strong id="dyno-est-torque-val">{torque_txt}</strong>
                         </div>
                     </div>
                     <div class="dyno-legend-row">
@@ -789,147 +779,189 @@ def widget_3_modular(
 
     return f"""
         <section class="widget-card widget-configs config-bar-inferior" id="widget-3">
-            <div class="widget-header">
-                <span class="ficha-titulo" id="cfg-main-title">CONFIGURAÇÕES DO MOTOR</span>
+            <div class="widget-header config-bar-header">
+                <span class="ficha-titulo" id="cfg-page-title">1 · BLOCO &amp; GEOMETRIA</span>
                 <div class="config-header-right">
                     <div id="rpm-alerta-msg" class="rpm-alerta-msg">{texto_alerta}</div>
+                    <div class="page-nav" role="navigation" aria-label="Páginas do configurador">
+                        <button type="button" class="btn-3d-ctrl btn-page-arrow" id="btn-page-prev" title="Página anterior" aria-label="Página anterior" disabled>&#9664;</button>
+                        <div class="page-dots" id="page-dots">
+                            <button type="button" class="btn-page-num ativo" id="page-dot-0" data-page-target="0" aria-current="page">1</button>
+                            <button type="button" class="btn-page-num" id="page-dot-1" data-page-target="1">2</button>
+                            <button type="button" class="btn-page-num" id="page-dot-2" data-page-target="2">3</button>
+                            <button type="button" class="btn-page-num" id="page-dot-3" data-page-target="3">4</button>
+                        </div>
+                        <button type="button" class="btn-3d-ctrl btn-page-arrow" id="btn-page-next" title="Próxima página" aria-label="Próxima página">&#9654;</button>
+                    </div>
                     <span class="widget-badge badge-live" id="cfg-live-badge">TEMPO REAL</span>
                 </div>
             </div>
-            <div class="config-sections-grid">
-                <!-- Secção 1: Bloco & Geometria -->
-                <div class="config-section">
-                    <div class="config-section-title" id="sec-title-1">1 · BLOCO &amp; GEOMETRIA</div>
-                    <div class="grid-2-col">
-                        <div class="campo-grupo">
-                            <label for="select-formato" id="lbl-formato">FORMATO</label>
-                            <select id="select-formato" class="input-cyber">
-                                {options_fmt_html}
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-cilindros" id="lbl-cilindros">N.º DE CILINDROS</label>
-                            <select id="select-cilindros" class="input-cyber">
-                                {options_cyl_html}
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="input-bore" id="lbl-bore">DIÂMETRO (mm)</label>
-                            <input type="number" id="input-bore" class="input-cyber" value="86.0" step="0.5" min="20" max="200">
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="input-stroke" id="lbl-stroke">CURSO (mm)</label>
-                            <input type="number" id="input-stroke" class="input-cyber" value="86.0" step="0.5" min="20" max="200">
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-v-angle" id="lbl-v-angle">ÂNGULO EM V</label>
-                            <select id="select-v-angle" class="input-cyber" {"disabled" if formato_clean not in ("V", "W") else ""}>
-                                <option value="60" selected>60° (Apertado)</option>
-                                <option value="90">90° (Aberto)</option>
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-material" id="lbl-material">MATERIAL DO MOTOR</label>
-                            <select id="select-material" class="input-cyber">
-                                <option value="Alumínio" selected>Alumínio</option>
-                                <option value="Ferro Fundido">Ferro Fundido</option>
-                                <option value="Alumínio Billet">Alumínio Billet</option>
-                                <option value="Billet">Billet (Maquinado)</option>
-                                <option value="Forged">Forged (Forjado)</option>
-                                <option value="Forged Heavy">Forged Heavy</option>
-                                <option value="Magnésio">Magnésio</option>
-                                <option value="Titanium">Titânio</option>
-                                <option value="Titanium Billet">Titânio Billet</option>
-                                <option value="Titanium Forged">Titânio Forged</option>
-                            </select>
-                        </div>
-                        <div class="campo-grupo campo-largura-total">
-                            <label for="select-piston-material" id="lbl-piston-material">MATERIAL DO PISTÃO</label>
-                            <select id="select-piston-material" class="input-cyber">
-                                <option value="Alumínio" selected>Alumínio</option>
-                                <option value="Forged">Forged</option>
-                                <option value="Forged Heavy">Forged Heavy</option>
-                                <option value="Titânio">Titânio</option>
-                            </select>
-                        </div>
+
+            <!-- Página 1: Bloco & Geometria -->
+            <div class="config-page ativo" id="cfg-page-0" data-page="0">
+                <div class="config-page-grid grid-cols-7">
+                    <div class="campo-grupo">
+                        <label for="select-formato" id="lbl-formato">FORMATO</label>
+                        <select id="select-formato" class="input-cyber">
+                            {options_fmt_html}
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-cilindros" id="lbl-cilindros">N.º DE CILINDROS</label>
+                        <select id="select-cilindros" class="input-cyber">
+                            {options_cyl_html}
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-bore" id="lbl-bore">DIÂMETRO (mm)</label>
+                        <input type="number" id="input-bore" class="input-cyber" value="86.0" step="0.5" min="20" max="200">
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-stroke" id="lbl-stroke">CURSO (mm)</label>
+                        <input type="number" id="input-stroke" class="input-cyber" value="86.0" step="0.5" min="20" max="200">
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-v-angle" id="lbl-v-angle">ÂNGULO EM V</label>
+                        <select id="select-v-angle" class="input-cyber" {"disabled" if formato_clean not in ("V", "W") else ""}>
+                            <option value="60" selected>60° (Apertado)</option>
+                            <option value="90">90° (Aberto)</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-material" id="lbl-material">MATERIAL DO MOTOR</label>
+                        <select id="select-material" class="input-cyber">
+                            <option value="Alumínio" selected>Alumínio</option>
+                            <option value="Ferro Fundido">Ferro Fundido</option>
+                            <option value="Alumínio Billet">Alumínio Billet</option>
+                            <option value="Billet">Billet (Maquinado)</option>
+                            <option value="Forged">Forged (Forjado)</option>
+                            <option value="Forged Heavy">Forged Heavy</option>
+                            <option value="Magnésio">Magnésio</option>
+                            <option value="Titanium">Titânio</option>
+                            <option value="Titanium Billet">Titânio Billet</option>
+                            <option value="Titanium Forged">Titânio Forged</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-piston-material" id="lbl-piston-material">MATERIAL DO PISTÃO</label>
+                        <select id="select-piston-material" class="input-cyber">
+                            <option value="Alumínio" selected>Alumínio</option>
+                            <option value="Forged">Forged</option>
+                            <option value="Forged Heavy">Forged Heavy</option>
+                            <option value="Titânio">Titânio</option>
+                        </select>
                     </div>
                 </div>
+            </div>
 
-                <!-- Secção 2: Distribuição & Válvulas -->
-                <div class="config-section">
-                    <div class="config-section-title" id="sec-title-2">2 · DISTRIBUIÇÃO &amp; VÁLVULAS</div>
-                    <div class="grid-2-col">
-                        <div class="campo-grupo">
-                            <label for="select-camshaft" id="lbl-camshaft">CAMSHAFT</label>
-                            <select id="select-camshaft" class="input-cyber">
-                                <option value="DOHC" selected>DOHC (Dupla)</option>
-                                <option value="SOHC">SOHC (Simples)</option>
-                                <option value="OHV">OHV (Varetas)</option>
-                                <option value="Freevalve">Freevalve (Sem Cames)</option>
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-valve-type" id="lbl-valve-type">TIPO DE VÁLVULAS</label>
-                            <select id="select-valve-type" class="input-cyber">
-                                <option value="Molas" selected>Molas Helicoidais</option>
-                                <option value="VVT">VVT (Variável)</option>
-                                <option value="Desmodrómico">Desmodrómico</option>
-                                <option value="Pneumático">Pneumático</option>
-                                <option value="Freevalve">Freevalve (Eletropneumático)</option>
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-valves" id="lbl-valves">VÁLVULAS / CIL.</label>
-                            <select id="select-valves" class="input-cyber">
-                                <option value="4" selected>4 Válvulas</option>
-                                <option value="2">2 Válvulas</option>
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-ciclo" id="lbl-ciclo">CICLO (2T / 4T)</label>
-                            <select id="select-ciclo" class="input-cyber">
-                                <option value="4T" selected>4T</option>
-                                <option value="2T">2T</option>
-                            </select>
-                        </div>
+            <!-- Página 2: Distribuição & Válvulas -->
+            <div class="config-page" id="cfg-page-1" data-page="1">
+                <div class="config-page-grid grid-cols-4">
+                    <div class="campo-grupo">
+                        <label for="select-camshaft" id="lbl-camshaft">CAMSHAFT</label>
+                        <select id="select-camshaft" class="input-cyber">
+                            <option value="DOHC" selected>DOHC (Dupla)</option>
+                            <option value="SOHC">SOHC (Simples)</option>
+                            <option value="OHV">OHV (Varetas)</option>
+                            <option value="Freevalve">Freevalve (Sem Cames)</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-valve-type" id="lbl-valve-type">TIPO DE VÁLVULAS</label>
+                        <select id="select-valve-type" class="input-cyber">
+                            <option value="Molas" selected>Molas Helicoidais</option>
+                            <option value="VVT">VVT (Variável)</option>
+                            <option value="Desmodrómico">Desmodrómico</option>
+                            <option value="Pneumático">Pneumático</option>
+                            <option value="Freevalve">Freevalve (Eletropneumático)</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-valves" id="lbl-valves">VÁLVULAS / CIL.</label>
+                        <select id="select-valves" class="input-cyber">
+                            <option value="4" selected>4 Válvulas</option>
+                            <option value="2">2 Válvulas</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-ciclo" id="lbl-ciclo">CICLO (2T / 4T)</label>
+                        <select id="select-ciclo" class="input-cyber">
+                            <option value="4T" selected>4T</option>
+                            <option value="2T">2T</option>
+                        </select>
                     </div>
                 </div>
+            </div>
 
-                <!-- Secção 3: Admissão & Combustão -->
-                <div class="config-section">
-                    <div class="config-section-title" id="sec-title-3">3 · ADMISSÃO &amp; COMBUSTÃO</div>
-                    <div class="grid-2-col">
-                        <div class="campo-grupo">
-                            <label for="select-admissao" id="lbl-admissao">TIPO DE ADMISSÃO</label>
-                            <select id="select-admissao" class="input-cyber">
-                                {options_adm_html}
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="select-combustivel" id="lbl-combustivel">COMBUSTÍVEL</label>
-                            <select id="select-combustivel" class="input-cyber">
-                                <option value="Gasolina" selected>Gasolina</option>
-                                <option value="Etanol (E85)">Etanol (E85)</option>
-                                <option value="Metanol">Metanol</option>
-                                <option value="Diesel">Diesel</option>
-                            </select>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="input-turbo-boost" id="lbl-turbo-boost">PRESSÃO TURBO (bar)</label>
-                            <input type="number" id="input-turbo-boost" class="input-cyber" value="{turbo_init:.1f}" step="0.1" min="0.1" max="6.0" {"" if has_turbo else "disabled"}>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="input-sc-boost" id="lbl-sc-boost">PRESSÃO SUPERCHARGER (bar)</label>
-                            <input type="number" id="input-sc-boost" class="input-cyber" value="{sc_init:.1f}" step="0.1" min="0.1" max="4.0" {"" if has_sc else "disabled"}>
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="input-cr" id="lbl-cr">COMPRESSÃO (:1)</label>
-                            <input type="number" id="input-cr" class="input-cyber" value="10.5" step="0.1" min="4" max="25">
-                        </div>
-                        <div class="campo-grupo">
-                            <label for="input-rpm" id="lbl-rpm">ROTAÇÃO MÁX. (RPM)</label>
-                            <input type="number" id="input-rpm" class="{classe_rpm}" value="7500" step="100" min="1000" max="25000">
-                        </div>
+            <!-- Página 3: Admissão & Combustão -->
+            <div class="config-page" id="cfg-page-2" data-page="2">
+                <div class="config-page-grid grid-cols-6">
+                    <div class="campo-grupo">
+                        <label for="select-admissao" id="lbl-admissao">TIPO DE ADMISSÃO</label>
+                        <select id="select-admissao" class="input-cyber">
+                            {options_adm_html}
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="select-combustivel" id="lbl-combustivel">COMBUSTÍVEL</label>
+                        <select id="select-combustivel" class="input-cyber">
+                            <option value="Gasolina" selected>Gasolina</option>
+                            <option value="Etanol (E85)">Etanol (E85)</option>
+                            <option value="Metanol">Metanol</option>
+                            <option value="Diesel">Diesel</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-turbo-boost" id="lbl-turbo-boost">PRESSÃO TURBO (bar)</label>
+                        <input type="number" id="input-turbo-boost" class="input-cyber" value="{turbo_init:.1f}" step="0.1" min="0.1" max="6.0" {"" if has_turbo else "disabled"}>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-sc-boost" id="lbl-sc-boost">PRESSÃO SUPERCHARGER (bar)</label>
+                        <input type="number" id="input-sc-boost" class="input-cyber" value="{sc_init:.1f}" step="0.1" min="0.1" max="4.0" {"" if has_sc else "disabled"}>
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-cr" id="lbl-cr">COMPRESSÃO (:1)</label>
+                        <input type="number" id="input-cr" class="input-cyber" value="10.5" step="0.1" min="4" max="25">
+                    </div>
+                    <div class="campo-grupo">
+                        <label for="input-rpm" id="lbl-rpm">ROTAÇÃO MÁX. (RPM)</label>
+                        <input type="number" id="input-rpm" class="{classe_rpm}" value="7500" step="100" min="1000" max="25000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Página 4 (Sempre Última Página): Dados do Motor + Dyno Curves à direita -->
+            <div class="config-page" id="cfg-page-3" data-page="3">
+                <div class="summary-stats-grid">
+                    <div class="summary-pill summary-arch">
+                        <span id="lbl-sum-arch">ARQUITETURA</span>
+                        <strong id="sum-arch-val">{formato_clean}{num_cilindros} · DOHC · 4V</strong>
+                        <small id="sum-arch-sub">4T · Compressão 10.5:1</small>
+                    </div>
+                    <div class="summary-pill">
+                        <span id="lbl-sum-disp">CILINDRADA</span>
+                        <strong id="sum-disp-val">2.00 L</strong>
+                        <small id="sum-geo-sub">86×86 mm · 7500 RPM</small>
+                    </div>
+                    <div class="summary-pill dyno-est-power">
+                        <span id="lbl-est-power">POTÊNCIA EST.</span>
+                        <strong id="dyno-est-power-val">{dados_iniciais["potencia_kw"]}</strong>
+                        <small id="dyno-est-power-rpm">@ 7500 RPM</small>
+                    </div>
+                    <div class="summary-pill dyno-est-torque">
+                        <span id="lbl-est-torque">BINÁRIO EST.</span>
+                        <strong id="dyno-est-torque-val">{dados_iniciais["torque_nm"]}</strong>
+                        <small id="dyno-est-torque-rpm">@ 5200 RPM</small>
+                    </div>
+                    <div class="summary-pill">
+                        <span id="lbl-sum-adm">ADMISSÃO &amp; PRESSÃO</span>
+                        <strong id="sum-adm-val">{admissao}</strong>
+                        <small id="sum-adm-sub">{dados_iniciais["pressao_bar"]}</small>
+                    </div>
+                    <div class="summary-pill">
+                        <span id="lbl-sum-build">BLOCO &amp; COMBUSTÍVEL</span>
+                        <strong id="sum-build-val">Alumínio</strong>
+                        <small id="sum-build-sub">Pistão: Alumínio · Gasolina</small>
                     </div>
                 </div>
             </div>
@@ -1017,7 +1049,7 @@ def gerar_dashboard_html(
             flex-direction: column;
             align-items: stretch;
             justify-content: space-between;
-            padding: 14px 20px 18px;
+            padding: 10px 16px 12px;
             position: relative;
             overflow-x: hidden;
         }}
@@ -1037,7 +1069,7 @@ def gerar_dashboard_html(
             width: 100%;
             height: 100%;
             display: block;
-            opacity: 0.72;
+            opacity: 0.78;
             cursor: grab;
             touch-action: none;
             user-select: none;
@@ -1055,7 +1087,7 @@ def gerar_dashboard_html(
             max-width: none;
             display: flex;
             flex-direction: column;
-            gap: 14px;
+            gap: 8px;
             flex: 1;
             pointer-events: none;
         }}
@@ -1067,101 +1099,68 @@ def gerar_dashboard_html(
             pointer-events: auto;
         }}
 
-        /* Barra Superior */
+        /* Barra Superior Compacta (sem título/subtítulo para libertar visualização 3D) */
         .dashboard-topbar {{
-            width: 100%;
+            align-self: flex-end;
+            width: auto;
+            max-width: 100%;
             display: flex;
             flex-wrap: wrap;
-            justify-content: space-between;
+            justify-content: flex-end;
             align-items: center;
-            gap: 12px;
-            padding: 12px 18px;
+            gap: 8px;
+            padding: 7px 12px;
             background: var(--bg-elevated);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid var(--border-subtle);
-            border-left: 4px solid var(--accent-primary);
             border-radius: var(--radius-lg);
             box-shadow: var(--shadow-card);
-        }}
-
-        .topbar-brand {{
-            display: flex;
-            align-items: center;
-            gap: 13px;
-        }}
-
-        .topbar-icon {{
-            width: 38px;
-            height: 38px;
-            border-radius: 9px;
-            background: var(--accent-primary-soft);
-            border: 1px solid var(--accent-primary-border);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #cbd5e1;
-            flex-shrink: 0;
-        }}
-
-        .topbar-textos {{
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }}
-
-        .topbar-titulo {{
-            font-size: 1.08rem;
-            font-weight: 700;
-            letter-spacing: 0.03em;
-            color: var(--text-primary);
-            line-height: 1.15;
-            text-transform: uppercase;
-        }}
-
-        .topbar-subtitulo {{
-            font-family: var(--font-mono);
-            font-size: 0.66rem;
-            font-weight: 600;
-            letter-spacing: 0.10em;
-            color: var(--text-secondary);
-            text-transform: uppercase;
         }}
 
         .topbar-right {{
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 8px;
+            justify-content: flex-end;
+            gap: 7px;
         }}
 
         button {{
             transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease, opacity 0.15s ease;
         }}
 
-        /* Grelha principal: Esquerda ampla para o Motor 3D no background + Dyno encostado à direita */
+        /* Grelha principal: Esquerda ampla para o Motor 3D no background + Dyno encostado à direita na última página */
         .dashboard-container {{
             display: grid;
-            grid-template-columns: minmax(0, 1fr) clamp(370px, 26vw, 430px);
-            gap: 18px;
+            grid-template-columns: minmax(0, 1fr) clamp(360px, 26vw, 430px);
+            gap: 14px;
             width: 100%;
             flex: 1;
             align-items: stretch;
             pointer-events: none;
         }}
 
+        .dashboard-container.dyno-hidden {{
+            grid-template-columns: 1fr;
+        }}
+
+        .dashboard-container.dyno-hidden .panels-right-col {{
+            display: none;
+        }}
+
         .engine-foreground-col {{
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            gap: 10px;
-            min-height: 360px;
+            gap: 8px;
+            min-height: 280px;
             pointer-events: none;
         }}
 
         .engine-viewport-space {{
             flex: 1;
-            min-height: 210px;
+            min-height: 160px;
             pointer-events: none;
             display: flex;
             align-items: flex-start;
@@ -1190,12 +1189,12 @@ def gerar_dashboard_html(
             border: 1px solid var(--border-subtle);
             border-left: 4px solid var(--accent-primary);
             border-radius: var(--radius-lg);
-            padding: 13px 16px;
+            padding: 9px 13px;
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 10px;
             box-shadow: var(--shadow-card);
         }}
 
@@ -1203,7 +1202,7 @@ def gerar_dashboard_html(
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }}
 
         .btn-engine-ctrl {{
@@ -1211,9 +1210,9 @@ def gerar_dashboard_html(
             color: var(--text-primary);
             border: 1px solid var(--border-strong);
             border-radius: var(--radius-md);
-            padding: 10px 18px;
+            padding: 8px 14px;
             font-family: var(--font-sans);
-            font-size: 0.80rem;
+            font-size: 0.75rem;
             font-weight: 700;
             letter-spacing: 0.06em;
             text-transform: uppercase;
@@ -1221,7 +1220,7 @@ def gerar_dashboard_html(
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 7px;
             user-select: none;
         }}
 
@@ -1548,10 +1547,14 @@ def gerar_dashboard_html(
             font-weight: 600;
         }}
 
-        /* Widget Dyno Curves */
+        /* Widget Dyno Curves (exibido na última página à direita) */
+        .panels-right-col {{
+            align-self: end;
+        }}
+
         .widget-dyno {{
             justify-content: flex-start;
-            gap: 10px;
+            gap: 9px;
         }}
 
         .dyno-header-actions {{
@@ -1567,55 +1570,6 @@ def gerar_dashboard_html(
             letter-spacing: 0.04em;
             padding: 4px 9px;
             border-radius: 6px;
-        }}
-
-        .dyno-est-stats {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }}
-
-        .dyno-est-pill {{
-            background: var(--bg-surface);
-            border: 1px solid var(--border-subtle);
-            border-bottom: 2px solid var(--border-strong);
-            border-radius: var(--radius-md);
-            padding: 8px 11px;
-            display: flex;
-            align-items: baseline;
-            justify-content: space-between;
-            gap: 8px;
-        }}
-
-        .dyno-est-pill span {{
-            font-size: 0.62rem;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }}
-
-        .dyno-est-pill strong {{
-            font-family: var(--font-mono);
-            font-size: 0.96rem;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-        }}
-
-        .dyno-est-power {{
-            border-bottom-color: #ef4444;
-        }}
-
-        .dyno-est-power strong {{
-            color: #f87171;
-        }}
-
-        .dyno-est-torque {{
-            border-bottom-color: var(--accent-warm);
-        }}
-
-        .dyno-est-torque strong {{
-            color: var(--accent-warm);
         }}
 
         .dyno-legend-row {{
@@ -1657,7 +1611,7 @@ def gerar_dashboard_html(
         .dyno-canvas-wrap {{
             position: relative;
             width: 100%;
-            height: 198px;
+            height: 224px;
             background: rgba(7, 9, 13, 0.85);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
@@ -1673,48 +1627,211 @@ def gerar_dashboard_html(
             cursor: crosshair;
         }}
 
-        /* Barra Inferior de Largura Total: Configurações do Motor em 3 Secções */
+        /* Barra Inferior Compacta com Paginação por Setas */
         .config-bar-inferior {{
             width: 100%;
             border-top: 3px solid var(--accent-primary);
+            padding: 9px 14px 10px;
+            gap: 8px;
+        }}
+
+        .config-bar-inferior .config-bar-header {{
+            padding-bottom: 6px;
+        }}
+
+        .config-bar-inferior .campo-grupo {{
+            gap: 3px;
+        }}
+
+        .config-bar-inferior .campo-grupo label {{
+            font-size: 0.60rem;
+        }}
+
+        .config-bar-inferior .input-cyber {{
+            padding: 6px 8px;
+            font-size: 0.76rem;
         }}
 
         .config-header-right {{
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }}
 
-        .config-sections-grid {{
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
-            width: 100%;
-        }}
-
-        .config-section {{
-            background: linear-gradient(180deg, rgba(20, 23, 31, 0.72) 0%, rgba(12, 14, 20, 0.78) 100%);
+        .page-nav {{
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(9, 11, 16, 0.72);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-md);
-            padding: 11px 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 9px;
+            border-radius: 8px;
+            padding: 2px 4px;
         }}
 
-        .config-section-title {{
+        .btn-page-arrow {{
+            padding: 3px 8px;
+            font-size: 0.68rem;
+            line-height: 1.2;
+            border-radius: 5px;
+        }}
+
+        .btn-page-arrow:disabled {{
+            opacity: 0.32;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }}
+
+        .page-dots {{
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }}
+
+        .btn-page-num {{
+            min-width: 22px;
+            height: 22px;
+            padding: 0 5px;
+            border-radius: 5px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-secondary);
             font-family: var(--font-mono);
             font-size: 0.68rem;
             font-weight: 700;
-            letter-spacing: 0.09em;
-            color: var(--accent-teal);
+            cursor: pointer;
+        }}
+
+        .btn-page-num:hover {{
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.08);
+        }}
+
+        .btn-page-num.ativo {{
+            background: rgba(110, 168, 166, 0.22);
+            border-color: rgba(110, 168, 166, 0.55);
+            color: #e2e8f0;
+        }}
+
+        .config-page {{
+            display: none;
+            width: 100%;
+        }}
+
+        .config-page.ativo {{
+            display: block;
+        }}
+
+        .config-page-grid {{
+            display: grid;
+            gap: 8px;
+            width: 100%;
+            align-items: end;
+        }}
+
+        .config-page-grid.grid-cols-7 {{
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+        }}
+
+        .config-page-grid.grid-cols-6 {{
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+        }}
+
+        .config-page-grid.grid-cols-4 {{
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }}
+
+        /* Última página: Cartões de Resumo do Motor (Arquitetura, Potência Est., Binário Est., etc.) */
+        .summary-stats-grid {{
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 8px;
+            width: 100%;
+        }}
+
+        .summary-pill {{
+            background: linear-gradient(180deg, rgba(22, 26, 36, 0.85) 0%, rgba(12, 15, 22, 0.90) 100%);
+            border: 1px solid var(--border-subtle);
+            border-bottom: 2px solid var(--border-strong);
+            border-radius: var(--radius-md);
+            padding: 7px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+        }}
+
+        .summary-pill span {{
+            font-size: 0.58rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
             text-transform: uppercase;
-            padding-bottom: 6px;
-            border-bottom: 1px solid var(--border-subtle);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+
+        .summary-pill strong {{
+            font-family: var(--font-mono);
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+
+        .summary-pill small {{
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+
+        .summary-pill.summary-arch {{
+            border-bottom-color: var(--accent-teal);
+        }}
+
+        .summary-pill.summary-arch strong {{
+            color: #99f6e4;
+        }}
+
+        .summary-pill.dyno-est-power {{
+            border-bottom-color: #ef4444;
+        }}
+
+        .summary-pill.dyno-est-power strong {{
+            color: #f87171;
+        }}
+
+        .summary-pill.dyno-est-torque {{
+            border-bottom-color: var(--accent-warm);
+        }}
+
+        .summary-pill.dyno-est-torque strong {{
+            color: var(--accent-warm);
+        }}
+
+        @media (max-width: 1220px) {{
+            .config-page-grid.grid-cols-7 {{
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }}
+            .config-page-grid.grid-cols-6,
+            .summary-stats-grid {{
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }}
         }}
 
         @media (max-width: 1020px) {{
+            .dashboard-topbar {{
+                align-self: stretch;
+                justify-content: center;
+            }}
             .dashboard-container {{
                 grid-template-columns: 1fr;
             }}
@@ -1722,25 +1839,28 @@ def gerar_dashboard_html(
                 align-self: stretch;
             }}
             .engine-foreground-col {{
-                min-height: 300px;
+                min-height: 240px;
             }}
             .engine-viewport-space {{
-                min-height: 200px;
-            }}
-            .config-sections-grid {{
-                grid-template-columns: 1fr;
+                min-height: 150px;
             }}
         }}
 
         @media (max-width: 680px) {{
             body {{
-                padding: 12px 10px 18px;
+                padding: 10px 10px 14px;
             }}
             .widget-card {{
-                padding: 14px;
+                padding: 10px 12px;
             }}
             .engine-action-dock {{
-                padding: 12px;
+                padding: 10px 12px;
+            }}
+            .config-page-grid.grid-cols-7,
+            .config-page-grid.grid-cols-6,
+            .config-page-grid.grid-cols-4,
+            .summary-stats-grid {{
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }}
             .dyno-canvas-wrap {{
                 height: 195px;
@@ -1756,19 +1876,6 @@ def gerar_dashboard_html(
 
     <div class="ui-layer">
         <header class="dashboard-topbar">
-            <div class="topbar-brand">
-                <div class="topbar-icon" aria-hidden="true">
-                    <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M12 2v4M4.9 6.2l2.6 2.6M19.1 6.2l-2.6 2.6M3 13h3M18 13h3" />
-                        <path d="M5 19h14a2 2 0 0 0 2-2v-2a9 9 0 1 0-18 0v2a2 2 0 0 0 2 2Z" />
-                        <path d="M12 14l4-4" />
-                    </svg>
-                </div>
-                <div class="topbar-textos">
-                    <span class="topbar-titulo">Custom Engine</span>
-                    <span class="topbar-subtitulo" id="topbar-subtitle">SIMULADOR 3D // Dinamómetro &amp; Engenharia</span>
-                </div>
-            </div>
             <div class="topbar-right">
                 <span class="widget-badge badge-live" id="motor-3d-badge">{formato_clean}{num_cilindros} · {adm_clean.upper()}</span>
                 <button type="button" class="btn-3d-ctrl ativo" id="btn-3d-cutaway" aria-pressed="true" title="Alternar vista de corte transparente">Vista Corte</button>
@@ -1778,19 +1885,19 @@ def gerar_dashboard_html(
             </div>
         </header>
 
-        <main class="dashboard-container">
+        <main class="dashboard-container dyno-hidden" id="dashboard-main">
             <!-- Lado Esquerdo: Área aberta para visualizar/mover o motor no background + Botões Ligar/Desligar e Acelerar -->
 
 {w1}
-            <!-- Lado Direito: Dyno Curves -->
-            <div class="panels-right-col">
+            <!-- Lado Direito: Dyno Curves (visível apenas na última página) -->
+            <div class="panels-right-col" id="panels-right-col">
                 <!-- Dyno Curves (Potência e Binário) -->
 
 {w_dyno}
             </div>
         </main>
 
-        <!-- Barra inferior em 3 secções: Todas as Configurações do Motor -->
+        <!-- Barra inferior compacta paginada (1: Bloco, 2: Válvulas, 3: Admissão, 4: Dados + Dyno) -->
 
 {w3}
     </div>
@@ -1833,16 +1940,31 @@ def gerar_dashboard_html(
         const dynoPeakBadge = document.getElementById('dyno-peak-badge');
         const dynoLiveReadout = document.getElementById('dyno-live-readout');
         const btnUnitToggle = document.getElementById('btn-unit-toggle');
+        const dynsRightCol = document.getElementById('panels-right-col');
+        const dashboardMain = document.getElementById('dashboard-main');
+        const cfgPageTitle = document.getElementById('cfg-page-title');
+        const btnPagePrev = document.getElementById('btn-page-prev');
+        const btnPageNext = document.getElementById('btn-page-next');
         const dynoEstPowerVal = document.getElementById('dyno-est-power-val');
         const dynoEstTorqueVal = document.getElementById('dyno-est-torque-val');
+        const dynoEstPowerRpm = document.getElementById('dyno-est-power-rpm');
+        const dynoEstTorqueRpm = document.getElementById('dyno-est-torque-rpm');
+        const sumArchVal = document.getElementById('sum-arch-val');
+        const sumArchSub = document.getElementById('sum-arch-sub');
+        const sumDispVal = document.getElementById('sum-disp-val');
+        const sumGeoSub = document.getElementById('sum-geo-sub');
+        const sumAdmVal = document.getElementById('sum-adm-val');
+        const sumAdmSub = document.getElementById('sum-adm-sub');
+        const sumBuildVal = document.getElementById('sum-build-val');
+        const sumBuildSub = document.getElementById('sum-build-sub');
         const dynoLegendPower = document.getElementById('dyno-legend-power');
         const dynoLegendTorque = document.getElementById('dyno-legend-torque');
         let motor3D = null;
+        let currentPageIdx = 0;
 
         let currentLang = 'pt';
         const I18N = {{
             pt: {{
-                topbarSubtitle: 'SIMULADOR 3D // Dinamómetro & Engenharia',
                 cutawayOn: 'Vista Corte',
                 cutawayOff: 'Bloco Sólido',
                 cutawayTitle: 'Alternar vista de corte transparente',
@@ -1871,11 +1993,23 @@ def gerar_dashboard_html(
                 torqueWord: 'Binário',
                 engineOff: 'Motor desligado',
                 cursorPrefix: 'Cursor',
-                cfgMain: 'CONFIGURAÇÕES DO MOTOR',
                 liveBadge: 'TEMPO REAL',
-                sec1: '1 · BLOCO & GEOMETRIA',
-                sec2: '2 · DISTRIBUIÇÃO & VÁLVULAS',
-                sec3: '3 · ADMISSÃO & COMBUSTÃO',
+                pageTitles: [
+                    '1 · BLOCO & GEOMETRIA',
+                    '2 · DISTRIBUIÇÃO & VÁLVULAS',
+                    '3 · ADMISSÃO & COMBUSTÃO',
+                    '4 · DADOS DO MOTOR & DYNO'
+                ],
+                pagePrevTitle: 'Página anterior',
+                pageNextTitle: 'Próxima página',
+                lblSumArch: 'ARQUITETURA',
+                lblSumDisp: 'CILINDRADA',
+                lblSumAdm: 'ADMISSÃO & PRESSÃO',
+                lblSumBuild: 'BLOCO & COMBUSTÍVEL',
+                rotaryWord: 'Rotativo',
+                compShort: 'Comp.',
+                pistonWord: 'Pistão',
+                rotorMatWord: 'Rotor',
                 lblFormato: 'FORMATO',
                 lblCilindros: 'N.º DE CILINDROS',
                 lblRotors: 'N.º DE ROTORES',
@@ -1926,7 +2060,6 @@ def gerar_dashboard_html(
                 warnCr: lim => `Taxa de compressão > ${{lim}}:1`
             }},
             en: {{
-                topbarSubtitle: '3D SIMULATOR // Dyno & Engineering',
                 cutawayOn: 'Cutaway View',
                 cutawayOff: 'Solid Block',
                 cutawayTitle: 'Toggle transparent cutaway view',
@@ -1955,11 +2088,23 @@ def gerar_dashboard_html(
                 torqueWord: 'Torque',
                 engineOff: 'Engine off',
                 cursorPrefix: 'Cursor',
-                cfgMain: 'ENGINE CONFIGURATION',
                 liveBadge: 'REAL TIME',
-                sec1: '1 · BLOCK & GEOMETRY',
-                sec2: '2 · VALVETRAIN & CYCLE',
-                sec3: '3 · INDUCTION & COMBUSTION',
+                pageTitles: [
+                    '1 · BLOCK & GEOMETRY',
+                    '2 · VALVETRAIN & CYCLE',
+                    '3 · INDUCTION & COMBUSTION',
+                    '4 · ENGINE DATA & DYNO'
+                ],
+                pagePrevTitle: 'Previous page',
+                pageNextTitle: 'Next page',
+                lblSumArch: 'ARCHITECTURE',
+                lblSumDisp: 'DISPLACEMENT',
+                lblSumAdm: 'INDUCTION & BOOST',
+                lblSumBuild: 'MATERIALS & FUEL',
+                rotaryWord: 'Rotary',
+                compShort: 'CR',
+                pistonWord: 'Piston',
+                rotorMatWord: 'Rotor',
                 lblFormato: 'ENGINE FORMAT',
                 lblCilindros: 'CYLINDERS',
                 lblRotors: 'ROTORS',
@@ -2066,6 +2211,8 @@ def gerar_dashboard_html(
             }}
             if (dynoEstPowerVal) dynoEstPowerVal.textContent = pStr;
             if (dynoEstTorqueVal) dynoEstTorqueVal.textContent = tStr;
+            if (dynoEstPowerRpm) dynoEstPowerRpm.textContent = `@ ${{engineSim.peakPowerRpm}} RPM`;
+            if (dynoEstTorqueRpm) dynoEstTorqueRpm.textContent = `@ ${{engineSim.peakTorqueRpm}} RPM`;
             if (dynoPeakBadge) dynoPeakBadge.textContent = `${{pStr}} · ${{tStr}}`;
             const t = I18N[currentLang];
             if (dynoLegendPower) dynoLegendPower.textContent = `${{t.powerWord}} (${{powerUnitLabel()}})`;
@@ -2160,11 +2307,38 @@ def gerar_dashboard_html(
             }}
         }}
 
+        function setActivePage(pageIdx) {{
+            const clamped = Math.max(0, Math.min(3, pageIdx | 0));
+            currentPageIdx = clamped;
+            const t = I18N[currentLang];
+            const isLast = clamped === 3;
+            for (let i = 0; i < 4; i++) {{
+                const pg = document.getElementById(`cfg-page-${{i}}`);
+                const dot = document.getElementById(`page-dot-${{i}}`);
+                if (pg) pg.classList.toggle('ativo', i === clamped);
+                if (dot) {{
+                    dot.classList.toggle('ativo', i === clamped);
+                    dot.setAttribute('aria-current', i === clamped ? 'page' : 'false');
+                }}
+            }}
+            if (cfgPageTitle && t.pageTitles && t.pageTitles[clamped]) {{
+                cfgPageTitle.textContent = t.pageTitles[clamped];
+            }}
+            if (btnPagePrev) btnPagePrev.disabled = (clamped === 0);
+            if (btnPageNext) btnPageNext.disabled = isLast;
+            if (dashboardMain) dashboardMain.classList.toggle('dyno-hidden', !isLast);
+            if (motor3D && typeof motor3D.setRightPanelVisible === 'function') {{
+                motor3D.setRightPanelVisible(isLast);
+            }}
+            if (isLast) {{
+                drawDynoChart();
+            }}
+        }}
+
         function applyLanguage() {{
             const t = I18N[currentLang];
             document.documentElement.lang = currentLang;
             const setTxt = (id, val) => {{ const el = document.getElementById(id); if (el) el.textContent = val; }};
-            setTxt('topbar-subtitle', t.topbarSubtitle);
             setTxt('btn-3d-autorotate', t.autoRotate);
             setTxt('btn-3d-reset', t.resetView);
             setTxt('motor-3d-hint', t.hint);
@@ -2174,11 +2348,22 @@ def gerar_dashboard_html(
             setTxt('dyno-title', t.dynoTitle);
             setTxt('lbl-est-power', t.estPower);
             setTxt('lbl-est-torque', t.estTorque);
-            setTxt('cfg-main-title', t.cfgMain);
             setTxt('cfg-live-badge', t.liveBadge);
-            setTxt('sec-title-1', t.sec1);
-            setTxt('sec-title-2', t.sec2);
-            setTxt('sec-title-3', t.sec3);
+            setTxt('lbl-sum-arch', t.lblSumArch);
+            setTxt('lbl-sum-disp', t.lblSumDisp);
+            setTxt('lbl-sum-adm', t.lblSumAdm);
+            setTxt('lbl-sum-build', t.lblSumBuild);
+            if (cfgPageTitle && t.pageTitles && t.pageTitles[currentPageIdx]) {{
+                cfgPageTitle.textContent = t.pageTitles[currentPageIdx];
+            }}
+            if (btnPagePrev) {{
+                btnPagePrev.title = t.pagePrevTitle;
+                btnPagePrev.setAttribute('aria-label', t.pagePrevTitle);
+            }}
+            if (btnPageNext) {{
+                btnPageNext.title = t.pageNextTitle;
+                btnPageNext.setAttribute('aria-label', t.pageNextTitle);
+            }}
             setTxt('lbl-formato', t.lblFormato);
             setTxt('lbl-bore', t.lblBore);
             setTxt('lbl-stroke', t.lblStroke);
@@ -2666,8 +2851,8 @@ def gerar_dashboard_html(
                     yaw: -0.66,
                     pitch: 0.40,
                     zoom: 1.0,
-                    panX: isDesktop ? 0.78 : 0.0,
-                    panY: isDesktop ? -0.10 : 0.10
+                    panX: 0.0,
+                    panY: isDesktop ? 0.04 : 0.12
                 }};
                 this.cam = {{ ...this.defaultCam }};
                 this.targetCam = {{ ...this.defaultCam }};
@@ -4559,10 +4744,25 @@ def gerar_dashboard_html(
                 }}
             }}
 
+            setRightPanelVisible(visible) {{
+                const isDesktop = window.innerWidth > 1020;
+                const prevPanX = this.defaultCam.panX;
+                const nextPanX = (visible && isDesktop) ? 0.78 : 0.0;
+                const nextPanY = isDesktop ? (visible ? -0.05 : 0.04) : 0.12;
+                this.defaultCam.panX = nextPanX;
+                this.defaultCam.panY = nextPanY;
+                if (Math.abs(this.targetCam.panX - prevPanX) < 0.12) {{
+                    this.targetCam.panX = nextPanX;
+                    this.targetCam.panY = nextPanY;
+                }}
+            }}
+
             resetView() {{
                 const isDesktop = window.innerWidth > 1020;
-                this.defaultCam.panX = isDesktop ? 0.78 : 0.0;
-                this.defaultCam.panY = isDesktop ? -0.10 : 0.10;
+                const dyEl = document.getElementById('dashboard-main');
+                const rightVis = dyEl ? !dyEl.classList.contains('dyno-hidden') : false;
+                this.defaultCam.panX = (rightVis && isDesktop) ? 0.78 : 0.0;
+                this.defaultCam.panY = isDesktop ? (rightVis ? -0.05 : 0.04) : 0.12;
                 this.targetCam = {{ ...this.defaultCam }};
             }}
 
@@ -5122,6 +5322,35 @@ def gerar_dashboard_html(
                     ? `WANKEL · ${{litros}} L · ${{p.cilindros}}R`
                     : `${{p.formato}} · ${{litros}} L · ${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm`;
             }}
+
+            const matLabel = (t.matOpts && t.matOpts[p.material]) ? t.matOpts[p.material] : p.material;
+            const pMatLabel = (t.pistonMatOpts && t.pistonMatOpts[p.piston_material]) ? t.pistonMatOpts[p.piston_material] : p.piston_material;
+            const fuelLabel = (t.fuelOpts && t.fuelOpts[p.combustivel]) ? t.fuelOpts[p.combustivel] : p.combustivel;
+            if (sumArchVal) {{
+                if (isWankel) {{
+                    sumArchVal.textContent = `${{fmtDisplay}} · ${{t.rotaryWord}}`;
+                }} else {{
+                    const vtShort = p.camshaft === 'Freevalve' ? 'Freevalve' : `${{p.camshaft}} · ${{p.num_valvulas}}V`;
+                    sumArchVal.textContent = `${{fmtDisplay}} · ${{vtShort}}`;
+                }}
+            }}
+            if (sumArchSub) {{
+                sumArchSub.textContent = `${{p.ciclo}} · ${{t.compShort}} ${{p.compression_ratio.toFixed(1)}}:1${{!isWankel && p.camshaft !== 'Freevalve' ? ` · ${{p.valve_type}}` : ''}}`;
+            }}
+            if (sumDispVal) sumDispVal.textContent = `${{litros}} L`;
+            if (sumGeoSub) sumGeoSub.textContent = `${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm · ${{p.max_rpm}} RPM`;
+            if (sumAdmVal) sumAdmVal.textContent = admLabel;
+            if (sumAdmSub) {{
+                if (p.admissao === 'Atmosférico') sumAdmSub.textContent = '0.0 bar';
+                else if (p.admissao === 'Supercompressor') sumAdmSub.textContent = `+${{p.sc_bar.toFixed(1)}} bar`;
+                else if (p.admissao === 'Twincharge') sumAdmSub.textContent = `+${{p.turbo_bar.toFixed(1)}} / +${{p.sc_bar.toFixed(1)}} bar`;
+                else sumAdmSub.textContent = `+${{p.turbo_bar.toFixed(1)}} bar`;
+            }}
+            if (sumBuildVal) sumBuildVal.textContent = matLabel;
+            if (sumBuildSub) {{
+                const pWord = isWankel ? t.rotorMatWord : t.pistonWord;
+                sumBuildSub.textContent = `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}}`;
+            }}
             if (motor3D) {{
                 motor3D.setConfig({{
                     cilindros: p.cilindros,
@@ -5282,10 +5511,22 @@ def gerar_dashboard_html(
             }});
         }});
 
+        if (btnPagePrev) {{
+            btnPagePrev.addEventListener('click', () => setActivePage(currentPageIdx - 1));
+        }}
+        if (btnPageNext) {{
+            btnPageNext.addEventListener('click', () => setActivePage(currentPageIdx + 1));
+        }}
+        for (let pi = 0; pi < 4; pi++) {{
+            const dotBtn = document.getElementById(`page-dot-${{pi}}`);
+            if (dotBtn) dotBtn.addEventListener('click', () => setActivePage(pi));
+        }}
+
         window.addEventListener('resize', () => drawDynoChart());
         syncCylinderOptionsForFormat();
         syncBoostControls(false);
         syncEnginePowerUI();
+        setActivePage(0);
         atualizarMotor3D();
         atualizarWidget3();
     </script>
