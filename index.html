@@ -1282,6 +1282,7 @@
                                 <option value="Sequencial">Sequencial (Dog-Box)</option>
                                 <option value="DCT">Dupla Embraiagem (DCT)</option>
                                 <option value="Automática">Automática (Epicíclica)</option>
+                                <option value="E-CVT">E-CVT (Híbrido Planetário)</option>
                             </select>
                         </div>
                         <div class="campo-grupo">
@@ -1386,6 +1387,8 @@
             <!-- Lado Esquerdo: Área aberta para visualizar/mover o motor no background + Botões Ligar/Desligar e Acelerar -->
 
 
+
+
             <div class="engine-foreground-col">
                 <div class="engine-viewport-space">
                     <div class="motor-3d-hint" id="motor-3d-hint">Arrastar fundo: rodar · Scroll: zoom · Botão dir.: mover</div>
@@ -1430,6 +1433,8 @@
                 <!-- Dyno Curves (Potência e Binário) -->
 
 
+
+
                 <section class="widget-card widget-dyno" id="widget-dyno">
                     <div class="widget-header">
                         <span class="ficha-titulo" id="dyno-title">DYNO CURVES</span>
@@ -1450,10 +1455,13 @@
                     </div>
                 </section>
     
+    
             </div>
         </main>
 
         <!-- Barra inferior compacta paginada (1: Bloco, 2: Válvulas, 3: Admissão, 4: Dados + Dyno) -->
+
+
 
 
         <section class="widget-card widget-configs config-bar-inferior" id="widget-3">
@@ -1718,6 +1726,7 @@
             </div>
         </section>
     
+    
     </div>
 
     <script>
@@ -1767,6 +1776,11 @@
         const selectExhaustJunction = document.getElementById('select-exhaust-junction');
         const EXHAUST_JUNCTION_FORMATS = ['B', 'VR', 'V', 'W'];
         let savedDualExhaustJunction = 'X-Pipe';
+        const FOUR_STROKE_VALVE_TYPES = ['Molas', 'VVT', 'Desmodrómico', 'Pneumático', 'Freevalve'];
+        let savedPistonCycle = '4T';
+        let saved4tCamshaft = 'DOHC';
+        let saved4tValveType = 'Molas';
+        let saved4tNumValves = '4';
         const rangeExhaustDiameter = document.getElementById('range-exhaust-diameter');
         const inputExhaustDiameter = document.getElementById('input-exhaust-diameter');
         const exhaustSoundNote = document.getElementById('exhaust-sound-note');
@@ -1883,8 +1897,12 @@
                     'Gated Manual': 'Manual Gated (Grelha H)',
                     'Sequencial': 'Sequencial (Dog-Box)',
                     'DCT': 'Dupla Embraiagem (DCT)',
-                    'Automática': 'Automática (Epicíclica)'
+                    'Automática': 'Automática (Epicíclica)',
+                    'E-CVT': 'E-CVT (Híbrido Planetário)'
                 },
+                gbSteplessLabel: 'Contínua',
+                gbSteplessShort: 'Cont.',
+                gbSpeedsEcvtTitle: 'E-CVT planetária tem variação contínua (sem mudanças fixas)',
                 gbSpeedOpts: {
                     '4': '4 Mudanças',
                     '5': '5 Mudanças',
@@ -2010,7 +2028,10 @@
                     'Titânio': 'Titânio'
                 },
                 camOpts: { 'DOHC': 'DOHC (Dupla)', 'SOHC': 'SOHC (Simples)', 'OHV': 'OHV (Varetas)', 'Freevalve': 'Freevalve (Sem Cames)' },
-                vTypeOpts: { 'Molas': 'Molas Helicoidais', 'VVT': 'VVT (Variável)', 'Desmodrómico': 'Desmodrómico', 'Pneumático': 'Pneumático', 'Freevalve': 'Freevalve (Eletropneumático)' },
+                vTypeOpts: { 'Molas': 'Molas Helicoidais', 'VVT': 'VVT (Variável)', 'Desmodrómico': 'Desmodrómico', 'Pneumático': 'Pneumático', 'Freevalve': 'Freevalve (Eletropneumático)', 'Reed Valve': 'Reed Valve (Lâminas)' },
+                wankelCycleTitle: 'Motores Wankel operam sempre em ciclo de 4 tempos (4T)',
+                reedLockedTitle: 'Motores de 2 tempos utilizam exclusivamente admissão por Reed Valve',
+                twoStrokeNoCamTitle: 'Motores 2T com Reed Valve não utilizam árvore de cames nem válvulas de cabeça',
                 flywheelOpts: {
                     'Monomassa Aço': 'Monomassa (Aço)',
                     'Dupla Massa': 'Dupla Massa (DMF)',
@@ -2149,8 +2170,12 @@
                     'Gated Manual': 'Gated Manual (Open-Gate H)',
                     'Sequencial': 'Sequential (Dog-Box)',
                     'DCT': 'Dual-Clutch (DCT)',
-                    'Automática': 'Automatic (Planetary)'
+                    'Automática': 'Automatic (Planetary)',
+                    'E-CVT': 'E-CVT (Planetary Hybrid)'
                 },
+                gbSteplessLabel: 'Stepless',
+                gbSteplessShort: 'Stepless',
+                gbSpeedsEcvtTitle: 'Planetary E-CVT is continuously variable (no fixed gears)',
                 gbSpeedOpts: {
                     '4': '4-Speed',
                     '5': '5-Speed',
@@ -2276,7 +2301,10 @@
                     'Titânio': 'Titanium'
                 },
                 camOpts: { 'DOHC': 'DOHC (Dual Cam)', 'SOHC': 'SOHC (Single Cam)', 'OHV': 'OHV (Pushrod)', 'Freevalve': 'Freevalve (Camless)' },
-                vTypeOpts: { 'Molas': 'Coil Springs', 'VVT': 'VVT (Variable)', 'Desmodrómico': 'Desmodromic', 'Pneumático': 'Pneumatic', 'Freevalve': 'Freevalve (Electro-Pneumatic)' },
+                vTypeOpts: { 'Molas': 'Coil Springs', 'VVT': 'VVT (Variable)', 'Desmodrómico': 'Desmodromic', 'Pneumático': 'Pneumatic', 'Freevalve': 'Freevalve (Electro-Pneumatic)', 'Reed Valve': 'Reed Valve' },
+                wankelCycleTitle: 'Wankel rotary engines always operate on a 4-stroke cycle (4T)',
+                reedLockedTitle: '2-stroke engines use fixed Reed Valve induction (4-stroke valves removed)',
+                twoStrokeNoCamTitle: '2-stroke Reed Valve engines do not use camshafts or poppet valves',
                 flywheelOpts: {
                     'Monomassa Aço': 'Single-Mass (Steel)',
                     'Dupla Massa': 'Dual-Mass (DMF)',
@@ -2452,6 +2480,101 @@
             'Twincharge': { turbo: 1.5, sc: 0.8 }
         };
 
+        const FORMAT_CYCLE_LIMITS = {
+            'I': ['4T', '2T'],
+            'VR': ['4T', '2T'],
+            'V': ['4T', '2T'],
+            'W': ['4T', '2T'],
+            'B': ['4T', '2T'],
+            'WANKEL': ['4T']
+        };
+
+        function syncCycleAndValvetrainUI() {
+            const t = I18N[currentLang];
+            const fmt = (selectFormato && FORMAT_CYL_LIMITS[selectFormato.value]) ? selectFormato.value : 'I';
+            const isWankel = fmt === 'WANKEL';
+            const allowedCycles = FORMAT_CYCLE_LIMITS[fmt] || ['4T', '2T'];
+
+            if (selectCiclo) {
+                const curCiclo = selectCiclo.value;
+                if (!selectCiclo.disabled && (curCiclo === '4T' || curCiclo === '2T')) {
+                    savedPistonCycle = curCiclo;
+                }
+                const targetCiclo = isWankel
+                    ? '4T'
+                    : (selectCiclo.disabled ? savedPistonCycle : (allowedCycles.includes(curCiclo) ? curCiclo : allowedCycles[0]));
+                const curOpts = Array.from(selectCiclo.options).map(o => o.value);
+                if (curOpts.length !== allowedCycles.length || allowedCycles.some((c, idx) => curOpts[idx] !== c)) {
+                    selectCiclo.innerHTML = allowedCycles.map(c => `<option value="${c}">${c}</option>`).join('');
+                }
+                selectCiclo.value = allowedCycles.includes(targetCiclo) ? targetCiclo : allowedCycles[0];
+                selectCiclo.disabled = isWankel || allowedCycles.length <= 1;
+                selectCiclo.title = isWankel ? (t.wankelCycleTitle || '') : '';
+                if (!isWankel) savedPistonCycle = selectCiclo.value;
+            }
+
+            const effCiclo = isWankel ? '4T' : (selectCiclo ? (selectCiclo.value || '4T') : '4T');
+            const is2T = !isWankel && effCiclo === '2T';
+            const has4tOptions = selectValveType
+                ? (selectValveType.options.length === FOUR_STROKE_VALVE_TYPES.length && Array.from(selectValveType.options).every((o, i) => o.value === FOUR_STROKE_VALVE_TYPES[i]))
+                : false;
+
+            if (!isWankel && !is2T && has4tOptions) {
+                if (selectCamshaft && !selectCamshaft.disabled) saved4tCamshaft = selectCamshaft.value || 'DOHC';
+                if (selectValveType && !selectValveType.disabled && FOUR_STROKE_VALVE_TYPES.includes(selectValveType.value)) {
+                    saved4tValveType = selectValveType.value;
+                }
+                if (selectValves && !selectValves.disabled) saved4tNumValves = selectValves.value || '4';
+            }
+
+            if (is2T) {
+                if (has4tOptions) {
+                    if (selectCamshaft) saved4tCamshaft = selectCamshaft.value || 'DOHC';
+                    if (selectValveType && FOUR_STROKE_VALVE_TYPES.includes(selectValveType.value)) {
+                        saved4tValveType = selectValveType.value;
+                    }
+                    if (selectValves) saved4tNumValves = selectValves.value || '4';
+                }
+                if (selectValveType) {
+                    const reedLabel = (t.vTypeOpts && t.vTypeOpts['Reed Valve']) ? t.vTypeOpts['Reed Valve'] : 'Reed Valve';
+                    selectValveType.innerHTML = `<option value="Reed Valve">${reedLabel}</option>`;
+                    selectValveType.value = 'Reed Valve';
+                    selectValveType.disabled = true;
+                    selectValveType.title = t.reedLockedTitle || '';
+                }
+                if (selectCamshaft) {
+                    selectCamshaft.disabled = true;
+                    selectCamshaft.title = t.twoStrokeNoCamTitle || '';
+                }
+                if (selectValves) {
+                    selectValves.disabled = true;
+                    selectValves.title = t.twoStrokeNoCamTitle || '';
+                }
+            } else {
+                if (selectValveType) {
+                    if (!has4tOptions) {
+                        selectValveType.innerHTML = FOUR_STROKE_VALVE_TYPES
+                            .map(v => `<option value="${v}">${(t.vTypeOpts && t.vTypeOpts[v]) ? t.vTypeOpts[v] : v}</option>`)
+                            .join('');
+                        const restoreV = FOUR_STROKE_VALVE_TYPES.includes(saved4tValveType) ? saved4tValveType : 'Molas';
+                        selectValveType.value = restoreV;
+                    }
+                    selectValveType.disabled = isWankel;
+                    selectValveType.title = '';
+                }
+                if (selectCamshaft) {
+                    if (!has4tOptions && saved4tCamshaft) selectCamshaft.value = saved4tCamshaft;
+                    selectCamshaft.disabled = isWankel;
+                    selectCamshaft.title = '';
+                }
+                if (selectValves) {
+                    if (!has4tOptions && saved4tNumValves) selectValves.value = saved4tNumValves;
+                    selectValves.disabled = isWankel;
+                    selectValves.title = '';
+                }
+            }
+        }
+
         function syncCylinderOptionsForFormat() {
             if (!selectFormato || !selectCilindros) return;
             const fmt = FORMAT_CYL_LIMITS[selectFormato.value] ? selectFormato.value : 'I';
@@ -2477,9 +2600,7 @@
             if (lblPisMat) lblPisMat.textContent = isWankel ? t.lblRotorMaterial : t.lblPistonMaterial;
 
             if (selectVAngle) selectVAngle.disabled = (fmt !== 'V' && fmt !== 'W');
-            if (selectCamshaft) selectCamshaft.disabled = isWankel;
-            if (selectValveType) selectValveType.disabled = isWankel;
-            if (selectValves) selectValves.disabled = isWankel;
+            syncCycleAndValvetrainUI();
         }
 
         function syncBoostControls(resetToDefaults = false) {
@@ -2727,7 +2848,7 @@
             if (isDiesel) fuelMult = 1.38;
             else if (comb === 'Nitrometano') fuelMult = 1.34;
             else if (['Etanol (E85)', 'Metanol', 'Gasolina 102', 'Gasolina 110'].includes(comb)) fuelMult = 1.06;
-            const cycleMult = params.ciclo === '2T' ? 0.90 : 1.00;
+            const cycleMult = (!isWankel && params.ciclo === '2T') ? 0.90 : 1.00;
             const boostTotal = Math.max(0, Number(params.turbo_bar) || 0) + Math.max(0, Number(params.sc_bar) || 0);
             const boostMult = 1.0 + Math.min(0.45, boostTotal * 0.08);
             const maxR = Math.max(1500, Number(params.max_rpm) || 7500);
@@ -2856,7 +2977,10 @@
             const pIMat = intMatMap[params.intake_material] || intMatMap['Alumínio Fundido'];
             const isDiesel = params.combustivel === 'Diesel' || params.combustivel === 'Biodiesel';
             const isWankel = params.formato === 'WANKEL';
-            const isFreevalve = !isWankel && (params.camshaft === 'Freevalve' || params.valve_type === 'Freevalve');
+            const effCiclo = isWankel ? '4T' : (params.ciclo === '2T' ? '2T' : '4T');
+            const is2T = !isWankel && effCiclo === '2T';
+            const effValveType = is2T ? 'Reed Valve' : params.valve_type;
+            const isFreevalve = !isWankel && !is2T && (params.camshaft === 'Freevalve' || effValveType === 'Freevalve');
 
             const unitCc = (Math.PI / 4.0) * Math.pow(params.bore / 10.0, 2) * (params.stroke / 10.0);
             const litros = isWankel
@@ -2873,7 +2997,8 @@
                 'VVT': { tq: 1.03, hp: 1.03 },
                 'Desmodrómico': { tq: 1.01, hp: 1.05 },
                 'Pneumático': { tq: 1.00, hp: 1.08 },
-                'Freevalve': { tq: 1.00, hp: 1.00 }
+                'Freevalve': { tq: 1.00, hp: 1.00 },
+                'Reed Valve': { tq: 1.00, hp: 1.00 }
             };
             const matHpMap = {
                 'Alumínio': 1.00, 'Ferro Fundido': 1.00, 'Alumínio Billet': 1.02,
@@ -2909,7 +3034,8 @@
                 'DCT':        { tq: 0.995, hp: 1.015, in: 0.88 },
                 'DCT 7V':     { tq: 0.995, hp: 1.015, in: 0.88 },
                 'Automática': { tq: 1.015, hp: 0.975, in: 1.15 },
-                'Automática 8V': { tq: 1.015, hp: 0.975, in: 1.15 }
+                'Automática 8V': { tq: 1.015, hp: 0.975, in: 1.15 },
+                'E-CVT':      { tq: 1.045, hp: 1.035, in: 0.72 }
             };
             const clutchMap = {
                 'Monodisco Orgânica':   { tq: 1.000, hp: 1.000, in: 1.00 },
@@ -2932,15 +3058,15 @@
                 'Y-Pipe':        { tq: 1.012, hp: 1.010 },
                 'Coletor Merge': { tq: 1.008, hp: 1.018 }
             };
-            const pCam = isWankel ? { tq: 1.00, hp: 1.00 } : (isFreevalve ? camMap['Freevalve'] : (camMap[params.camshaft] || camMap['DOHC']));
-            const pVal = isWankel ? { tq: 1.00, hp: 1.00 } : (isFreevalve ? valMap['Freevalve'] : (valMap[params.valve_type] || valMap['Molas']));
+            const pCam = (isWankel || is2T) ? { tq: 1.00, hp: 1.00 } : (isFreevalve ? camMap['Freevalve'] : (camMap[params.camshaft] || camMap['DOHC']));
+            const pVal = isWankel ? { tq: 1.00, hp: 1.00 } : (isFreevalve ? valMap['Freevalve'] : (valMap[effValveType] || valMap['Molas']));
             const pMatHp = matHpMap[params.material] || 1.00;
             const pPis = pisMap[params.piston_material] || pisMap['Alumínio'];
             const pFw = fwMap[params.flywheel] || fwMap['Monomassa Aço'];
             const pDmp = dmpMap[params.damper] || dmpMap['Elastómero OEM'];
             const pGb = gbMap[params.gearbox_type] || gbMap['Manual'];
             const gbSpds = Math.max(4, Math.min(9, parseInt(params.gearbox_speeds, 10) || 6));
-            const gbSpdHp = 1.0 + (gbSpds - 6) * 0.004;
+            const gbSpdHp = params.gearbox_type === 'E-CVT' ? 1.0 : (1.0 + (gbSpds - 6) * 0.004);
             const pCl = clutchMap[params.clutch_type] || clutchMap['Monodisco Orgânica'];
             const pExh = exhMap[params.exhaust_type] || exhMap['OEM Catalisador'];
             const supportsExhJunc = EXHAUST_JUNCTION_FORMATS.includes(params.formato);
@@ -2955,13 +3081,13 @@
             engineSim.damperIdealKg = dmpStats.idealKg;
             engineSim.inertiaFactor = pFw.in * pDmp.in * pGb.in * pCl.in * dmpStats.wIn;
             const nVal = parseInt(params.num_valvulas, 10) === 2 ? 2 : 4;
-            const valTq = isWankel ? 1.00 : (nVal === 2 ? 1.02 : 1.00);
-            const valHp = isWankel ? 1.00 : (nVal === 2 ? 0.93 : 1.00);
+            const valTq = (isWankel || is2T) ? 1.00 : (nVal === 2 ? 1.02 : 1.00);
+            const valHp = (isWankel || is2T) ? 1.00 : (nVal === 2 ? 0.93 : 1.00);
 
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
-            const fatorCicloTq = isWankel ? 1.42 : (params.ciclo === '2T' ? 1.25 : 1.00);
+            const fatorCicloTq = isWankel ? 1.42 : (effCiclo === '2T' ? 1.25 : 1.00);
             const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq);
-            const fatorRpmHp = isWankel ? 0.93 : (params.ciclo === '4T' ? 0.88 : 0.94);
+            const fatorRpmHp = isWankel ? 0.93 : (effCiclo === '4T' ? 0.88 : 0.94);
             const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * 1.01387;
             const peakPowerKw = Math.round(peakPowerCv * 0.73549875);
 
@@ -2969,7 +3095,7 @@
             const startRpm = Math.min(1000, Math.round(maxRpm * 0.15));
             const steps = 48;
             const strokeRatio = Math.max(0.75, Math.min(1.25, params.stroke / Math.max(1, params.bore)));
-            const lowEndBias = (strokeRatio - 1.0) * 0.14 + (isDiesel ? 0.12 : 0.0) + (params.camshaft === 'OHV' && !isWankel ? 0.04 : 0.0) + (params.valve_type === 'VVT' && !isWankel ? 0.05 : 0.0) + (isFreevalve ? 0.06 : 0.0) + (nVal === 2 && !isWankel ? 0.04 : 0.0) + pInt.lowEnd;
+            const lowEndBias = (strokeRatio - 1.0) * 0.14 + (isDiesel ? 0.12 : 0.0) + (!isWankel && !is2T && params.camshaft === 'OHV' ? 0.04 : 0.0) + (!isWankel && !is2T && effValveType === 'VVT' ? 0.05 : 0.0) + (isFreevalve ? 0.06 : 0.0) + (!isWankel && !is2T && nVal === 2 ? 0.04 : 0.0) + pInt.lowEnd;
             const topFallScale = Math.max(0.60, 1.0 - pInt.topEnd * 2.5);
 
             const raw = [];
@@ -4198,6 +4324,49 @@
                 }
             }
 
+            addReedValveCage(px, py, pz, orientation = 'z+', scale = 1.0, tiltAngle = 0) {
+                const s = Math.max(0.65, Math.min(1.4, scale));
+                const C_FLANGE = [0.76, 0.80, 0.86, 1.0];
+                const C_PETAL  = [0.13, 0.15, 0.19, 1.0];
+                const C_STOP   = [0.68, 0.72, 0.78, 1.0];
+                const C_BOLT   = [0.84, 0.64, 0.24, 1.0];
+
+                if (orientation === 'y+') {
+                    // Admissão vertical superior (Boxer): V-block aponta para baixo no pórtico
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(px, py, pz, 0, 0, 0, 0.145 * s, 0.042 * s, 0.125 * s), C_FLANGE, [0.72, 56]);
+                    for (const bx of [-0.055 * s, 0.055 * s]) {
+                        for (const bz of [-0.045 * s, 0.045 * s]) {
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(px + bx, py + 0.024 * s, pz + bz, 0, 0, 0, 0.015 * s, 0.018 * s, 0.015 * s), C_BOLT, [0.80, 62]);
+                        }
+                    }
+                    for (const side of [-1, 1]) {
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py - 0.045 * s, pz + side * 0.022 * s, side * 0.36, 0, 0, 0.105 * s, 0.068 * s, 0.014 * s), C_PETAL, [0.28, 18]);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py - 0.045 * s, pz + side * 0.030 * s, side * 0.36, 0, 0, 0.095 * s, 0.054 * s, 0.008 * s), C_STOP, [0.76, 58]);
+                    }
+                } else if (orientation === 'v') {
+                    // Admissão inclinada pelo ângulo de bancada V / W
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(px, py, pz, tiltAngle, 0, 0, 0.140 * s, 0.042 * s, 0.120 * s), C_FLANGE, [0.72, 56]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(px - 0.052 * s, py + 0.018 * s, pz, tiltAngle, 0, 0, 0.015 * s, 0.018 * s, 0.015 * s), C_BOLT, [0.80, 62]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(px + 0.052 * s, py + 0.018 * s, pz, tiltAngle, 0, 0, 0.015 * s, 0.018 * s, 0.015 * s), C_BOLT, [0.80, 62]);
+                    for (const side of [-1, 1]) {
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py - 0.032 * s, pz + side * 0.020 * s, tiltAngle + side * 0.36, 0, 0, 0.098 * s, 0.060 * s, 0.014 * s), C_PETAL, [0.28, 18]);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py - 0.032 * s, pz + side * 0.028 * s, tiltAngle + side * 0.36, 0, 0, 0.088 * s, 0.048 * s, 0.008 * s), C_STOP, [0.76, 58]);
+                    }
+                } else {
+                    // Admissão lateral (+Z em I / VR): flange vertical + bloco de lâminas em V
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(px, py, pz, 0, 0, 0, 0.155 * s, 0.130 * s, 0.044 * s), C_FLANGE, [0.72, 56]);
+                    for (const bx of [-0.058 * s, 0.058 * s]) {
+                        for (const by of [-0.046 * s, 0.046 * s]) {
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(px + bx, py + by, pz + 0.025 * s, Math.PI * 0.5, 0, 0, 0.015 * s, 0.018 * s, 0.015 * s), C_BOLT, [0.80, 62]);
+                        }
+                    }
+                    for (const side of [-1, 1]) {
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py + side * 0.024 * s, pz + 0.050 * s, -side * 0.38, 0, 0, 0.112 * s, 0.014 * s, 0.072 * s), C_PETAL, [0.28, 18]);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py + side * 0.032 * s, pz + 0.050 * s, -side * 0.38, 0, 0, 0.100 * s, 0.008 * s, 0.058 * s), C_STOP, [0.76, 58]);
+                    }
+                }
+            }
+
             addStarterMotor(x, y, z) {
                 const C_BODY = [0.24, 0.27, 0.33, 1.0];
                 const C_CAP  = [0.54, 0.58, 0.64, 1.0];
@@ -4287,11 +4456,13 @@
                     'Gated Manual': { caseCol: [0.56, 0.60, 0.68, 1.0], ribCol: [0.80, 0.64, 0.24, 1.0], turretCol: [0.76, 0.80, 0.86, 1.0], spec: [0.74, 58] },
                     'Sequencial':   { caseCol: [0.24, 0.27, 0.33, 1.0], ribCol: [0.76, 0.22, 0.22, 1.0], turretCol: [0.78, 0.60, 0.24, 1.0], spec: [0.68, 56] },
                     'DCT':          { caseCol: [0.40, 0.45, 0.52, 1.0], ribCol: [0.72, 0.58, 0.26, 1.0], turretCol: [0.18, 0.22, 0.28, 1.0], spec: [0.58, 46] },
-                    'Automática':   { caseCol: [0.34, 0.37, 0.43, 1.0], ribCol: [0.48, 0.52, 0.58, 1.0], turretCol: [0.16, 0.18, 0.22, 1.0], spec: [0.46, 36] }
+                    'Automática':   { caseCol: [0.34, 0.37, 0.43, 1.0], ribCol: [0.48, 0.52, 0.58, 1.0], turretCol: [0.16, 0.18, 0.22, 1.0], spec: [0.46, 36] },
+                    'E-CVT':        { caseCol: [0.68, 0.75, 0.84, 1.0], ribCol: [0.90, 0.44, 0.12, 1.0], turretCol: [0.16, 0.56, 0.78, 1.0], spec: [0.76, 62] }
                 };
                 const st = styles[gbType] || styles['Manual'];
+                const isEcvt = gbType === 'E-CVT';
 
-                const extraLen = (speeds - 6) * 0.14;
+                const extraLen = isEcvt ? 0.16 : (speeds - 6) * 0.14;
                 const caseLen = 1.24 + extraLen;
                 const xBell = xFront + 0.34;
                 const xCase = xFront + 0.72 + caseLen * 0.5;
@@ -4320,14 +4491,21 @@
 
                 // Carcaça principal da caixa (cutaway) + nervuras estruturais + cárter inferior
                 this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xCase, -0.12, 0, 0, 0, 0, caseLen, 0.78, 0.72), st.caseCol, st.spec);
-                const ribCount = Math.max(4, speeds - 1);
+                const ribCount = isEcvt ? 6 : Math.max(4, speeds - 1);
                 for (let rk = 0; rk < ribCount; rk++) {
                     const rx = xCase - caseLen * 0.40 + (rk / (ribCount - 1)) * (caseLen * 0.80);
                     this.addPart(this.staticOpaque, 'box', this.matTRS(rx, -0.52, 0, 0, 0, 0, 0.036, 0.05, 0.70), st.ribCol, [0.55, 42]);
                 }
                 this.addPart(this.staticOpaque, 'hex', this.matTRS(xCase + 0.14, -0.55, 0, 0, 0, 0, 0.038, 0.04, 0.038), [0.84, 0.64, 0.24, 1.0], [0.78, 60]);
 
-                if (gbType === 'Automática') {
+                if (gbType === 'E-CVT') {
+                    // Inversor de potência (PCU) superior + cabos laranja High-Voltage para MG1/MG2
+                    const C_HV = [0.92, 0.40, 0.08, 1.0];
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xCase, 0.34, 0, 0, 0, 0, caseLen * 0.68, 0.14, 0.52), [0.72, 0.78, 0.86, 1.0], [0.78, 64]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xCase, 0.42, 0, 0, 0, 0, caseLen * 0.56, 0.04, 0.38), st.turretCol, [0.68, 54]);
+                    this.addPipe(this.staticOpaque, [[xCase - 0.28, 0.34, 0.28], [xCase - 0.28, 0.18, 0.39], [xCase - 0.36, 0.04, 0.32]], 0.028, C_HV, [0.38, 28]);
+                    this.addPipe(this.staticOpaque, [[xCase + 0.28, 0.34, 0.28], [xCase + 0.28, 0.18, 0.39], [xCase + 0.36, 0.04, 0.32]], 0.028, C_HV, [0.38, 28]);
+                } else if (gbType === 'Automática') {
                     this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xCase, -0.54, 0, 0, 0, 0, caseLen * 0.92, 0.11, 0.64), st.turretCol, [0.35, 22]);
                     this.addPipe(this.staticOpaque, [[xCase - 0.34, -0.26, 0.38], [xCase - 0.34, -0.02, 0.45], [xCase + 0.34, -0.02, 0.45], [xCase + 0.34, -0.26, 0.38]], 0.022, [0.80, 0.62, 0.24, 1.0], [0.78, 60]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCase + 0.20, 0.30, 0, 0, 0, 0, 0.12, 0.10, 0.12), [0.22, 0.25, 0.30, 1.0], [0.55, 40]);
@@ -4362,27 +4540,59 @@
                     this.addPart(this.staticOpaque, 'sphere', this.matTRS(xCase + 0.16, 0.56, 0.06, 0, 0, 0, 0.068, 0.068, 0.068), [0.74, 0.22, 0.22, 1.0], [0.65, 52]);
                 }
 
-                // Veios internos + N pares de carretos dentados (4 a 9 mudanças)
+                // Veios internos + Power-Split Planetário E-CVT ou N pares de carretos dentados (4 a 9 mudanças)
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(xFront + 0.64 + caseLen * 0.45, 0.02, 0, 0, 0, Math.PI * 0.5, 0.055, caseLen + 0.66, 0.055), [0.74, 0.78, 0.84, 1.0], [0.78, 64]);
                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(xCase, -0.27, 0, 0, 0, Math.PI * 0.5, 0.048, caseLen * 0.90, 0.048), [0.62, 0.66, 0.72, 1.0], [0.72, 58]);
 
                 const xStartG = xCase - caseLen * 0.38;
                 const xEndG = xCase + caseLen * 0.38;
-                for (let gi = 0; gi < speeds; gi++) {
-                    const frac = speeds > 1 ? gi / (speeds - 1) : 0.5;
-                    const gx = xStartG + frac * (xEndG - xStartG);
-                    const topR = 0.085 + frac * 0.120;
-                    const botR = 0.290 - topR;
-                    const gCol = (gi % 2 === 0) ? [0.66, 0.71, 0.78, 1.0] : [0.54, 0.59, 0.66, 1.0];
-                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: gx, cy: 0.02, cz: 0, r: topR, thick: 0.058, speedMult: 1.0, colorRim: gCol });
-                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: gx, cy: -0.27, cz: 0, r: botR, thick: 0.058, speedMult: -0.78, colorRim: [0.48, 0.53, 0.60, 1.0] });
-                    if (gi < speeds - 1) {
-                        const synX = gx + ((xEndG - xStartG) / (speeds - 1)) * 0.5;
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(synX, 0.02, 0, 0, 0, Math.PI * 0.5, 0.088, 0.022, 0.088), [0.84, 0.64, 0.24, 1.0], [0.80, 62]);
+                if (isEcvt) {
+                    // Motor-Gerador MG1 (Gerador + arranque híbrido)
+                    const xMg1 = xCase - caseLen * 0.29;
+                    const C_STATOR = [0.22, 0.26, 0.33, 1.0];
+                    const C_COPPER = [0.82, 0.42, 0.16, 1.0];
+                    this.addPart(this.staticOpaque, 'torus', this.matTRS(xMg1, 0.02, 0, 0, Math.PI * 0.5, 0, 0.23, 0.23, 0.23), C_STATOR, [0.55, 42]);
+                    this.addPart(this.staticOpaque, 'torus', this.matTRS(xMg1 - 0.06, 0.02, 0, 0, Math.PI * 0.5, 0, 0.19, 0.19, 0.19), C_COPPER, [0.74, 58]);
+                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 16, cx: xMg1, cy: 0.02, cz: 0, r: 0.165, thick: 0.105, speedMult: -1.35, colorRim: [0.18, 0.62, 0.84, 1.0] });
+
+                    // Conjunto Planetário Divisor de Potência (Power-Split Device)
+                    const xPsd = xCase;
+                    this.addPart(this.staticTrans, 'torus', this.matTRS(xPsd, 0.02, 0, 0, Math.PI * 0.5, 0, 0.245, 0.245, 0.245), [0.74, 0.78, 0.84, 1.0], [0.72, 56]);
+                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 18, cx: xPsd, cy: 0.02, cz: 0, r: 0.102, thick: 0.068, speedMult: 1.0, colorRim: [0.84, 0.68, 0.28, 1.0] });
+                    for (let pi = 0; pi < 3; pi++) {
+                        const pa = (pi * Math.PI * 2) / 3;
+                        this.dynamicRotors.push({
+                            type: 'gearboxGear', symmetry: 14,
+                            cx: xPsd, cy: 0.02 + Math.cos(pa) * 0.168, cz: Math.sin(pa) * 0.168,
+                            r: 0.062, thick: 0.064, speedMult: -1.65,
+                            colorRim: [0.64, 0.70, 0.78, 1.0]
+                        });
                     }
+
+                    // Motor-Gerador MG2 (Tração elétrica de binário elevado + redução)
+                    const xMg2 = xCase + caseLen * 0.28;
+                    this.addPart(this.staticOpaque, 'torus', this.matTRS(xMg2, 0.02, 0, 0, Math.PI * 0.5, 0, 0.26, 0.26, 0.26), C_STATOR, [0.55, 42]);
+                    this.addPart(this.staticOpaque, 'torus', this.matTRS(xMg2 - 0.07, 0.02, 0, 0, Math.PI * 0.5, 0, 0.22, 0.22, 0.22), C_COPPER, [0.74, 58]);
+                    this.addPart(this.staticOpaque, 'torus', this.matTRS(xMg2 + 0.07, 0.02, 0, 0, Math.PI * 0.5, 0, 0.22, 0.22, 0.22), C_COPPER, [0.74, 58]);
+                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: xMg2, cy: 0.02, cz: 0, r: 0.205, thick: 0.145, speedMult: 0.90, colorRim: [0.20, 0.66, 0.88, 1.0] });
+                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 18, cx: xMg2, cy: -0.27, cz: 0, r: 0.125, thick: 0.070, speedMult: -1.25, colorRim: [0.54, 0.59, 0.66, 1.0] });
+                } else {
+                    for (let gi = 0; gi < speeds; gi++) {
+                        const frac = speeds > 1 ? gi / (speeds - 1) : 0.5;
+                        const gx = xStartG + frac * (xEndG - xStartG);
+                        const topR = 0.085 + frac * 0.120;
+                        const botR = 0.290 - topR;
+                        const gCol = (gi % 2 === 0) ? [0.66, 0.71, 0.78, 1.0] : [0.54, 0.59, 0.66, 1.0];
+                        this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: gx, cy: 0.02, cz: 0, r: topR, thick: 0.058, speedMult: 1.0, colorRim: gCol });
+                        this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: gx, cy: -0.27, cz: 0, r: botR, thick: 0.058, speedMult: -0.78, colorRim: [0.48, 0.53, 0.60, 1.0] });
+                        if (gi < speeds - 1) {
+                            const synX = gx + ((xEndG - xStartG) / (speeds - 1)) * 0.5;
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(synX, 0.02, 0, 0, 0, Math.PI * 0.5, 0.088, 0.022, 0.088), [0.84, 0.64, 0.24, 1.0], [0.80, 62]);
+                        }
+                    }
+                    // Carreto de marcha-atrás lateral
+                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: xStartG, cy: -0.13, cz: 0.23, r: 0.084, thick: 0.055, speedMult: -0.95, colorRim: [0.76, 0.58, 0.26, 1.0] });
                 }
-                // Carreto de marcha-atrás lateral
-                this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 20, cx: xStartG, cy: -0.13, cz: 0.23, r: 0.084, thick: 0.055, speedMult: -0.95, colorRim: [0.76, 0.58, 0.26, 1.0] });
 
                 // Coroa do diferencial traseiro (proporcional à relação final) + cauda + veio de saída
                 const ringR = Math.max(0.24, Math.min(0.36, 0.22 + (finalDrive - 2.9) * 0.06));
@@ -4582,10 +4792,11 @@
 
             buildStandaloneGearboxScene() {
                 this.sceneCenterX = 0;
+                const isEcvt = this.config.gearboxType === 'E-CVT';
                 const speeds = Math.max(4, Math.min(9, parseInt(this.config.gearboxSpeeds, 10) || 6));
-                const extraLen = (speeds - 6) * 0.14;
+                const extraLen = isEcvt ? 0.16 : (speeds - 6) * 0.14;
                 this.addGearboxModel(-1.45 - extraLen * 0.3, 0.68);
-                this.baseDist = 5.4 + Math.max(0, speeds - 6) * 0.25;
+                this.baseDist = 5.4 + (isEcvt ? 0.15 : Math.max(0, speeds - 6) * 0.25);
             }
 
             buildStandaloneExhaustScene() {
@@ -4946,7 +5157,8 @@
                 const pMatOpt = this.config.pistonMaterial || 'Alumínio';
                 const camMode = ['DOHC', 'SOHC', 'OHV', 'Freevalve'].includes(this.config.camshaft) ? this.config.camshaft : 'DOHC';
                 const vType = this.config.valveType || 'Molas';
-                const isFreevalve = fmt !== 'WANKEL' && (camMode === 'Freevalve' || vType === 'Freevalve');
+                const is2Stroke = fmt !== 'WANKEL' && this.config.ciclo === '2T';
+                const isFreevalve = fmt !== 'WANKEL' && !is2Stroke && (camMode === 'Freevalve' || vType === 'Freevalve');
                 const valvesCount = parseInt(this.config.numValvulas, 10) === 2 ? 2 : 4;
                 const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
                 const turboCfg = (hasMultiTurbo && this.config.turboConfig === 'Sequencial') ? 'Sequencial' : 'Paralelo';
@@ -5092,25 +5304,38 @@
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.05, 0.08, blockZ * 0.55, Math.PI * 0.5, 0, 0, 0.032, 0.08, 0.032), C_BRASS, [0.74, 58]);
                     this.addStarterMotor(halfLenX * 0.62, -0.06, blockZ * 0.56 + 0.16);
 
-                    // Cabeça + tampa de válvulas esculpida em dois túneis (DOHC) / torre central + respiro PCV
+                    // Cabeça + tampa de válvulas esculpida em dois túneis (DOHC) / torre central + respiro PCV (ou cabeça 2T sem válvulas)
                     this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, deckDist + 0.16, 0, 0, 0, 0, blockW * 1.01, 0.28, blockZ * 1.04), C_HEAD, [0.46, 36]);
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.36, 0, 0, 0, 0, blockW * 1.02, 0.11, blockZ * 1.02), C_VALVE, [0.58, 50]);
-                    if (!isFreevalve && camMode === 'DOHC') {
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, -blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43,  blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
-                    } else if (!isFreevalve) {
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, 0, 0, 0, 0, blockW * 0.98, 0.075, blockZ * 0.62), C_VALVE, [0.60, 52]);
+                    if (is2Stroke) {
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.30, 0, 0, 0, 0, blockW * 1.00, 0.06, blockZ * 0.96), C_HEAD, [0.56, 44]);
+                        for (let i = 0; i < n; i++) {
+                            const cx = cylSpecs[i].x;
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, deckDist + 0.34, 0, 0, 0, 0, 0.04, 0.045, blockZ * 0.90), C_BOLT, [0.70, 52]);
+                            this.addCoilPackAndDetails(cx, deckDist + 0.36, 0, 0, isDiesel);
+                        }
+                    } else {
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.36, 0, 0, 0, 0, blockW * 1.02, 0.11, blockZ * 1.02), C_VALVE, [0.58, 50]);
+                        if (!isFreevalve && camMode === 'DOHC') {
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, -blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43,  blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
+                        } else if (!isFreevalve) {
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, 0, 0, 0, 0, blockW * 0.98, 0.075, blockZ * 0.62), C_VALVE, [0.60, 52]);
+                        }
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47, -blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47,  blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.70, deckDist + 0.48, 0.12, 0, 0, 0, 0.092, 0.055, 0.092), C_BOLT, [0.78, 62]);
                     }
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47, -blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47,  blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.70, deckDist + 0.48, 0.12, 0, 0, 0, 0.092, 0.055, 0.092), C_BOLT, [0.78, 62]);
 
-                    // Distribuição DOHC / SOHC / OHV / Freevalve + capas + calha elétrica + bobinas/injetores
+                    // Distribuição DOHC / SOHC / OHV / Freevalve (ou 2T Reed Valve sem árvore de cames)
                     const camZIn = blockZ * 0.22;
                     const camZEx = -blockZ * 0.22;
                     const tx = -halfLenX - 0.24;
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist + 0.46, 0.14, 0, 0, 0, blockW * 0.88, 0.04, 0.045), C_BELT, [0.25, 16]);
-                    if (isFreevalve) {
+                    if (!is2Stroke) {
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist + 0.46, 0.14, 0, 0, 0, blockW * 0.88, 0.04, 0.045), C_BELT, [0.25, 16]);
+                    }
+                    if (is2Stroke) {
+                        // Motor 2T utiliza Reed Valve na admissão — sem árvores de cames nem polias de distribuição
+                    } else if (isFreevalve) {
                         for (let i = 0; i < n; i++) {
                             const c = cylSpecs[i];
                             this.addCoilPackAndDetails(c.x, deckDist + 0.45, 0, 0, isDiesel);
@@ -5173,7 +5398,7 @@
                         r: 0.12, thick: 0.07, speedMult: 1.8,
                         colorRim: [0.46, 0.50, 0.56, 1.0], colorHub: [0.76, 0.80, 0.86, 1.0]
                     });
-                    if (isFreevalve) {
+                    if (is2Stroke || isFreevalve) {
                         this.addPipe(this.staticOpaque, [
                             [tx, 0, -0.25],
                             [tx, wpY, -blockZ * 0.22 - 0.12],
@@ -5229,6 +5454,9 @@
 
                     for (let i = 0; i < n; i++) {
                         const cx = cylSpecs[i].x;
+                        if (is2Stroke) {
+                            this.addReedValveCage(cx, portY + 0.02, blockZ * 0.50, 'z+', boreScale, 0);
+                        }
                         this.addPipe(this.staticOpaque, [
                             [cx, portY, blockZ * 0.45],
                             [cx, portY + 0.11, intZ * 0.84],
@@ -5371,7 +5599,7 @@
                             }
                         }
                         this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, 0, side * (deckDist + 0.35), ang, 0, 0, blockW * 1.02, 0.11, bankH * 1.02), C_VALVE, [0.58, 50]);
-                        if (!isFreevalve && camMode === 'DOHC') {
+                        if (!is2Stroke && !isFreevalve && camMode === 'DOHC') {
                             for (const cyOff of [-bankH * 0.26, bankH * 0.26]) {
                                 this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, cyOff, side * (deckDist + 0.42), ang, 0, 0, blockW * 0.98, 0.075, bankH * 0.34), C_VALVE, [0.62, 54]);
                             }
@@ -5379,8 +5607,8 @@
                         this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, 0, side * (deckDist + 0.425), ang, 0, 0, blockW * 0.90, 0.03, bankH * 0.26), C_BOLT, [0.7, 54]);
 
                         const camZ = side * (deckDist + 0.20);
-                        if (isFreevalve) {
-                            // Atuadores eletro-pneumáticos adicionados via addFreevalveBank
+                        if (is2Stroke || isFreevalve) {
+                            // 2T Reed Valve / Freevalve: sem árvore de cames na bancada
                         } else if (camMode === 'DOHC') {
                             for (const cyOff of [-0.11, 0.11]) {
                                 this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, cyOff, camZ, 0, 0, Math.PI * 0.5, 0.044, blockW * 1.03, 0.044), C_CRANK, [0.65, 52]);
@@ -5397,7 +5625,7 @@
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.38, bankH * 0.54, -0.18, 0.18, 0, 0, 0.068, 0.16, 0.056), C_HOSE, [0.22, 16]);
                     this.addPart(this.staticOpaque, 'hex', this.matTRS(-halfLenX * 0.38, bankH * 0.63, -0.20, 0.18, 0, 0, 0.078, 0.036, 0.078), C_DIP, [0.42, 32]);
                     this.addPipe(this.staticOpaque, [[-halfLenX - 0.06, -0.16, -deckDist - 0.10], [-halfLenX - 0.06, -0.28, 0], [-halfLenX - 0.06, -0.16, deckDist + 0.10]], 0.042, C_PIPE, [0.78, 60]);
-                    if (!isFreevalve && camMode === 'OHV') {
+                    if (!is2Stroke && !isFreevalve && camMode === 'OHV') {
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, 0.24, 0, 0, 0, Math.PI * 0.5, 0.052, blockW * 1.02, 0.052), C_CRANK, [0.65, 52]);
                         this.dynamicRotors.push({ type: 'pulley', cx: -halfLenX - 0.24, cy: 0.24, cz: 0, r: 0.18, thick: 0.07, speedMult: this.config.ciclo === '2T' ? 1.0 : 0.5, colorRim: [0.36, 0.41, 0.48, 1.0], colorHub: [0.72, 0.48, 0.26, 1.0] });
                     }
@@ -5405,7 +5633,7 @@
                     // Motor de arranque traseiro + capas de mancal + cames/varetas + bobinas/injetores Boxer
                     this.addStarterMotor(halfLenX * 0.62, bankH * 0.48 + 0.14, 0.24);
                     for (const c of cylSpecs) {
-                        if (!isFreevalve) {
+                        if (!is2Stroke && !isFreevalve) {
                             if (camMode === 'OHV') {
                                 this.dynamicCams.push({ x: c.x, y: 0.24, z: 0, phase: c.phase * 0.5 });
                                 this.addPipe(this.staticOpaque, [[c.x, 0.24, 0], [c.x, 0, (deckDist + 0.20) * Math.sin(c.angle)]], 0.020, C_PIPE, [0.75, 58]);
@@ -5434,7 +5662,7 @@
                         colorRim: [0.46, 0.50, 0.56, 1.0],
                         colorHub: [0.76, 0.80, 0.86, 1.0]
                     });
-                    if (isFreevalve) {
+                    if (is2Stroke || isFreevalve) {
                         this.addPipe(this.staticOpaque, [
                             [tx, -0.24, 0],
                             [tx, 0, -0.24],
@@ -5493,6 +5721,9 @@
                     const plenumW = halfLenX * 1.82;
                     for (const c of cylSpecs) {
                         const portZ = c.bank * (deckDist + 0.06);
+                        if (is2Stroke) {
+                            this.addReedValveCage(c.x, bankH * 0.45, portZ, 'y+', boreScale, 0);
+                        }
                         this.addPipe(this.staticOpaque, [
                             [c.x, bankH * 0.45, portZ],
                             [c.x, intTopY - 0.08, c.bank * (deckDist * 0.48)],
@@ -5627,7 +5858,7 @@
                         this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, headD * cosA, headD * sinA, ang, 0, 0, blockW * 1.01, 0.26, bankZWidth * 1.03), C_HEAD, [0.45, 36]);
                         const vcD = deckDist + 0.35;
                         this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, vcD * cosA, vcD * sinA, ang, 0, 0, blockW * 1.02, 0.11, bankZWidth * 1.02), C_VALVE, [0.58, 50]);
-                        if (!isFreevalve && camMode === 'DOHC') {
+                        if (!is2Stroke && !isFreevalve && camMode === 'DOHC') {
                             const camRidgeD = deckDist + 0.415;
                             for (const off of [-bankZWidth * 0.25, bankZWidth * 0.25]) {
                                 this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, camRidgeD * cosA - off * sinA, camRidgeD * sinA + off * cosA, ang, 0, 0, blockW * 0.98, 0.072, bankZWidth * 0.34), C_VALVE, [0.62, 54]);
@@ -5637,8 +5868,8 @@
                         this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, ribD * cosA, ribD * sinA, ang, 0, 0, blockW * 0.90, 0.03, bankZWidth * 0.28), C_BOLT, [0.7, 54]);
 
                         const vvtColor = vType === 'VVT' ? [0.76, 0.60, 0.24, 1.0] : [0.26, 0.44, 0.64, 1.0];
-                        if (isFreevalve) {
-                            // Atuadores eletro-pneumáticos adicionados via addFreevalveBank
+                        if (is2Stroke || isFreevalve) {
+                            // 2T Reed Valve / Freevalve: sem árvore de cames na cabeça
                         } else if (camMode === 'DOHC') {
                             const camD = deckDist + 0.20;
                             for (const off of [-0.11, 0.11]) {
@@ -5662,14 +5893,14 @@
                     const vCrossY = deckDist * 0.76;
                     this.addPipe(this.staticOpaque, [[vCrossX, vCrossY, -0.44], [vCrossX, vCrossY + 0.04, 0], [vCrossX, vCrossY, 0.44]], 0.042, C_PIPE, [0.78, 60]);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(vCrossX - 0.08, vCrossY + 0.05, 0, 0, 0, Math.PI * 0.5, 0.068, 0.14, 0.068), C_HEAD, [0.55, 38]);
-                    if (!isFreevalve && camMode === 'OHV') {
+                    if (!is2Stroke && !isFreevalve && camMode === 'OHV') {
                         const valleyCamY = 0.26;
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, valleyCamY, 0, 0, 0, Math.PI * 0.5, 0.055, blockW * 1.02, 0.055), C_CRANK, [0.65, 52]);
                         this.dynamicRotors.push({ type: 'pulley', cx: -halfLenX - 0.24, cy: valleyCamY, cz: 0, r: 0.20, thick: 0.075, speedMult: this.config.ciclo === '2T' ? 1.0 : 0.5, colorRim: [0.36, 0.41, 0.48, 1.0], colorHub: [0.72, 0.48, 0.26, 1.0] });
                     }
                     // Bobinas/injetores + cames + varetas OHV + capas de mancal em cada cilindro
                     for (const c of cylSpecs) {
-                        if (!isFreevalve) {
+                        if (!is2Stroke && !isFreevalve) {
                             if (camMode === 'OHV') {
                                 this.dynamicCams.push({ x: c.x, y: 0.26, z: 0, phase: c.phase * 0.5 });
                                 const pTopD = deckDist + 0.20;
@@ -5694,7 +5925,7 @@
                     const camY = camD * Math.cos(baseBankAng);
                     const camZ = camD * Math.sin(baseBankAng);
                     const tx = -halfLenX - 0.24;
-                    if (isFreevalve) {
+                    if (is2Stroke || isFreevalve) {
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.60, 0.34, 0.34, 0, 0, Math.PI * 0.5, 0.14, 0.28, 0.14), C_ALT, [0.6, 48]);
                         this.dynamicRotors.push({ type: 'pulley', cx: tx, cy: 0.34, cz: 0.34, r: 0.11, thick: 0.07, speedMult: 1.8, colorRim: [0.46, 0.50, 0.56, 1.0], colorHub: [0.76, 0.80, 0.86, 1.0] });
                         this.addPipe(this.staticOpaque, [
@@ -5749,6 +5980,9 @@
                     for (const c of cylSpecs) {
                         const portY = (deckDist + 0.08) * Math.cos(c.angle);
                         const portZ = (deckDist + 0.08) * Math.sin(c.angle) - c.bank * (bankZWidth * 0.35);
+                        if (is2Stroke) {
+                            this.addReedValveCage(c.x, portY + 0.02, portZ, 'v', boreScale, c.angle);
+                        }
                         this.addPipe(this.staticOpaque, [[c.x, valleyY, 0], [c.x, portY, portZ]], 0.064 * boreScale, C_RUNNER, intApp.rSpec);
                     }
                     // Rampas de injeção no vale central
@@ -6061,38 +6295,40 @@
                         cylR, crankR, rodLen, pistonH,
                         cPiston: C_PISTON, cRing: C_RING, cRod: C_ROD, cCrank: C_CRANK
                     });
-                    const xValOffs = valvesCount === 4 ? [-cylR * 0.30, cylR * 0.30] : [0];
-                    const vHeadScale = valvesCount === 4 ? 0.19 : 0.27;
-                    for (const xOff of xValOffs) {
-                        for (const sideSign of [-1, 1]) {
-                            const latOff = sideSign * (cylR * 0.34);
-                            if (!isFreevalve) {
-                                const seatD = deckDist + 0.105;
-                                const spRad = vType === 'Pneumático' ? 0.048 : 0.040;
-                                this.addPart(
-                                    this.staticOpaque,
-                                    'cyl',
-                                    this.matTRS(c.x + xOff, seatD * cosA + latOff * latY, c.zOff + seatD * sinA + latOff * latZ, c.angle + sideSign * 0.10, 0, 0, spRad * 1.15, 0.012, spRad * 1.15),
-                                    C_CRANK,
-                                    [0.65, 52]
-                                );
-                                if (camMode !== 'DOHC') {
-                                    const rkD = deckDist + 0.232;
+                    if (!is2Stroke) {
+                        const xValOffs = valvesCount === 4 ? [-cylR * 0.30, cylR * 0.30] : [0];
+                        const vHeadScale = valvesCount === 4 ? 0.19 : 0.27;
+                        for (const xOff of xValOffs) {
+                            for (const sideSign of [-1, 1]) {
+                                const latOff = sideSign * (cylR * 0.34);
+                                if (!isFreevalve) {
+                                    const seatD = deckDist + 0.105;
+                                    const spRad = vType === 'Pneumático' ? 0.048 : 0.040;
                                     this.addPart(
                                         this.staticOpaque,
-                                        'bevelBox',
-                                        this.matTRS(c.x + xOff, rkD * cosA + (latOff * 0.55) * latY, c.zOff + rkD * sinA + (latOff * 0.55) * latZ, c.angle, 0, 0, 0.032, 0.024, cylR * 0.42),
+                                        'cyl',
+                                        this.matTRS(c.x + xOff, seatD * cosA + latOff * latY, c.zOff + seatD * sinA + latOff * latZ, c.angle + sideSign * 0.10, 0, 0, spRad * 1.15, 0.012, spRad * 1.15),
                                         C_CRANK,
                                         [0.65, 52]
                                     );
+                                    if (camMode !== 'DOHC') {
+                                        const rkD = deckDist + 0.232;
+                                        this.addPart(
+                                            this.staticOpaque,
+                                            'bevelBox',
+                                            this.matTRS(c.x + xOff, rkD * cosA + (latOff * 0.55) * latY, c.zOff + rkD * sinA + (latOff * 0.55) * latZ, c.angle, 0, 0, 0.032, 0.024, cylR * 0.42),
+                                            C_CRANK,
+                                            [0.65, 52]
+                                        );
+                                    }
                                 }
+                                this.dynamicValves.push({
+                                    x: c.x + xOff, zOff: c.zOff, angle: c.angle,
+                                    phase: c.phase * 0.5 + (sideSign > 0 ? 0 : 2.1),
+                                    deckDist, cylR, sideSign, vHeadScale,
+                                    vType, showSpring: !isFreevalve
+                                });
                             }
-                            this.dynamicValves.push({
-                                x: c.x + xOff, zOff: c.zOff, angle: c.angle,
-                                phase: c.phase * 0.5 + (sideSign > 0 ? 0 : 2.1),
-                                deckDist, cylR, sideSign, vHeadScale,
-                                vType, showSpring: !isFreevalve
-                            });
                         }
                     }
                 }
@@ -7051,13 +7287,17 @@
             const rawDamperWeight = inputDamperWeight ? parseFloat(inputDamperWeight.value) : 3.2;
             const adm = selectAdmissao.value || 'Atmosférico';
             const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
+            const fmtVal = selectFormato.value || 'I';
+            const isWankelFmt = fmtVal === 'WANKEL';
+            const cicloVal = isWankelFmt ? '4T' : (selectCiclo.value === '2T' ? '2T' : '4T');
+            const is2tVal = !isWankelFmt && cicloVal === '2T';
             return {
                 bore: Number.isFinite(rawBore) && rawBore > 0 ? Math.max(10.0, rawBore) : 86.0,
                 stroke: Number.isFinite(rawStroke) && rawStroke > 0 ? Math.max(10.0, rawStroke) : 86.0,
                 compression_ratio: Number.isFinite(rawCr) && rawCr > 0 ? Math.max(2.0, rawCr) : 10.5,
                 max_rpm: Number.isFinite(rawRpm) && rawRpm > 0 ? Math.max(500, rawRpm) : 7500,
                 combustivel: selectCombustivel.value || 'Gasolina 95',
-                ciclo: selectCiclo.value || '4T',
+                ciclo: cicloVal,
                 cilindros: parseInt(selectCilindros.value, 10) || 4,
                 admissao: adm,
                 turbo_config: (hasMultiTurbo && selectTurboConfig && selectTurboConfig.value === 'Sequencial') ? 'Sequencial' : 'Paralelo',
@@ -7072,14 +7312,14 @@
                 final_drive: selectFinalDrive ? (parseFloat(selectFinalDrive.value) || 3.73) : 3.73,
                 exhaust_type: selectExhaustType ? selectExhaustType.value : 'OEM Catalisador',
                 exhaust_tips: selectExhaustTips ? selectExhaustTips.value : 'Dupla',
-                exhaust_junction: (EXHAUST_JUNCTION_FORMATS.includes(selectFormato.value || 'I') && selectExhaustJunction) ? selectExhaustJunction.value : 'Sem União',
+                exhaust_junction: (EXHAUST_JUNCTION_FORMATS.includes(fmtVal) && selectExhaustJunction) ? selectExhaustJunction.value : 'Sem União',
                 exhaust_diameter: inputExhaustDiameter ? Math.max(35, Math.min(140, parseFloat(inputExhaustDiameter.value) || 63)) : 63,
-                formato: selectFormato.value || 'I',
+                formato: fmtVal,
                 v_angle: selectVAngle ? selectVAngle.value : '60',
                 material: selectMaterial ? selectMaterial.value : 'Alumínio',
                 piston_material: selectPistonMaterial ? selectPistonMaterial.value : 'Alumínio',
                 camshaft: selectCamshaft ? selectCamshaft.value : 'DOHC',
-                valve_type: selectValveType ? selectValveType.value : 'Molas',
+                valve_type: is2tVal ? 'Reed Valve' : (selectValveType ? selectValveType.value : 'Molas'),
                 num_valvulas: selectValves ? parseInt(selectValves.value, 10) : 4,
                 turbo_bar: (inputTurboBoost && !inputTurboBoost.disabled && Number.isFinite(rawTurbo)) ? Math.max(0, rawTurbo) : 0.0,
                 sc_bar: (inputScBoost && !inputScBoost.disabled && Number.isFinite(rawSc)) ? Math.max(0, rawSc) : 0.0
@@ -7115,16 +7355,19 @@
             const fuelLabel = (t.fuelOpts && t.fuelOpts[p.combustivel]) ? t.fuelOpts[p.combustivel] : p.combustivel;
             const fwShort = (t.flywheelShort && t.flywheelShort[p.flywheel]) ? t.flywheelShort[p.flywheel] : p.flywheel;
             const dmpShort = (t.damperShort && t.damperShort[p.damper]) ? t.damperShort[p.damper] : p.damper;
+            const is2T = !isWankel && p.ciclo === '2T';
             if (sumArchVal) {
                 if (isWankel) {
                     sumArchVal.textContent = `${fmtDisplay} · ${t.rotaryWord}`;
+                } else if (is2T) {
+                    sumArchVal.textContent = `${fmtDisplay} · Reed Valve`;
                 } else {
                     const vtShort = p.camshaft === 'Freevalve' ? 'Freevalve' : `${p.camshaft} · ${p.num_valvulas}V`;
                     sumArchVal.textContent = `${fmtDisplay} · ${vtShort}`;
                 }
             }
             if (sumArchSub) {
-                sumArchSub.textContent = `${p.ciclo} · ${t.compShort} ${p.compression_ratio.toFixed(1)}:1${!isWankel && p.camshaft !== 'Freevalve' ? ` · ${p.valve_type}` : ''}`;
+                sumArchSub.textContent = `${p.ciclo} · ${t.compShort} ${p.compression_ratio.toFixed(1)}:1${!isWankel && (is2T || p.camshaft !== 'Freevalve') ? ` · ${p.valve_type}` : ''}`;
             }
             if (sumDispVal) sumDispVal.textContent = `${litros} L`;
             if (sumGeoSub) sumGeoSub.textContent = `${p.bore.toFixed(0)}×${p.stroke.toFixed(0)} mm · ${p.max_rpm} RPM`;
@@ -7224,18 +7467,20 @@
                 'Forged': 2.5, 'Forged Heavy': 1.5, 'Billet': 3.8,
                 'Magnésio': 1.5, 'Titanium': 4.5, 'Titanium Billet': 6.0, 'Titanium Forged': 5.5
             };
-            const valTol = { 'Molas': 0.0, 'VVT': 0.5, 'Desmodrómico': 2.0, 'Pneumático': 4.0, 'Freevalve': 4.5 };
+            const valTol = { 'Molas': 0.0, 'VVT': 0.5, 'Desmodrómico': 2.0, 'Pneumático': 4.0, 'Freevalve': 4.5, 'Reed Valve': 3.5 };
             const pisTol = { 'Alumínio': 0.0, 'Forged': 2.5, 'Forged Heavy': 1.5, 'Titânio': 5.0 };
             const pisCrTol = { 'Alumínio': 0.0, 'Forged': 1.0, 'Forged Heavy': 3.0, 'Titânio': 2.0 };
             const fwTol = { 'Monomassa Aço': 0.0, 'Dupla Massa': -0.8, 'Aligeirado Cromoly': 1.0, 'Alumínio Billet': 1.5, 'Carbono Multi-Disco': 2.5 };
             const dmpTol = { 'Elastómero OEM': 0.0, 'Fluido Viscoso': 2.0, 'ATI Super Damper': 3.5, 'Polia Sólida': -2.5 };
             const isWankel = payload.formato === 'WANKEL';
-            const isFreevalve = !isWankel && (payload.camshaft === 'Freevalve' || payload.valve_type === 'Freevalve');
+            const is2T = !isWankel && payload.ciclo === '2T';
+            const effValveType = is2T ? 'Reed Valve' : payload.valve_type;
+            const isFreevalve = !isWankel && !is2T && (payload.camshaft === 'Freevalve' || effValveType === 'Freevalve');
             const velMediaPistao = isWankel
                 ? (2.0 * (payload.stroke / 1000.0) * (payload.max_rpm / 3.0) * 1.55) / 60.0
                 : (2.0 * (payload.stroke / 1000.0) * payload.max_rpm) / 60.0;
             const matTVal = matTol[payload.material] !== undefined ? matTol[payload.material] : 0.5;
-            const valTVal = isWankel ? 6.0 : (isFreevalve ? 4.5 : (valTol[payload.valve_type] || 0.0));
+            const valTVal = isWankel ? 6.0 : (isFreevalve ? 4.5 : (valTol[effValveType] || 0.0));
             const pisTVal = pisTol[payload.piston_material] || 0.0;
             const fwTVal = fwTol[payload.flywheel] !== undefined ? fwTol[payload.flywheel] : 0.0;
             const dmpTVal = dmpTol[payload.damper] !== undefined ? dmpTol[payload.damper] : 0.0;
@@ -7330,10 +7575,17 @@
             const t = I18N[currentLang];
             const gb = selectGearboxType ? selectGearboxType.value : 'Manual';
             const spds = selectGearboxSpeeds ? (parseInt(selectGearboxSpeeds.value, 10) || 6) : 6;
+            const isEcvt = gb === 'E-CVT';
+            if (selectGearboxSpeeds) {
+                selectGearboxSpeeds.disabled = isEcvt;
+                selectGearboxSpeeds.title = isEcvt ? (t.gbSpeedsEcvtTitle || '') : '';
+            }
             const cl = selectClutchType ? selectClutchType.value : 'Monodisco Orgânica';
             const clShort = (t.clutchShort && t.clutchShort[cl]) ? t.clutchShort[cl] : cl;
+            const gbSpdSummary = isEcvt ? (t.gbSteplessLabel || 'Stepless') : `${spds}M`;
+            const gbSpdBtn = isEcvt ? (t.gbSteplessShort || 'Stepless') : `${spds}M`;
             if (gearboxSummaryInfo) {
-                gearboxSummaryInfo.textContent = `${gb} · ${spds}M · ${clShort}`;
+                gearboxSummaryInfo.textContent = `${gb} · ${gbSpdSummary} · ${clShort}`;
             }
 
             const fmtCur = selectFormato ? (selectFormato.value || 'I') : 'I';
@@ -7370,7 +7622,7 @@
                 btnTopEngine.style.display = viewMode === 'engine' ? 'none' : 'inline-flex';
             }
             if (btnTopGearbox) {
-                btnTopGearbox.textContent = `${t.topGearbox} · ${spds}M`;
+                btnTopGearbox.textContent = `${t.topGearbox} · ${gbSpdBtn}`;
                 btnTopGearbox.classList.toggle('ativo', viewMode === 'gearbox' || activeTopPopover === 'gearbox');
                 btnTopGearbox.setAttribute('aria-expanded', activeTopPopover === 'gearbox' ? 'true' : 'false');
             }
@@ -7490,7 +7742,15 @@
             });
         }
 
-        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectCiclo, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial].forEach(el => {
+        if (selectCiclo) {
+            selectCiclo.addEventListener('change', () => {
+                syncCycleAndValvetrainUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+        }
+
+        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial].forEach(el => {
             if (!el) return;
             el.addEventListener('input', () => {
                 atualizarMotor3D();
@@ -7524,4 +7784,5 @@
     </script>
 </body>
 </html>
+
 
