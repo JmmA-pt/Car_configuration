@@ -1199,6 +1199,9 @@
             .topbar-subsystems-wrap {
                 align-items: stretch;
             }
+            .subsystem-popover {
+                width: 100%;
+            }
             .topbar-subsystems,
             .dashboard-topbar {
                 align-self: stretch;
@@ -1261,9 +1264,10 @@
     <div class="ui-layer">
         <div class="topbar-row">
             <div class="topbar-subsystems-wrap">
-                <nav class="dashboard-topbar topbar-subsystems" aria-label="Redutor EV e Conjunto Propulsor">
+                <nav class="dashboard-topbar topbar-subsystems" aria-label="Subsistema EV e Conjunto Propulsor">
                     <button type="button" class="btn-3d-ctrl" id="btn-top-engine" style="display:none;" title="Voltar ao modelo 3D do Motor Elétrico">← Motor Elétrico</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-gearbox" aria-expanded="false" title="Ver modelo separado do Redutor / Caixa EV 3D">Redutor EV · 1V</button>
+                    <button type="button" class="btn-3d-ctrl" id="btn-top-battery" aria-expanded="false" title="Ver modelo separado do Pack de Bateria HV 3D">Bateria · 85 kWh</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-all" aria-pressed="false" title="Ver Motor Elétrico, Redutor EV e Pack de Bateria HV juntos em 3D">Ver Tudo Junto</button>
                 </nav>
 
@@ -1313,6 +1317,50 @@
                     <div class="subsystem-footer-row">
                         <span class="subsystem-readout-pill" id="gearbox-summary-info">Redutor 1V · 1V · Aberto · 9.73:1</span>
                         <button type="button" class="btn-3d-ctrl" id="btn-gb-back-engine">Ver Motor</button>
+                    </div>
+                </div>
+
+                <div class="subsystem-popover" id="popover-battery" role="region" aria-label="Pack de Bateria HV">
+                    <div class="subsystem-popover-header">
+                        <span class="ficha-titulo" id="bat-panel-title">PACK DE BATERIA HV</span>
+                        <button type="button" class="btn-popover-close" id="btn-close-battery" aria-label="Fechar">×</button>
+                    </div>
+                    <div class="grid-2-col">
+                        <div class="campo-grupo">
+                            <label for="select-battery-chem" id="lbl-battery-chem">QUÍMICA BATERIA</label>
+                            <select id="select-battery-chem" class="input-cyber">
+                                <option value="LFP (LiFePO4)">LFP (Ferro-Fosfato)</option>
+                                <option value="NMC 811" selected>NMC 811 (Alta Densidade)</option>
+                                <option value="NCA Performance">NCA (Descarga Alta)</option>
+                                <option value="Estado Sólido">Estado Sólido (Solid)</option>
+                                <option value="Supercondensador">Híbrido Supercap.</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="input-battery-kwh" id="lbl-battery-kwh">CAPACIDADE (kWh)</label>
+                            <input type="number" id="input-battery-kwh" class="input-cyber" value="85" step="5" min="20" max="250">
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-cell-format" id="lbl-cell-format">FORMATO DE CÉLULAS</label>
+                            <select id="select-cell-format" class="input-cyber">
+                                <option value="Prismática" selected>Prismática (Módulos)</option>
+                                <option value="Cilíndrica 4680">Cilíndrica 4680</option>
+                                <option value="Blade (Lâmina)">Lâmina (Cell-to-Pack)</option>
+                                <option value="Pouch (Bolsa)">Bolsa (Pouch Empilhada)</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-pack-arch" id="lbl-pack-arch">ARQUITETURA PACK</label>
+                            <select id="select-pack-arch" class="input-cyber">
+                                <option value="Skateboard (Piso)" selected>Skateboard (Piso)</option>
+                                <option value="T-Pack Central">T-Pack Central</option>
+                                <option value="Estrutural 800V">Estrutural Monobloco</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="subsystem-footer-row">
+                        <span class="subsystem-readout-pill" id="battery-summary-info">NMC 811 · 85 kWh · Prismática · Skateboard</span>
+                        <button type="button" class="btn-3d-ctrl" id="btn-bat-back-engine">Ver Motor</button>
                     </div>
                 </div>
             </div>
@@ -1532,9 +1580,9 @@
                 </div>
             </div>
 
-            <!-- Página 3: Inversor, Bateria & Rotação -->
+            <!-- Página 3: Inversor, Mapa & Rotação (Bateria movida para o painel separado no topo) -->
             <div class="config-page" id="cfg-page-2" data-page="2">
-                <div class="config-page-grid grid-cols-7">
+                <div class="config-page-grid grid-cols-5-intake">
                     <div class="campo-grupo">
                         <label for="select-voltage" id="lbl-voltage">TENSÃO HV (V)</label>
                         <select id="select-voltage" class="input-cyber">
@@ -1556,20 +1604,6 @@
                     <div class="campo-grupo">
                         <label for="input-current-limit" id="lbl-current-limit">CORRENTE INV. (A)</label>
                         <input type="number" id="input-current-limit" class="input-cyber" value="650" step="25" min="100" max="2400">
-                    </div>
-                    <div class="campo-grupo">
-                        <label for="select-battery-chem" id="lbl-battery-chem">QUÍMICA BATERIA</label>
-                        <select id="select-battery-chem" class="input-cyber">
-                            <option value="LFP (LiFePO4)">LFP (Ferro-Fosfato)</option>
-                            <option value="NMC 811" selected>NMC 811 (Alta Densidade)</option>
-                            <option value="NCA Performance">NCA (Descarga Alta)</option>
-                            <option value="Estado Sólido">Estado Sólido (Solid)</option>
-                            <option value="Supercondensador">Híbrido Supercap.</option>
-                        </select>
-                    </div>
-                    <div class="campo-grupo">
-                        <label for="input-battery-kwh" id="lbl-battery-kwh">CAPACIDADE (kWh)</label>
-                        <input type="number" id="input-battery-kwh" class="input-cyber" value="85" step="5" min="20" max="250">
                     </div>
                     <div class="campo-grupo">
                         <label for="select-drive-mode" id="lbl-drive-mode">MAPA / MODO</label>
@@ -1656,6 +1690,7 @@
 
         const btnTopEngine = document.getElementById('btn-top-engine');
         const btnTopGearbox = document.getElementById('btn-top-gearbox');
+        const btnTopBattery = document.getElementById('btn-top-battery');
         const btnTopAll = document.getElementById('btn-top-all');
         const popoverGearbox = document.getElementById('popover-gearbox');
         const btnCloseGearbox = document.getElementById('btn-close-gearbox');
@@ -1665,6 +1700,13 @@
         const selectDiffType = document.getElementById('select-diff-type');
         const selectFinalDrive = document.getElementById('select-final-drive');
         const gearboxSummaryInfo = document.getElementById('gearbox-summary-info');
+
+        const popoverBattery = document.getElementById('popover-battery');
+        const btnCloseBattery = document.getElementById('btn-close-battery');
+        const btnBatBackEngine = document.getElementById('btn-bat-back-engine');
+        const selectCellFormat = document.getElementById('select-cell-format');
+        const selectPackArch = document.getElementById('select-pack-arch');
+        const batterySummaryInfo = document.getElementById('battery-summary-info');
 
         let savedRotorForPmsm = 'Neodímio N52 (V-Shape)';
         let viewMode = 'engine';
@@ -1747,7 +1789,7 @@
                 pageTitles: [
                     '1 · ARQUITETURA & ESTATOR',
                     '2 · ROTOR & ARREFECIMENTO',
-                    '3 · INVERSOR, BATERIA & RPM',
+                    '3 · INVERSOR, MAPA & RPM',
                     '4 · DADOS ELÉTRICOS & DYNO'
                 ],
                 pagePrevTitle: 'Página anterior',
@@ -1756,6 +1798,8 @@
                 topEngineTitle: 'Voltar ao modelo 3D do Motor Elétrico',
                 topGearbox: 'Redutor EV',
                 topGearboxTitle: 'Ver modelo separado do Redutor / Caixa EV 3D',
+                topBattery: 'Bateria',
+                topBatteryTitle: 'Ver modelo separado do Pack de Bateria HV 3D',
                 topAll: 'Ver Tudo Junto',
                 topAllTitle: 'Ver Motor Elétrico, Redutor EV e Bateria HV juntos em 3D',
                 viewEngineBtn: 'Ver Motor',
@@ -1764,6 +1808,31 @@
                 lblGbSpeeds: 'ESTÁGIOS / VEL.',
                 lblDiffType: 'DIFERENCIAL / VETOR.',
                 lblGbFinal: 'REDUÇÃO FINAL',
+                batPanelTitle: 'PACK DE BATERIA HV',
+                lblCellFormat: 'FORMATO DE CÉLULAS',
+                lblPackArch: 'ARQUITETURA PACK',
+                cellFormatOpts: {
+                    'Prismática': 'Prismática (Módulos)',
+                    'Cilíndrica 4680': 'Cilíndrica 4680',
+                    'Blade (Lâmina)': 'Lâmina (Cell-to-Pack)',
+                    'Pouch (Bolsa)': 'Bolsa (Pouch Empilhada)'
+                },
+                cellFormatShort: {
+                    'Prismática': 'Prismática',
+                    'Cilíndrica 4680': '4680',
+                    'Blade (Lâmina)': 'Blade',
+                    'Pouch (Bolsa)': 'Pouch'
+                },
+                packArchOpts: {
+                    'Skateboard (Piso)': 'Skateboard (Piso)',
+                    'T-Pack Central': 'T-Pack Central',
+                    'Estrutural 800V': 'Estrutural Monobloco'
+                },
+                packArchShort: {
+                    'Skateboard (Piso)': 'Skateboard',
+                    'T-Pack Central': 'T-Pack',
+                    'Estrutural 800V': 'Estrutural'
+                },
                 gbTypeOpts: {
                     'Redutor 1V Direto': 'Redutor 1V Direto',
                     'Caixa EV 2V': 'Caixa EV 2V (Tipo Taycan)',
@@ -1994,7 +2063,7 @@
                 pageTitles: [
                     '1 · ARCHITECTURE & STATOR',
                     '2 · ROTOR & COOLING',
-                    '3 · INVERTER, BATTERY & RPM',
+                    '3 · INVERTER, MAP & RPM',
                     '4 · EV SPECS & DYNO'
                 ],
                 pagePrevTitle: 'Previous page',
@@ -2003,6 +2072,8 @@
                 topEngineTitle: 'Return to 3D Electric Motor model',
                 topGearbox: 'EV Gearbox',
                 topGearboxTitle: 'View standalone 3D EV Reducer / Gearbox model',
+                topBattery: 'Battery',
+                topBatteryTitle: 'View standalone 3D HV Battery Pack model',
                 topAll: 'View All Together',
                 topAllTitle: 'View Electric Motor, EV Reducer & HV Battery Pack together in 3D',
                 viewEngineBtn: 'View Motor',
@@ -2011,6 +2082,31 @@
                 lblGbSpeeds: 'STAGES / SPEEDS',
                 lblDiffType: 'DIFFERENTIAL / TV',
                 lblGbFinal: 'FINAL REDUCTION',
+                batPanelTitle: 'HV BATTERY PACK',
+                lblCellFormat: 'CELL FORMAT',
+                lblPackArch: 'PACK ARCHITECTURE',
+                cellFormatOpts: {
+                    'Prismática': 'Prismatic Modules',
+                    'Cilíndrica 4680': '4680 Cylindrical Array',
+                    'Blade (Lâmina)': 'Blade (Cell-to-Pack)',
+                    'Pouch (Bolsa)': 'Stacked Pouch Cells'
+                },
+                cellFormatShort: {
+                    'Prismática': 'Prismatic',
+                    'Cilíndrica 4680': '4680 Cyl.',
+                    'Blade (Lâmina)': 'Blade CTP',
+                    'Pouch (Bolsa)': 'Pouch'
+                },
+                packArchOpts: {
+                    'Skateboard (Piso)': 'Flat Skateboard Tray',
+                    'T-Pack Central': 'Central T-Pack Spine',
+                    'Estrutural 800V': 'Structural Monocoque'
+                },
+                packArchShort: {
+                    'Skateboard (Piso)': 'Skateboard',
+                    'T-Pack Central': 'T-Pack',
+                    'Estrutural 800V': 'Structural'
+                },
                 gbTypeOpts: {
                     'Redutor 1V Direto': '1-Speed Direct Reduction',
                     'Caixa EV 2V': '2-Speed EV (Taycan-Style)',
@@ -2463,17 +2559,24 @@
             mapOpts(selectGearboxSpeeds, t.gbSpeedOpts);
             mapOpts(selectDiffType, t.diffOpts);
             mapOpts(selectFinalDrive, t.finalDriveOpts);
+            mapOpts(selectCellFormat, t.cellFormatOpts);
+            mapOpts(selectPackArch, t.packArchOpts);
 
             setTxt('gb-panel-title', t.gbPanelTitle);
             setTxt('lbl-gb-type', t.lblGbType);
             setTxt('lbl-gb-speeds', t.lblGbSpeeds);
             setTxt('lbl-diff-type', t.lblDiffType);
             setTxt('lbl-gb-final', t.lblGbFinal);
+            setTxt('bat-panel-title', t.batPanelTitle);
+            setTxt('lbl-cell-format', t.lblCellFormat);
+            setTxt('lbl-pack-arch', t.lblPackArch);
             setTxt('btn-top-engine', t.topEngine);
             setTxt('btn-top-all', t.topAll);
             setTxt('btn-gb-back-engine', t.viewEngineBtn);
+            setTxt('btn-bat-back-engine', t.viewEngineBtn);
             if (btnTopEngine) btnTopEngine.title = t.topEngineTitle;
             if (btnTopGearbox) btnTopGearbox.title = t.topGearboxTitle;
+            if (btnTopBattery) btnTopBattery.title = t.topBatteryTitle;
             if (btnTopAll) btnTopAll.title = t.topAllTitle;
 
             syncSubsystemUI();
@@ -2988,6 +3091,8 @@
                     currentLimit: 650,
                     batteryChem: 'NMC 811',
                     batteryKwh: 85,
+                    cellFormat: 'Prismática',
+                    packArch: 'Skateboard (Piso)',
                     driveMode: 'Normal',
                     maxRpm: 16000,
                     viewMode: 'engine',
@@ -2997,7 +3102,6 @@
                     finalDrive: 9.73
                 };
 
-                this.fluxRings = [];
                 this.hvPaths = [];
                 this.energyPhase = 0;
 
@@ -3835,7 +3939,7 @@
                         const torM = isInWheel
                             ? this.matTRS(bx, y, bz, 0, 0, 0, raceR * 1.05, raceR * 1.05, 0.055 * s)
                             : this.matTRS(bx, y, bz, 0, Math.PI * 0.5, 0, raceR * 1.05, raceR * 1.05, 0.055 * s);
-                        this.addPart(this.staticOpaque, 'torus', torM, [0.18, 0.56, 0.96, 1.0], [0.72, 60]);
+                        this.addPart(this.staticOpaque, 'torus', torM, [0.34, 0.42, 0.54, 1.0], [0.72, 60]);
                         for (let c = 0; c < 6; c++) {
                             const ca = (c * Math.PI * 2) / 6;
                             const cm = isInWheel
@@ -3959,8 +4063,8 @@
                             this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, fz, Math.PI * 0.5, 0, 0, rStat * 1.13, 0.015 * s, rStat * 1.13), hs.col, hs.spec);
                         }
                     } else if (cooling === 'Glicol (Camisa Água)' || cooling === 'Imersão Dielétrica') {
-                        const cCol = cooling === 'Imersão Dielétrica' ? [0.42, 0.28, 0.86, 1.0] : [0.16, 0.66, 0.88, 1.0];
-                        this.addPart(this.staticTrans, 'torus', this.matTRS(x, y, z, 0, 0, 0, rStat * 1.10, rStat * 1.10, 0.038 * s), cCol, [0.70, 56]);
+                        const cCol = cooling === 'Imersão Dielétrica' ? [0.42, 0.34, 0.68, 1.0] : [0.38, 0.44, 0.52, 1.0];
+                        this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, rStat * 1.10, lenCore * 0.55, rStat * 1.10), cCol, [0.70, 56]);
                     }
                 } else if (cooling === 'Ar (Aletas)') {
                     const finNum = isAxial ? 4 : 8;
@@ -3978,17 +4082,22 @@
                         speedMult: flipDir * 1.0,
                         symmetry: 7,
                         colorHub: C_STEEL,
-                        colorBlade: [0.36, 0.72, 0.94, 1.0]
+                        colorBlade: [0.64, 0.70, 0.78, 1.0]
                     });
                 } else if (cooling === 'Glicol (Camisa Água)') {
-                    const C_GLYCOL = [0.16, 0.66, 0.88, 1.0];
-                    for (const jSide of [-0.30, 0.30]) {
-                        this.addPart(this.staticTrans, 'torus', this.matTRS(x + jSide * lenCore, y, z, 0, Math.PI * 0.5, 0, rStat * 1.10, rStat * 1.10, 0.042 * s), C_GLYCOL, [0.68, 54]);
+                    // Camisa de refrigeração maquilhada na carcaça + tomadas AN metálicas (sem círculos azuis)
+                    const C_JACKET = [0.38, 0.43, 0.50, 1.0];
+                    const C_PORT = [0.72, 0.77, 0.84, 1.0];
+                    const C_AN = [0.22, 0.38, 0.56, 1.0];
+                    if (!isAxial) {
+                        this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.10, lenCore * 0.72, rStat * 1.10), C_JACKET, [0.64, 52]);
                     }
-                    const pIn = [x - lenCore * 0.35, y + rStat * 1.08, z + rStat * 0.42];
-                    const pOut = [x + lenCore * 0.35, y + rStat * 1.08, z - rStat * 0.42];
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(pIn[0], pIn[1], pIn[2], 0, 0, 0, 0.036 * s, 0.12 * s, 0.036 * s), C_GLYCOL, [0.76, 60]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(pOut[0], pOut[1], pOut[2], 0, 0, 0, 0.036 * s, 0.12 * s, 0.036 * s), C_GLYCOL, [0.76, 60]);
+                    const pIn = [x - lenCore * 0.32, y + rStat * 1.08, z + rStat * 0.40];
+                    const pOut = [x + lenCore * 0.32, y + rStat * 1.08, z - rStat * 0.40];
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(pIn[0], pIn[1], pIn[2], 0, 0, 0, 0.034 * s, 0.10 * s, 0.034 * s), C_PORT, [0.80, 64]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(pIn[0], pIn[1] + 0.055 * s, pIn[2], 0, 0, 0, 0.042 * s, 0.035 * s, 0.042 * s), C_AN, [0.78, 60]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(pOut[0], pOut[1], pOut[2], 0, 0, 0, 0.034 * s, 0.10 * s, 0.034 * s), C_PORT, [0.80, 64]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(pOut[0], pOut[1] + 0.055 * s, pOut[2], 0, 0, 0, 0.042 * s, 0.035 * s, 0.042 * s), C_AN, [0.78, 60]);
                 } else if (cooling === 'Óleo Direto') {
                     const C_BRASS = [0.82, 0.64, 0.24, 1.0];
                     for (const endS of [-1, 1]) {
@@ -4025,18 +4134,6 @@
                     speedMult: flipDir,
                     angle: rotorIdx * 0.42
                 });
-
-                // Anéis de fluxo magnético animado no entreferro (fluxRings)
-                if (isInWheel) {
-                    this.fluxRings.push({ x, y, z: z - lenCore * 0.24, r: rRotor * 0.80, thick: 0.032 * s, phaseOff: rotorIdx * 0.3, axisZ: true });
-                    this.fluxRings.push({ x, y, z: z + lenCore * 0.24, r: rRotor * 0.80, thick: 0.032 * s, phaseOff: rotorIdx * 0.3 + 0.5, axisZ: true });
-                } else if (isAxial) {
-                    this.fluxRings.push({ x: x - lenCore * 0.24, y, z, r: rRotor * 0.80, thick: 0.032 * s, phaseOff: rotorIdx * 0.3, axisZ: false });
-                    this.fluxRings.push({ x: x + lenCore * 0.24, y, z, r: rRotor * 0.80, thick: 0.032 * s, phaseOff: rotorIdx * 0.3 + 0.5, axisZ: false });
-                } else {
-                    this.fluxRings.push({ x: x - lenCore * 0.22, y, z, r: rStat * 0.64, thick: 0.030 * s, phaseOff: rotorIdx * 0.3, axisZ: false });
-                    this.fluxRings.push({ x: x + lenCore * 0.22, y, z, r: rStat * 0.64, thick: 0.030 * s, phaseOff: rotorIdx * 0.3 + 0.5, axisZ: false });
-                }
 
                 // Bloco de terminais trifásicos + Inversor opcional montado acima da unidade
                 const termY = y + rStat * 1.07;
@@ -4219,12 +4316,16 @@
 
             addHvBatteryPack(cx, cy, cz, lenX, widthZ) {
                 const chem = this.config.batteryChem || 'NMC 811';
-                const kwh = Math.max(30, Math.min(220, Number(this.config.batteryKwh) || 85));
-                const thickY = 0.24 + (kwh - 40) / 180 * 0.10;
+                const cellFmt = this.config.cellFormat || 'Prismática';
+                const packArch = this.config.packArch || 'Skateboard (Piso)';
+                const kwh = Math.max(20, Math.min(250, Number(this.config.batteryKwh) || 85));
+                const thickY = 0.23 + (kwh - 20) / 230 * 0.12;
 
-                const C_TRAY = [0.22, 0.26, 0.32, 1.0];
-                const C_COOLPLATE = [0.16, 0.44, 0.62, 1.0];
+                const C_TRAY = packArch === 'Estrutural 800V' ? [0.15, 0.18, 0.24, 1.0] : [0.22, 0.26, 0.32, 1.0];
+                const C_COOLPLATE = [0.22, 0.38, 0.48, 1.0];
                 const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
+                const C_COPPER = [0.86, 0.52, 0.22, 1.0];
+                const C_STEEL = [0.76, 0.80, 0.86, 1.0];
 
                 let cellCol = [0.46, 0.38, 0.86, 1.0];
                 let cellSpec = [0.68, 52];
@@ -4242,29 +4343,87 @@
                     cellSpec = [0.80, 64];
                 }
 
-                // Base arrefecida + travessa estrutural do pack skate + tampa superior em corte transparente
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy - thickY * 0.46, cz, 0, 0, 0, lenX * 1.03, 0.042, widthZ * 1.03), C_TRAY, [0.48, 34]);
+                // Base arrefecida + chapa térmica inferior + tampa superior em corte transparente
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy - thickY * 0.46, cz, 0, 0, 0, lenX * 1.04, 0.044, widthZ * 1.04), C_TRAY, [0.52, 38]);
                 this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy - thickY * 0.36, cz, 0, 0, 0, lenX * 0.96, 0.020, widthZ * 0.96), C_COOLPLATE, [0.64, 48]);
                 this.addPart(this.staticTrans, 'bevelBox', this.matTRS(cx, cy + 0.02, cz, 0, 0, 0, lenX, thickY, widthZ), [0.32, 0.38, 0.48, 1.0], [0.56, 46]);
 
-                // Travessas laterais de proteção contra impacto
+                // Travessas laterais contra impacto e pernos perimetrais
                 for (const sz of [-1, 1]) {
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz + sz * widthZ * 0.51, 0, 0, 0, lenX * 1.02, thickY * 0.85, 0.055), [0.44, 0.48, 0.54, 1.0], [0.58, 44]);
+                    const railZ = cz + sz * widthZ * 0.51;
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, railZ, 0, 0, 0, lenX * 1.03, thickY * 0.85, 0.058), [0.44, 0.48, 0.54, 1.0], [0.62, 46]);
+                    for (let lb = 0; lb < 5; lb++) {
+                        const lx = cx + (-0.42 + (0.84 * lb) / 4) * lenX;
+                        this.addPart(this.staticOpaque, 'hex', this.matTRS(lx, cy + thickY * 0.44, railZ, 0, 0, 0, 0.022, 0.032, 0.022), C_STEEL, [0.84, 68]);
+                    }
                 }
 
-                // Módulos de células específicos por química
-                const rowsX = chem === 'LFP (LiFePO4)' ? 8 : 5;
-                const colsZ = chem === 'LFP (LiFePO4)' ? 1 : 2;
-                for (let rx = 0; rx < rowsX; rx++) {
-                    const mx = cx + (-0.39 + (0.78 * rx) / Math.max(1, rowsX - 1)) * lenX;
-                    for (let czIdx = 0; czIdx < colsZ; czIdx++) {
-                        const mz = colsZ === 1 ? cz : cz + (czIdx === 0 ? -0.23 : 0.23) * widthZ;
-                        const mwX = (lenX * 0.72) / rowsX;
-                        const mwZ = (widthZ * 0.82) / colsZ;
-                        const mhY = thickY * (chem === 'Estado Sólido' ? 0.55 : 0.70);
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, mwX, mhY, mwZ), cellCol, cellSpec);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + mhY * 0.52, mz, 0, 0, 0, mwX * 0.85, 0.014, mwZ * 0.28), [0.86, 0.52, 0.22, 1.0], [0.80, 62]);
+                // Bocais hidráulicos de refrigeração da placa base (dianteira)
+                for (const sz of [-1, 1]) {
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - lenX * 0.54, cy - thickY * 0.28, cz + sz * widthZ * 0.26, 0, 0, Math.PI * 0.5, 0.026, 0.11, 0.026), [0.54, 0.62, 0.72, 1.0], [0.80, 62]);
+                }
+
+                if (packArch === 'Estrutural 800V') {
+                    for (let r = 0; r < 3; r++) {
+                        const rxPos = cx + (-0.26 + r * 0.26) * lenX;
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(rxPos, cy + thickY * 0.05, cz, 0, 0, 0, 0.032, thickY * 0.80, widthZ * 0.94), [0.28, 0.32, 0.38, 1.0], [0.64, 48]);
                     }
+                }
+
+                // Módulos internos consoante formato escolhido (Prismática, 4680, Blade, Pouch)
+                if (cellFmt === 'Cilíndrica 4680') {
+                    const rows = 9, cols = 6;
+                    const cellH = thickY * 0.68;
+                    for (let rx = 0; rx < rows; rx++) {
+                        const mx = cx + (-0.39 + (0.72 * rx) / (rows - 1)) * lenX;
+                        for (let czIdx = 0; czIdx < cols; czIdx++) {
+                            const mz = cz + (-0.37 + (0.74 * czIdx) / (cols - 1)) * widthZ;
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, 0.052, cellH, 0.052), [0.74, 0.79, 0.86, 1.0], [0.84, 68]);
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, cy + cellH * 0.50, mz, 0, 0, 0, 0.024, 0.014, 0.024), cellCol, cellSpec);
+                        }
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + cellH * 0.53, cz, 0, 0, 0, 0.026, 0.012, widthZ * 0.80), C_COPPER, [0.84, 64]);
+                    }
+                } else if (cellFmt === 'Blade (Lâmina)') {
+                    const blades = 11;
+                    const bladeH = thickY * 0.66;
+                    for (let bx = 0; bx < blades; bx++) {
+                        const mx = cx + (-0.41 + (0.76 * bx) / (blades - 1)) * lenX;
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, cz, 0, 0, 0, (lenX * 0.66) / blades, bladeH, widthZ * 0.86), cellCol, cellSpec);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + bladeH * 0.51, cz + widthZ * 0.34, 0, 0, 0, (lenX * 0.55) / blades, 0.014, 0.065), C_COPPER, [0.82, 62]);
+                    }
+                } else if (cellFmt === 'Pouch (Bolsa)') {
+                    const stacks = 6;
+                    const pouchH = thickY * 0.70;
+                    for (let sx = 0; sx < stacks; sx++) {
+                        const mx = cx + (-0.39 + (0.72 * sx) / (stacks - 1)) * lenX;
+                        for (const sgn of [-1, 1]) {
+                            const mz = cz + sgn * widthZ * 0.23;
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, (lenX * 0.64) / stacks, pouchH, widthZ * 0.38), [0.76, 0.79, 0.84, 1.0], [0.80, 62]);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + pouchH * 0.52, mz, 0, 0, 0, (lenX * 0.50) / stacks, 0.020, widthZ * 0.14), C_COPPER, [0.84, 66]);
+                        }
+                    }
+                } else {
+                    // Prismática (módulos padrão)
+                    const rowsX = chem === 'LFP (LiFePO4)' ? 8 : 5;
+                    const colsZ = chem === 'LFP (LiFePO4)' ? 1 : 2;
+                    for (let rx = 0; rx < rowsX; rx++) {
+                        const mx = cx + (-0.39 + (0.72 * rx) / Math.max(1, rowsX - 1)) * lenX;
+                        for (let czIdx = 0; czIdx < colsZ; czIdx++) {
+                            const mz = colsZ === 1 ? cz : cz + (czIdx === 0 ? -0.23 : 0.23) * widthZ;
+                            const mwX = (lenX * 0.68) / rowsX;
+                            const mwZ = (widthZ * 0.82) / colsZ;
+                            const mhY = thickY * (chem === 'Estado Sólido' ? 0.55 : 0.70);
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, mwX, mhY, mwZ), cellCol, cellSpec);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + mhY * 0.52, mz, 0, 0, 0, mwX * 0.85, 0.014, mwZ * 0.28), C_COPPER, [0.80, 62]);
+                        }
+                    }
+                }
+
+                if (packArch === 'T-Pack Central') {
+                    const spineH = thickY * 0.72;
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx - lenX * 0.04, cy + thickY * 0.78, cz, 0, 0, 0, lenX * 0.56, spineH, widthZ * 0.26), cellCol, cellSpec);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(cx - lenX * 0.04, cy + thickY * 0.80, cz, 0, 0, 0, lenX * 0.60, spineH * 1.15, widthZ * 0.30), C_TRAY, [0.56, 44]);
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx - lenX * 0.04, cy + thickY * 1.16, cz, 0, 0, 0, lenX * 0.50, 0.022, 0.06), C_HV_ORANGE, [0.58, 42]);
                 }
 
                 if (chem === 'Supercondensador') {
@@ -4279,11 +4438,19 @@
                 const xBdu = cx + lenX * 0.42;
                 this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xBdu, cy + thickY * 0.42, cz, 0, 0, 0, 0.28, 0.14, 0.36), [0.14, 0.16, 0.22, 1.0], [0.46, 36]);
                 this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xBdu, cy + thickY * 0.52, cz, 0, 0, 0, 0.18, 0.04, 0.22), C_HV_ORANGE, [0.58, 42]);
+                // Barramento coletor HV central
+                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + thickY * 0.36, cz, 0, 0, 0, lenX * 0.76, 0.018, 0.044), C_HV_ORANGE, [0.56, 40]);
 
                 return {
                     frontHv: [cx - lenX * 0.48, cy + thickY * 0.22, cz],
                     rearHv: [cx + lenX * 0.48, cy + thickY * 0.22, cz]
                 };
+            }
+
+            buildStandaloneBatteryScene() {
+                this.addHvBatteryPack(0, 0, 0, 2.35, 1.48);
+                this.sceneCenterX = 0;
+                this.baseDist = 3.9;
             }
 
             routeHvConduit(pA, pB, r = 0.026) {
@@ -4334,13 +4501,16 @@
                 this.staticTrans = [];
                 this.dynamicRotors = [];
                 this.dynamicEvRotors = [];
-                this.fluxRings = [];
                 this.hvPaths = [];
                 this.crankAngle = 0;
 
                 const viewMode = this.config.viewMode || 'engine';
                 if (viewMode === 'gearbox') {
                     this.buildStandaloneGearboxScene();
+                    return;
+                }
+                if (viewMode === 'battery') {
+                    this.buildStandaloneBatteryScene();
                     return;
                 }
 
@@ -4352,50 +4522,50 @@
                 let maxSpanZ = 1.1;
 
                 if (topo === 'Single') {
-                    const u = this.addEvDriveUnit({ x: isAll ? 1.55 : -0.22, y: 0, z: 0, scale: 1.02, flipDir: 1, includeInverter: true, rotorIdx: 0 });
-                    this.addEvGearboxModel(u.x + u.lenCore * 0.65 + 0.24, 0, 0.94, true);
+                    const u = this.addEvDriveUnit({ x: isAll ? 1.55 : 0.0, y: 0, z: 0, scale: isAll ? 1.02 : 1.08, flipDir: 1, includeInverter: true, rotorIdx: 0 });
                     units.push(u);
                     if (isAll) {
+                        this.addEvGearboxModel(u.x + u.lenCore * 0.65 + 0.24, 0, 0.94, true, 1);
                         const pack = this.addHvBatteryPack(-0.28, -0.26, 0, 2.10, 1.28);
                         if (u.hvPorts) this.routeHvConduit(pack.rearHv, u.hvPorts.hvInputPos, 0.028);
                         xMinAll = -1.55;
                         xMaxAll = 2.45;
                         maxSpanZ = 1.25;
                     } else {
-                        this.sceneCenterX = 0.08;
-                        this.baseDist = 3.6;
+                        this.sceneCenterX = 0.0;
+                        this.baseDist = 3.15;
                         return;
                     }
                 } else if (topo === 'Dual') {
-                    const xF = isAll ? -1.85 : -1.25;
-                    const xR = isAll ? 1.85 : 1.25;
+                    const xF = isAll ? -1.85 : -1.02;
+                    const xR = isAll ? 1.85 : 1.02;
                     const uF = this.addEvDriveUnit({ x: xF, y: 0, z: 0, scale: 0.90, flipDir: -1, includeInverter: true, rotorIdx: 0 });
                     const uR = this.addEvDriveUnit({ x: xR, y: 0, z: 0, scale: 0.96, flipDir: 1, includeInverter: true, rotorIdx: 1 });
-                    this.addEvGearboxModel(xF - uF.lenCore * 0.62 - 0.22, 0, 0.84, true, -1);
-                    this.addEvGearboxModel(xR + uR.lenCore * 0.62 + 0.22, 0, 0.88, true, 1);
                     units.push(uF, uR);
                     if (isAll) {
+                        this.addEvGearboxModel(xF - uF.lenCore * 0.62 - 0.22, 0, 0.84, true, -1);
+                        this.addEvGearboxModel(xR + uR.lenCore * 0.62 + 0.22, 0, 0.88, true, 1);
                         const pack = this.addHvBatteryPack(0, -0.26, 0, 2.25, 1.32);
                         if (uF.hvPorts) this.routeHvConduit(pack.frontHv, uF.hvPorts.hvInputPos, 0.026);
                         if (uR.hvPorts) this.routeHvConduit(pack.rearHv, uR.hvPorts.hvInputPos, 0.026);
                         xMinAll = -2.65;
                         xMaxAll = 2.65;
                     } else {
-                        xMinAll = -2.05;
-                        xMaxAll = 2.05;
+                        xMinAll = -1.65;
+                        xMaxAll = 1.65;
                     }
-                    maxSpanZ = 1.25;
+                    maxSpanZ = 1.15;
                 } else if (topo === 'Tri') {
-                    const xF = isAll ? -1.90 : -1.35;
-                    const xR = isAll ? 1.82 : 1.25;
+                    const xF = isAll ? -1.90 : -1.06;
+                    const xR = isAll ? 1.82 : 1.02;
                     const uF = this.addEvDriveUnit({ x: xF, y: 0, z: 0, scale: 0.88, flipDir: -1, includeInverter: true, rotorIdx: 0 });
                     const uRL = this.addEvDriveUnit({ x: xR, y: 0, z: -0.58, scale: 0.80, flipDir: 1, includeInverter: true, rotorIdx: 1 });
                     const uRR = this.addEvDriveUnit({ x: xR, y: 0, z: 0.58, scale: 0.80, flipDir: 1, includeInverter: true, rotorIdx: 2 });
-                    this.addEvGearboxModel(xF - uF.lenCore * 0.60 - 0.20, 0, 0.82, true, -1);
-                    this.addEvGearboxModel(xR + uRL.lenCore * 0.58 + 0.16, -0.58, 0.68, false, 1);
-                    this.addEvGearboxModel(xR + uRR.lenCore * 0.58 + 0.16, 0.58, 0.68, false, 1);
                     units.push(uF, uRL, uRR);
                     if (isAll) {
+                        this.addEvGearboxModel(xF - uF.lenCore * 0.60 - 0.20, 0, 0.82, true, -1);
+                        this.addEvGearboxModel(xR + uRL.lenCore * 0.58 + 0.16, -0.58, 0.68, false, 1);
+                        this.addEvGearboxModel(xR + uRR.lenCore * 0.58 + 0.16, 0.58, 0.68, false, 1);
                         const pack = this.addHvBatteryPack(0, -0.26, 0, 2.25, 1.36);
                         if (uF.hvPorts) this.routeHvConduit(pack.frontHv, uF.hvPorts.hvInputPos, 0.026);
                         if (uRL.hvPorts) this.routeHvConduit(pack.rearHv, uRL.hvPorts.hvInputPos, 0.024);
@@ -4403,23 +4573,23 @@
                         xMinAll = -2.65;
                         xMaxAll = 2.55;
                     } else {
-                        xMinAll = -2.05;
-                        xMaxAll = 2.05;
+                        xMinAll = -1.68;
+                        xMaxAll = 1.65;
                     }
-                    maxSpanZ = 1.40;
+                    maxSpanZ = 1.35;
                 } else if (topo === 'Quad') {
-                    const xF = isAll ? -1.88 : -1.28;
-                    const xR = isAll ? 1.88 : 1.28;
+                    const xF = isAll ? -1.88 : -1.04;
+                    const xR = isAll ? 1.88 : 1.04;
                     const uFL = this.addEvDriveUnit({ x: xF, y: 0, z: -0.56, scale: 0.78, flipDir: -1, includeInverter: true, rotorIdx: 0 });
                     const uFR = this.addEvDriveUnit({ x: xF, y: 0, z: 0.56, scale: 0.78, flipDir: -1, includeInverter: true, rotorIdx: 1 });
                     const uRL = this.addEvDriveUnit({ x: xR, y: 0, z: -0.56, scale: 0.78, flipDir: 1, includeInverter: true, rotorIdx: 2 });
                     const uRR = this.addEvDriveUnit({ x: xR, y: 0, z: 0.56, scale: 0.78, flipDir: 1, includeInverter: true, rotorIdx: 3 });
-                    this.addEvGearboxModel(xF - uFL.lenCore * 0.58 - 0.14, -0.56, 0.64, false, -1);
-                    this.addEvGearboxModel(xF - uFR.lenCore * 0.58 - 0.14, 0.56, 0.64, false, -1);
-                    this.addEvGearboxModel(xR + uRL.lenCore * 0.58 + 0.14, -0.56, 0.64, false, 1);
-                    this.addEvGearboxModel(xR + uRR.lenCore * 0.58 + 0.14, 0.56, 0.64, false, 1);
                     units.push(uFL, uFR, uRL, uRR);
                     if (isAll) {
+                        this.addEvGearboxModel(xF - uFL.lenCore * 0.58 - 0.14, -0.56, 0.64, false, -1);
+                        this.addEvGearboxModel(xF - uFR.lenCore * 0.58 - 0.14, 0.56, 0.64, false, -1);
+                        this.addEvGearboxModel(xR + uRL.lenCore * 0.58 + 0.14, -0.56, 0.64, false, 1);
+                        this.addEvGearboxModel(xR + uRR.lenCore * 0.58 + 0.14, 0.56, 0.64, false, 1);
                         const pack = this.addHvBatteryPack(0, -0.26, 0, 2.15, 1.32);
                         for (const uu of [uFL, uFR]) {
                             if (uu.hvPorts) this.routeHvConduit(pack.frontHv, uu.hvPorts.hvInputPos, 0.022);
@@ -4430,10 +4600,10 @@
                         xMinAll = -2.65;
                         xMaxAll = 2.65;
                     } else {
-                        xMinAll = -2.00;
-                        xMaxAll = 2.00;
+                        xMinAll = -1.65;
+                        xMaxAll = 1.65;
                     }
-                    maxSpanZ = 1.40;
+                    maxSpanZ = 1.35;
                 } else {
                     // In-Wheel: 4 motores pancake diretamente nos cubos das rodas + inversores montados em subchassis
                     const corners = [
@@ -4913,31 +5083,18 @@
                     }
                 }
 
-                // Brilho eletromagnético no entreferro e pulsos HV entre bateria/inversor/motor
+                // Pulsos HV nas cablagens entre bateria/inversor/motor (sem anéis azuis no entreferro)
                 const isActive = engineSim.on && (engineSim.currentRpm > 5 || engineSim.throttlePct > 0);
-                if (this.fluxRings.length || this.hvPaths.length) {
+                if (this.hvPaths.length) {
                     gl.enable(gl.BLEND);
                     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
                     gl.depthMask(false);
 
-                    const rpmRatio = engineSim.currentRpm / Math.max(3000, engineSim.maxRpm || 16000);
                     const regen = engineSim.isRegening;
-                    const fluxCol = regen
-                        ? [0.12, 0.92, 0.58, isActive ? 0.62 : 0.16]
-                        : [0.28, 0.72 + 0.22 * rpmRatio, 1.0, isActive ? (0.28 + 0.52 * Math.max(rpmRatio, (engineSim.throttlePct || 0) / 100)) : 0.14];
-
-                    for (const fr of this.fluxRings) {
-                        const pulseR = fr.r * (0.98 + 0.03 * Math.sin(this.energyPhase * 4.0 + fr.phaseOff));
-                        const fm = fr.axisZ
-                            ? this.matTRS(fr.x, fr.y, fr.z, 0, 0, 0, pulseR, pulseR, fr.thick)
-                            : this.matTRS(fr.x, fr.y, fr.z, 0, Math.PI * 0.5, 0, pulseR, pulseR, fr.thick);
-                        this.drawItem(this.meshes.torus, fm, fluxCol, [0.0, 1.0], viewProj);
-                    }
-
                     const pulseAlpha = isActive ? 0.88 : 0.28;
                     const pulseCol = regen
                         ? [0.14, 0.95, 0.56, pulseAlpha]
-                        : [0.46, 0.82, 1.0, pulseAlpha];
+                        : [1.0, 0.64, 0.22, pulseAlpha];
                     for (const hp of this.hvPaths) {
                         for (let k = 0; k < 2; k++) {
                             const s = ((this.energyPhase * 0.85 + hp.phaseOff + k * 0.5) % 1.0 + 1.0) % 1.0;
@@ -5205,6 +5362,8 @@
                 current_limit: (Number.isFinite(rawCurr) && rawCurr > 0) ? Math.max(100, Math.min(2400, rawCurr)) : 650,
                 battery_chem: selectBatteryChem ? selectBatteryChem.value : 'NMC 811',
                 battery_kwh: (Number.isFinite(rawKwh) && rawKwh > 0) ? Math.max(20, Math.min(250, rawKwh)) : 85,
+                cell_format: selectCellFormat ? selectCellFormat.value : 'Prismática',
+                pack_arch: selectPackArch ? selectPackArch.value : 'Skateboard (Piso)',
                 drive_mode: selectDriveMode ? selectDriveMode.value : 'Normal',
                 max_rpm: (Number.isFinite(rawRpm) && rawRpm > 0) ? Math.max(3000, Math.min(35000, rawRpm)) : 16000,
                 gearbox_type: gbType,
@@ -5240,7 +5399,8 @@
             if (sumArchSub) sumArchSub.textContent = `${p.voltage} V · ${t.invWord} ${invShort} · ${windShort}`;
             if (sumDispVal) sumDispVal.textContent = `Ø${Math.round(p.stator_diam)}×${Math.round(p.stack_len)} mm`;
             if (sumGeoSub) sumGeoSub.textContent = `${p.max_rpm} RPM · ${t.reducerWord} ${p.final_drive.toFixed(2)}:1`;
-            if (sumAdmVal) sumAdmVal.textContent = `${Math.round(p.battery_kwh)} kWh · ${p.battery_chem}`;
+            const fmtShort = (t.cellFormatShort && t.cellFormatShort[p.cell_format]) ? t.cellFormatShort[p.cell_format] : p.cell_format;
+            if (sumAdmVal) sumAdmVal.textContent = `${Math.round(p.battery_kwh)} kWh · ${p.battery_chem} (${fmtShort})`;
             if (sumAdmSub) sumAdmSub.textContent = `${t.effWord} ${engineSim.effPct.toFixed(1)}% · ${t.regenWord} ${regenShort}`;
             if (sumBuildVal) sumBuildVal.textContent = houseLabel;
             if (sumBuildSub) sumBuildSub.textContent = `${t.rotorWord}: ${rotorShort} · ${coolShort} · ${Math.round(p.current_limit)} A`;
@@ -5265,6 +5425,8 @@
                     currentLimit: p.current_limit,
                     batteryChem: p.battery_chem,
                     batteryKwh: p.battery_kwh,
+                    cellFormat: p.cell_format,
+                    packArch: p.pack_arch,
                     driveMode: p.drive_mode,
                     maxRpm: p.max_rpm,
                     viewMode: viewMode,
@@ -5421,6 +5583,17 @@
                 gearboxSummaryInfo.textContent = `${gbShort} · ${spdShort} · ${diffShort} · ${fdVal}:1`;
             }
 
+            const chem = selectBatteryChem ? selectBatteryChem.value : 'NMC 811';
+            const rawKwh = parseFloat(inputBatteryKwh ? inputBatteryKwh.value : 85);
+            const kwhVal = (Number.isFinite(rawKwh) && rawKwh > 0) ? Math.max(20, Math.min(250, rawKwh)) : 85;
+            const cFmt = selectCellFormat ? selectCellFormat.value : 'Prismática';
+            const pArch = selectPackArch ? selectPackArch.value : 'Skateboard (Piso)';
+            const cFmtShort = (t.cellFormatShort && t.cellFormatShort[cFmt]) ? t.cellFormatShort[cFmt] : cFmt;
+            const pArchShort = (t.packArchShort && t.packArchShort[pArch]) ? t.packArchShort[pArch] : pArch;
+            if (batterySummaryInfo) {
+                batterySummaryInfo.textContent = `${chem} · ${Math.round(kwhVal)} kWh · ${cFmtShort} · ${pArchShort}`;
+            }
+
             if (btnTopEngine) {
                 btnTopEngine.style.display = viewMode === 'engine' ? 'none' : 'inline-flex';
             }
@@ -5428,6 +5601,11 @@
                 btnTopGearbox.textContent = `${t.topGearbox} · ${spdShort}`;
                 btnTopGearbox.classList.toggle('ativo', viewMode === 'gearbox' || activeTopPopover === 'gearbox');
                 btnTopGearbox.setAttribute('aria-expanded', activeTopPopover === 'gearbox' ? 'true' : 'false');
+            }
+            if (btnTopBattery) {
+                btnTopBattery.textContent = `${t.topBattery} · ${Math.round(kwhVal)} kWh`;
+                btnTopBattery.classList.toggle('ativo', viewMode === 'battery' || activeTopPopover === 'battery');
+                btnTopBattery.setAttribute('aria-expanded', activeTopPopover === 'battery' ? 'true' : 'false');
             }
             if (btnTopAll) {
                 const isAll = viewMode === 'all';
@@ -5442,6 +5620,7 @@
             }
             activeTopPopover = popoverWhich;
             if (popoverGearbox) popoverGearbox.classList.toggle('aberto', activeTopPopover === 'gearbox');
+            if (popoverBattery) popoverBattery.classList.toggle('aberto', activeTopPopover === 'battery');
             syncSubsystemUI();
             atualizarMotor3D();
         }
@@ -5453,6 +5632,7 @@
             });
         }
         if (btnGbBackEngine) btnGbBackEngine.addEventListener('click', () => setViewAndPopover('engine', null));
+        if (btnBatBackEngine) btnBatBackEngine.addEventListener('click', () => setViewAndPopover('engine', null));
         if (btnTopGearbox) {
             btnTopGearbox.addEventListener('click', () => {
                 if (viewMode !== 'gearbox') {
@@ -5462,10 +5642,34 @@
                 }
             });
         }
+        if (btnTopBattery) {
+            btnTopBattery.addEventListener('click', () => {
+                if (viewMode !== 'battery') {
+                    setViewAndPopover('battery', 'battery');
+                } else {
+                    setViewAndPopover('battery', activeTopPopover === 'battery' ? null : 'battery');
+                }
+            });
+        }
         if (btnCloseGearbox) btnCloseGearbox.addEventListener('click', () => setViewAndPopover(null, null));
+        if (btnCloseBattery) btnCloseBattery.addEventListener('click', () => setViewAndPopover(null, null));
 
         [selectGearboxType, selectGearboxSpeeds, selectDiffType, selectFinalDrive].forEach(el => {
             if (!el) return;
+            el.addEventListener('change', () => {
+                syncSubsystemUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+        });
+
+        [selectBatteryChem, inputBatteryKwh, selectCellFormat, selectPackArch].forEach(el => {
+            if (!el) return;
+            el.addEventListener('input', () => {
+                syncSubsystemUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
             el.addEventListener('change', () => {
                 syncSubsystemUI();
                 atualizarMotor3D();
@@ -5520,7 +5724,7 @@
             });
         }
 
-        [inputStatorDiam, inputStackLen, selectPoles, selectWinding, selectHousingMat, selectCooling, selectBearingType, selectFieldWeakening, selectRegenMode, selectVoltage, selectInverter, inputCurrentLimit, selectBatteryChem, inputBatteryKwh, selectDriveMode, inputRpm].forEach(el => {
+        [inputStatorDiam, inputStackLen, selectPoles, selectWinding, selectHousingMat, selectCooling, selectBearingType, selectFieldWeakening, selectRegenMode, selectVoltage, selectInverter, inputCurrentLimit, selectDriveMode, inputRpm].forEach(el => {
             if (!el) return;
             el.addEventListener('input', () => {
                 atualizarMotor3D();
