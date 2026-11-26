@@ -1604,7 +1604,7 @@ def gerar_dashboard_html(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Powertrain Studio</title>
+    <title>Dynamic Kinematrix</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -3087,32 +3087,32 @@ def gerar_dashboard_html(
     </style>
 </head>
 <body>
-    <!-- Ecrã Inicial com seleção: ICE puro · Híbrido · Full Electric -->
+    <!-- Ecrã Inicial com seleção: ICE · Híbrido · 100% Elétrico -->
     <section id="launcher-screen" class="launcher-screen" aria-label="Seleção de Motorização">
         <div class="launcher-topbar">
-            <span class="widget-badge badge-live" id="launcher-brand-badge">POWERTRAIN STUDIO</span>
+            <span class="widget-badge badge-live" id="launcher-brand-badge">Dynamic Kinematrix</span>
             <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="launcher-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
         </div>
 
         <div class="launcher-center">
             <div class="launcher-hero">
-                <h1 id="launcher-title">Escolha a Arquitetura do Grupo Propulsor</h1>
-                <p id="launcher-subtitle">Selecione entre combustão interna pura, arquitetura híbrida ou propulsão 100% elétrica com simulação 3D interativa e banco de potência em tempo real.</p>
+                <h1 id="launcher-title">Dynamic Kinematrix</h1>
+                <p id="launcher-subtitle">Movidos pela paixão. Guiados pela criatividade.</p>
             </div>
 
             <div class="launcher-cards-grid">
                 <button type="button" class="launcher-card launcher-card-ice" id="btn-launch-ice">
                     <div>
                         <div class="launcher-card-head">
-                            <span class="launcher-card-badge" id="launcher-ice-badge">COMBUSTÃO PURA</span>
+                            <span class="launcher-card-badge" id="launcher-ice-badge">COMBUSTÃO INTERNA</span>
                             <span class="launcher-card-icon" aria-hidden="true">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14v10H5z"/><path d="M9 7V4h6v3"/><path d="M9 17v3h6v-3"/><circle cx="12" cy="12" r="2.2"/></svg>
                             </span>
                         </div>
-                        <h2 class="launcher-card-title" id="launcher-ice-title">ICE puro</h2>
-                        <p class="launcher-card-desc" id="launcher-ice-desc">Motor térmico puro em linha, V, VR, W, Boxer ou Wankel Rotativo · 2T/4T, Freevalve, Turbo/Quad/Twincharge, Radiadores, Caixa, Escape e Dyno ICE.</p>
+                        <h2 class="launcher-card-title" id="launcher-ice-title">ICE</h2>
+                        <p class="launcher-card-desc" id="launcher-ice-desc">Mais do que mecânica, é puro instinto: o calor da combustão desperta a fera no interior dos cilindros, entregando potência com alma e personalidade.</p>
                     </div>
-                    <span class="launcher-card-cta" id="launcher-ice-cta">Abrir ICE puro →</span>
+                    <span class="launcher-card-cta" id="launcher-ice-cta">Abrir ICE →</span>
                 </button>
 
                 <button type="button" class="launcher-card launcher-card-hybrid" id="btn-launch-hybrid">
@@ -3124,7 +3124,7 @@ def gerar_dashboard_html(
                             </span>
                         </div>
                         <h2 class="launcher-card-title" id="launcher-hyb-title">Híbrido</h2>
-                        <p class="launcher-card-desc" id="launcher-hyb-desc">Combustão e Parte Elétrica separadas + Ver Tudo Junto · MHEV 48V, Power-Split, P2, PHEV P2+P4, EREV e Hypercar MGU-K+H com curva combinada no Dyno.</p>
+                        <p class="launcher-card-desc" id="launcher-hyb-desc">A harmonia definitiva: onde a paixão clássica do combustível ganha o reforço silencioso e imediato da energia elétrica, adaptando-se a cada momento da condução.</p>
                     </div>
                     <span class="launcher-card-cta" id="launcher-hyb-cta">Abrir Híbrido →</span>
                 </button>
@@ -3132,20 +3132,20 @@ def gerar_dashboard_html(
                 <button type="button" class="launcher-card launcher-card-ev" id="btn-launch-electric">
                     <div>
                         <div class="launcher-card-head">
-                            <span class="launcher-card-badge" id="launcher-ev-badge">100% ELÉTRICO</span>
+                            <span class="launcher-card-badge" id="launcher-ev-badge">ELÉTRICO PURO</span>
                             <span class="launcher-card-icon" aria-hidden="true">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M19 10v4h2v-4z"/><path d="M11 9.5L8.5 12h3l-1 2.5L13.5 12h-3z"/></svg>
                             </span>
                         </div>
-                        <h2 class="launcher-card-title" id="launcher-ev-title">Full Electric</h2>
-                        <p class="launcher-card-desc" id="launcher-ev-desc">Grupo propulsor 100% EV · Single, Dual AWD, Tri, Quad ou In-Wheel Hub, PMSM/Fluxo Axial/Indução, Redutor EV 1V/2V/E-CVT, Pack Bateria HV e Dyno EV.</p>
+                        <h2 class="launcher-card-title" id="launcher-ev-title">100% Elétrico</h2>
+                        <p class="launcher-card-desc" id="launcher-ev-desc">Força invisível: no silêncio mais absoluto, desperta uma energia incrível que te empurra para a frente sem deixar rasto.</p>
                     </div>
-                    <span class="launcher-card-cta" id="launcher-ev-cta">Abrir Full Electric →</span>
+                    <span class="launcher-card-cta" id="launcher-ev-cta">Abrir 100% Elétrico →</span>
                 </button>
             </div>
         </div>
 
-        <p class="launcher-footer-hint" id="launcher-footer-hint">Pode regressar a este ecrã inicial a qualquer momento através do botão "← Início" na barra superior.</p>
+        <p class="launcher-footer-hint" id="launcher-footer-hint">Podes regressar a este menu a qualquer momento através do botão "← Início".</p>
     </section>
 
     <div id="app-ice" class="app-mode-shell" hidden>
@@ -3158,7 +3158,7 @@ def gerar_dashboard_html(
         <div class="topbar-row">
             <div class="topbar-subsystems-wrap">
                 <nav class="dashboard-topbar topbar-subsystems" aria-label="Subsistemas do Grupo Propulsor Híbrido">
-                    <button type="button" class="btn-3d-ctrl btn-back-launcher" id="btn-back-launcher" title="Voltar ao ecrã inicial (ICE puro · Híbrido · Full Electric)">← Início</button>
+                    <button type="button" class="btn-3d-ctrl btn-back-launcher" id="btn-back-launcher" title="Voltar ao ecrã inicial (ICE · Híbrido · 100% Elétrico)">← Início</button>
                     <button type="button" class="btn-3d-ctrl ativo" id="btn-top-engine" aria-pressed="true" title="Ver modelo 3D separado do Motor a Combustão">Combustão</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-gearbox" aria-expanded="false" title="Ver modelo separado da Caixa de Velocidades 3D">Caixa de Velocidades</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-exhaust" aria-expanded="false" title="Ver percurso dos gases e Escape 3D">Escape</button>
@@ -3599,7 +3599,7 @@ def gerar_dashboard_html(
                 pagePrevTitle: 'Página anterior',
                 pageNextTitle: 'Próxima página',
                 backLauncher: '← Início',
-                backLauncherTitle: 'Voltar ao ecrã inicial (ICE puro · Híbrido · Full Electric)',
+                backLauncherTitle: 'Voltar ao ecrã inicial (ICE · Híbrido · 100% Elétrico)',
                 topEngine: 'Combustão',
                 topEngineTitle: 'Ver apenas o modelo 3D e opções do Motor a Combustão',
                 topGearbox: 'Caixa de Velocidades',
@@ -4002,7 +4002,7 @@ def gerar_dashboard_html(
                 pagePrevTitle: 'Previous page',
                 pageNextTitle: 'Next page',
                 backLauncher: '← Home',
-                backLauncherTitle: 'Return to start screen (Pure ICE · Hybrid · Full Electric)',
+                backLauncherTitle: 'Return to start screen (ICE · Hybrid · 100% Electric)',
                 topEngine: 'Combustion',
                 topEngineTitle: 'View standalone 3D Combustion Engine model & controls',
                 topGearbox: 'Gearbox',
@@ -10879,44 +10879,44 @@ def gerar_dashboard_html(
         'use strict';
         const LAUNCHER_I18N = {{
             pt: {{
-                brandBadge: 'POWERTRAIN STUDIO',
+                brandBadge: 'Dynamic Kinematrix',
                 langBtn: 'PT → EN',
                 langTitle: 'Mudar idioma (Português / English)',
-                title: 'Escolha a Arquitetura do Grupo Propulsor',
-                subtitle: 'Selecione entre combustão interna pura, arquitetura híbrida ou propulsão 100% elétrica com simulação 3D interativa e banco de potência em tempo real.',
-                iceBadge: 'COMBUSTÃO PURA',
-                iceTitle: 'ICE puro',
-                iceDesc: 'Motor térmico puro em linha, V, VR, W, Boxer ou Wankel Rotativo · 2T/4T, Freevalve, Turbo/Quad/Twincharge, Radiadores, Caixa, Escape e Dyno ICE.',
-                iceCta: 'Abrir ICE puro →',
+                title: 'Dynamic Kinematrix',
+                subtitle: 'Movidos pela paixão. Guiados pela criatividade.',
+                iceBadge: 'COMBUSTÃO INTERNA',
+                iceTitle: 'ICE',
+                iceDesc: 'Mais do que mecânica, é puro instinto: o calor da combustão desperta a fera no interior dos cilindros, entregando potência com alma e personalidade.',
+                iceCta: 'Abrir ICE →',
                 hybBadge: 'COMBUSTÃO + ELÉTRICO',
                 hybTitle: 'Híbrido',
-                hybDesc: 'Combustão e Parte Elétrica separadas + Ver Tudo Junto · MHEV 48V, Power-Split, P2, PHEV P2+P4, EREV e Hypercar MGU-K+H com curva combinada no Dyno.',
+                hybDesc: 'A harmonia definitiva: onde a paixão clássica do combustível ganha o reforço silencioso e imediato da energia elétrica, adaptando-se a cada momento da condução.',
                 hybCta: 'Abrir Híbrido →',
-                evBadge: '100% ELÉTRICO',
-                evTitle: 'Full Electric',
-                evDesc: 'Grupo propulsor 100% EV · Single, Dual AWD, Tri, Quad ou In-Wheel Hub, PMSM/Fluxo Axial/Indução, Redutor EV 1V/2V/E-CVT, Pack Bateria HV e Dyno EV.',
-                evCta: 'Abrir Full Electric →',
-                footerHint: 'Pode regressar a este ecrã inicial a qualquer momento através do botão "← Início" na barra superior.'
+                evBadge: 'ELÉTRICO PURO',
+                evTitle: '100% Elétrico',
+                evDesc: 'Força invisível: no silêncio mais absoluto, desperta uma energia incrível que te empurra para a frente sem deixar rasto.',
+                evCta: 'Abrir 100% Elétrico →',
+                footerHint: 'Podes regressar a este menu a qualquer momento através do botão "← Início".'
             }},
             en: {{
-                brandBadge: 'POWERTRAIN STUDIO',
+                brandBadge: 'Dynamic Kinematrix',
                 langBtn: 'EN → PT',
                 langTitle: 'Switch language (Português / English)',
-                title: 'Choose Powertrain Architecture',
-                subtitle: 'Select between pure internal combustion, hybrid architecture, or 100% full electric propulsion with interactive 3D simulation and real-time dynamometer.',
-                iceBadge: 'PURE COMBUSTION',
-                iceTitle: 'Pure ICE',
-                iceDesc: 'Pure thermal engine in Inline, V, VR, W, Boxer or Wankel Rotary · 2T/4T, Freevalve, Turbo/Quad/Twincharge, Radiators, Gearbox, Exhaust & Pure ICE Dyno.',
-                iceCta: 'Open Pure ICE →',
+                title: 'Dynamic Kinematrix',
+                subtitle: 'Driven by passion. Guided by creativity.',
+                iceBadge: 'INTERNAL COMBUSTION',
+                iceTitle: 'ICE',
+                iceDesc: 'More than mechanics, pure instinct: the heat of combustion awakens the beast inside the cylinders, delivering power with soul and character.',
+                iceCta: 'Open ICE →',
                 hybBadge: 'COMBUSTION + ELECTRIC',
                 hybTitle: 'Hybrid',
-                hybDesc: 'Separated Combustion & Electric Part views + View All Together · 48V MHEV, Power-Split, P2, PHEV P2+P4, EREV & Hypercar MGU-K+H with combined Dyno curve.',
+                hybDesc: 'The ultimate harmony: where the classic passion of fuel gains the silent, instant boost of electric energy, adapting to every driving moment.',
                 hybCta: 'Open Hybrid →',
-                evBadge: '100% ELECTRIC',
-                evTitle: 'Full Electric',
-                evDesc: '100% EV drivetrain · Single, Dual AWD, Tri, Quad or In-Wheel Hub, PMSM/Axial Flux/Induction, 1-spd/2-spd/E-CVT EV Reducer, HV Battery Pack & EV Dyno.',
-                evCta: 'Open Full Electric →',
-                footerHint: 'You can return to this start screen anytime using the "← Home" button on the top bar.'
+                evBadge: 'ALL-ELECTRIC',
+                evTitle: '100% Electric',
+                evDesc: 'Invisible force: in absolute silence, incredible energy awakens to push you forward without leaving a trace.',
+                evCta: 'Open 100% Electric →',
+                footerHint: 'You can return to this menu anytime using the "← Home" button.'
             }}
         }};
 
