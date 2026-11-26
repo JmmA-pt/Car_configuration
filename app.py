@@ -7,6 +7,14 @@ import os
 import sys
 import webbrowser
 
+import ev_powertrain
+from ev_powertrain import (
+    TOPOLOGY_UNIT_COUNTS as EV_TOPOLOGY_UNIT_COUNTS,
+    calcular_peso_ideal_rotor,
+    gerar_svg_motor_eletrico,
+    processar_eletrico,
+)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -771,6 +779,7 @@ def processar_combustao(
     cell_format: str = "Prismática",
     battery_kwh: float = 18.5,
     hybrid_mode: str = "Equilibrado",
+    hybrid_enabled: bool = True,
 ) -> dict:
     """
     Calcula automaticamente em Python os parâmetros do motor (potência em kW,
@@ -1044,7 +1053,11 @@ def processar_combustao(
     p_ba = PERFIS_BAT_ARCH.get(battery_arch, 1.00)
     p_bc = PERFIS_BAT_CHEM.get(battery_chem, PERFIS_BAT_CHEM["NMC 811"])
     p_hm = PERFIS_HYB_MODE.get(hybrid_mode, 0.95)
-    mgu_h_boost = 1.03 if (p_hyb["no_lag"] and admissao_valida in ("Turbo", "Biturbo", "Quad Turbo", "Twincharge")) else 1.00
+    mgu_h_boost = (
+        1.03
+        if (hybrid_enabled and p_hyb["no_lag"] and admissao_valida in ("Turbo", "Biturbo", "Quad Turbo", "Twincharge"))
+        else 1.00
+    )
 
     fator_cr = 1.0 + max(-0.25, min(0.35, (cr - 10.0) * 0.025))
     fator_ciclo_tq = 1.42 if is_wankel else (1.25 if ciclo == "2T" else 1.00)
@@ -1105,10 +1118,13 @@ def processar_combustao(
     # Cálculo da contribuição elétrica e curva combinada em 49 pontos (paridade Python == JS)
     em_kw_clamped = max(5.0, min(600.0, float(emotor_kw)))
     bat_kwh_clamped = max(0.5, min(60.0, float(battery_kwh)))
-    raw_ev_kw = em_kw_clamped * p_hyb["eff"] * p_hyb["ev_share"] * p_em["hp"] * p_wind * p_cool * p_inv * p_v * p_ba * p_bc["m"] * p_hm
-    bat_burst_kw = max(22.0, bat_kwh_clamped * p_bc["c"]) * p_v
-    bat_scale = min(1.06, 0.68 + 0.32 * min(1.25, bat_burst_kw / max(15.0, raw_ev_kw)))
-    eff_ev_kw = raw_ev_kw * bat_scale
+    if hybrid_enabled:
+        raw_ev_kw = em_kw_clamped * p_hyb["eff"] * p_hyb["ev_share"] * p_em["hp"] * p_wind * p_cool * p_inv * p_v * p_ba * p_bc["m"] * p_hm
+        bat_burst_kw = max(22.0, bat_kwh_clamped * p_bc["c"]) * p_v
+        bat_scale = min(1.06, 0.68 + 0.32 * min(1.25, bat_burst_kw / max(15.0, raw_ev_kw)))
+        eff_ev_kw = raw_ev_kw * bat_scale
+    else:
+        eff_ev_kw = 0.0
 
     max_rpm_dyno = max(1500, int(max_rpm))
     start_rpm = min(1000, round(max_rpm_dyno * 0.15))
@@ -1182,25 +1198,31 @@ def processar_combustao(
         pts_ice.append((rpm_i, tq_i, p_raw))
 
     ev_base_rpm = max(1200.0, max_rpm_dyno * p_hyb["base_rpm_frac"])
-    ev_tq_base = (eff_ev_kw * 9549.2966) / ev_base_rpm * p_em["tq"] * p_hyb["tq_mult"]
+    ev_tq_base = ((eff_ev_kw * 9549.2966) / ev_base_rpm * p_em["tq"] * p_hyb["tq_mult"]) if hybrid_enabled else 0.0
     best_comb_kw = 0.0
     best_comb_tq = 0.0
     best_ev_tq = 0.0
     for rpm_i, ice_tq_i, p_raw in pts_ice:
         ice_kw_i = (p_raw / max_raw_p) * ice_peak_kw
-        if rpm_i <= ev_base_rpm:
-            ev_tq_i = ev_tq_base * (0.94 + 0.06 * _smooth(0.0, ev_base_rpm, rpm_i))
-            ev_kw_i = (ev_tq_i * rpm_i) / 9549.2966
+        if not hybrid_enabled:
+            ev_tq_i = 0.0
+            ev_kw_i = 0.0
+            comb_kw_i = ice_kw_i
+            comb_tq_i = ice_tq_i
         else:
-            hi_frac = max(0.0, (rpm_i - ev_base_rpm) / max(1.0, max_rpm_dyno - ev_base_rpm))
-            ev_kw_i = eff_ev_kw * (1.0 - 0.08 * (hi_frac ** 1.5))
-            ev_tq_i = (ev_kw_i * 9549.2966) / max(1.0, rpm_i)
-        if p_hyb["gen_cap"]:
-            comb_kw_i = ev_kw_i + ice_kw_i * 0.35
-            comb_tq_i = ev_tq_i + ice_tq_i * 0.35
-        else:
-            comb_kw_i = ice_kw_i + ev_kw_i
-            comb_tq_i = ice_tq_i + ev_tq_i
+            if rpm_i <= ev_base_rpm:
+                ev_tq_i = ev_tq_base * (0.94 + 0.06 * _smooth(0.0, ev_base_rpm, rpm_i))
+                ev_kw_i = (ev_tq_i * rpm_i) / 9549.2966
+            else:
+                hi_frac = max(0.0, (rpm_i - ev_base_rpm) / max(1.0, max_rpm_dyno - ev_base_rpm))
+                ev_kw_i = eff_ev_kw * (1.0 - 0.08 * (hi_frac ** 1.5))
+                ev_tq_i = (ev_kw_i * 9549.2966) / max(1.0, rpm_i)
+            if p_hyb["gen_cap"]:
+                comb_kw_i = ev_kw_i + ice_kw_i * 0.35
+                comb_tq_i = ev_tq_i + ice_tq_i * 0.35
+            else:
+                comb_kw_i = ice_kw_i + ev_kw_i
+                comb_tq_i = ice_tq_i + ev_tq_i
         if comb_kw_i >= best_comb_kw:
             best_comb_kw = comb_kw_i
         if comb_tq_i >= best_comb_tq:
@@ -1571,6 +1593,9 @@ def gerar_dashboard_html(
     w1 = widget_motor_inline(num_cilindros, formato, admissao)
     w3 = widget_3_modular(num_cilindros, admissao, formato)
     w_dyno = widget_dyno_modular(dados_iniciais["potencia_kw"], dados_iniciais["torque_nm"])
+    ev_css = ev_powertrain.render_ev_css()
+    ev_shell_html = ev_powertrain.render_ev_shell_html()
+    ev_script_html = ev_powertrain.render_ev_script()
     formato_clean = str(formato).upper() if str(formato).upper() in FORMATOS_MOTOR else "I"
     adm_clean = admissao if admissao in PERFIS_ADMISSAO else "Atmosférico"
 
@@ -1579,7 +1604,7 @@ def gerar_dashboard_html(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Engine</title>
+    <title>Custom Powertrain Studio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -2855,9 +2880,275 @@ def gerar_dashboard_html(
                 height: 118px;
             }}
         }}
+
+        /* Contentores de modo + Botão Voltar ao Menu + Ecrã Inicial (3 modos) */
+        .app-mode-shell {{
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            justify-content: space-between;
+            gap: 8px;
+            flex: 1;
+            width: 100%;
+        }}
+
+        .app-mode-shell[hidden],
+        .launcher-screen[hidden] {{
+            display: none !important;
+        }}
+
+        .btn-back-launcher {{
+            background: rgba(148, 163, 184, 0.14);
+            border-color: rgba(148, 163, 184, 0.42);
+            color: #e2e8f0;
+        }}
+
+        .launcher-screen {{
+            position: relative;
+            z-index: 4;
+            width: 100%;
+            max-width: 1160px;
+            margin: 0 auto;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 10px 8px 24px;
+            gap: 24px;
+        }}
+
+        .launcher-topbar {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 9px 14px;
+            background: var(--bg-elevated);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-card);
+        }}
+
+        .launcher-center {{
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+        }}
+
+        .launcher-hero {{
+            text-align: center;
+            max-width: 740px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }}
+
+        .launcher-hero h1 {{
+            font-size: clamp(1.65rem, 3.2vw, 2.55rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #f8fafc;
+        }}
+
+        .launcher-hero p {{
+            font-size: 0.96rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }}
+
+        .launcher-cards-grid {{
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            align-items: stretch;
+        }}
+
+        .launcher-card {{
+            --card-accent: #f97316;
+            --card-glow: rgba(249, 115, 22, 0.22);
+            text-align: left;
+            background: linear-gradient(180deg, rgba(19, 23, 33, 0.92) 0%, rgba(10, 12, 18, 0.96) 100%);
+            border: 1px solid var(--border-strong);
+            border-top: 3px solid var(--card-accent);
+            border-radius: 16px;
+            padding: 22px 20px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 16px;
+            cursor: pointer;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-card);
+            transition: transform 0.20s ease, border-color 0.20s ease, box-shadow 0.22s ease, background 0.20s ease;
+        }}
+
+        .launcher-card.launcher-card-hybrid {{
+            --card-accent: #2dd4bf;
+            --card-glow: rgba(45, 212, 191, 0.22);
+        }}
+
+        .launcher-card.launcher-card-ev {{
+            --card-accent: #38bdf8;
+            --card-glow: rgba(56, 189, 248, 0.24);
+        }}
+
+        .launcher-card:hover {{
+            transform: translateY(-4px);
+            border-color: var(--card-accent);
+            box-shadow: 0 22px 44px -16px rgba(0, 0, 0, 0.92), 0 0 28px -8px var(--card-glow);
+            background: linear-gradient(180deg, rgba(25, 31, 44, 0.96) 0%, rgba(12, 15, 23, 0.98) 100%);
+        }}
+
+        .launcher-card:focus-visible {{
+            outline: 2px solid var(--card-accent);
+            outline-offset: 3px;
+        }}
+
+        .launcher-card-head {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }}
+
+        .launcher-card-badge {{
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            padding: 4px 9px;
+            border-radius: 99px;
+            color: var(--card-accent);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+        }}
+
+        .launcher-card-icon {{
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-subtle);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--card-accent);
+        }}
+
+        .launcher-card-title {{
+            font-size: 1.32rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+            margin-top: 4px;
+        }}
+
+        .launcher-card-desc {{
+            font-size: 0.84rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }}
+
+        .launcher-card-cta {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-subtle);
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--card-accent);
+            text-transform: uppercase;
+        }}
+
+        .launcher-footer-hint {{
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 0.70rem;
+            color: var(--text-muted);
+        }}
+
+        @media (max-width: 900px) {{
+            .launcher-cards-grid {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+
+{ev_css}
     </style>
 </head>
 <body>
+    <!-- Ecrã Inicial com seleção: ICE puro · Híbrido · Full Electric -->
+    <section id="launcher-screen" class="launcher-screen" aria-label="Seleção de Motorização">
+        <div class="launcher-topbar">
+            <span class="widget-badge badge-live" id="launcher-brand-badge">POWERTRAIN STUDIO</span>
+            <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="launcher-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
+        </div>
+
+        <div class="launcher-center">
+            <div class="launcher-hero">
+                <h1 id="launcher-title">Escolha a Arquitetura do Grupo Propulsor</h1>
+                <p id="launcher-subtitle">Selecione entre combustão interna pura, arquitetura híbrida ou propulsão 100% elétrica com simulação 3D interativa e banco de potência em tempo real.</p>
+            </div>
+
+            <div class="launcher-cards-grid">
+                <button type="button" class="launcher-card launcher-card-ice" id="btn-launch-ice">
+                    <div>
+                        <div class="launcher-card-head">
+                            <span class="launcher-card-badge" id="launcher-ice-badge">COMBUSTÃO PURA</span>
+                            <span class="launcher-card-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14v10H5z"/><path d="M9 7V4h6v3"/><path d="M9 17v3h6v-3"/><circle cx="12" cy="12" r="2.2"/></svg>
+                            </span>
+                        </div>
+                        <h2 class="launcher-card-title" id="launcher-ice-title">ICE puro</h2>
+                        <p class="launcher-card-desc" id="launcher-ice-desc">Motor térmico puro em linha, V, VR, W, Boxer ou Wankel Rotativo · 2T/4T, Freevalve, Turbo/Quad/Twincharge, Radiadores, Caixa, Escape e Dyno ICE.</p>
+                    </div>
+                    <span class="launcher-card-cta" id="launcher-ice-cta">Abrir ICE puro →</span>
+                </button>
+
+                <button type="button" class="launcher-card launcher-card-hybrid" id="btn-launch-hybrid">
+                    <div>
+                        <div class="launcher-card-head">
+                            <span class="launcher-card-badge" id="launcher-hyb-badge">COMBUSTÃO + ELÉTRICO</span>
+                            <span class="launcher-card-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>
+                            </span>
+                        </div>
+                        <h2 class="launcher-card-title" id="launcher-hyb-title">Híbrido</h2>
+                        <p class="launcher-card-desc" id="launcher-hyb-desc">Combustão e Parte Elétrica separadas + Ver Tudo Junto · MHEV 48V, Power-Split, P2, PHEV P2+P4, EREV e Hypercar MGU-K+H com curva combinada no Dyno.</p>
+                    </div>
+                    <span class="launcher-card-cta" id="launcher-hyb-cta">Abrir Híbrido →</span>
+                </button>
+
+                <button type="button" class="launcher-card launcher-card-ev" id="btn-launch-electric">
+                    <div>
+                        <div class="launcher-card-head">
+                            <span class="launcher-card-badge" id="launcher-ev-badge">100% ELÉTRICO</span>
+                            <span class="launcher-card-icon" aria-hidden="true">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M19 10v4h2v-4z"/><path d="M11 9.5L8.5 12h3l-1 2.5L13.5 12h-3z"/></svg>
+                            </span>
+                        </div>
+                        <h2 class="launcher-card-title" id="launcher-ev-title">Full Electric</h2>
+                        <p class="launcher-card-desc" id="launcher-ev-desc">Grupo propulsor 100% EV · Single, Dual AWD, Tri, Quad ou In-Wheel Hub, PMSM/Fluxo Axial/Indução, Redutor EV 1V/2V/E-CVT, Pack Bateria HV e Dyno EV.</p>
+                    </div>
+                    <span class="launcher-card-cta" id="launcher-ev-cta">Abrir Full Electric →</span>
+                </button>
+            </div>
+        </div>
+
+        <p class="launcher-footer-hint" id="launcher-footer-hint">Pode regressar a este ecrã inicial a qualquer momento através do botão "← Início" na barra superior.</p>
+    </section>
+
+    <div id="app-ice" class="app-mode-shell" hidden>
     <!-- Motor 3D no background sobre a grelha -->
     <div id="motor-bg-stage" class="motor-bg-stage">
         <canvas id="motor-3d-canvas" class="motor-3d-canvas" aria-label="Modelo 3D interativo do motor no background"></canvas>
@@ -2867,6 +3158,7 @@ def gerar_dashboard_html(
         <div class="topbar-row">
             <div class="topbar-subsystems-wrap">
                 <nav class="dashboard-topbar topbar-subsystems" aria-label="Subsistemas do Grupo Propulsor Híbrido">
+                    <button type="button" class="btn-3d-ctrl btn-back-launcher" id="btn-back-launcher" title="Voltar ao ecrã inicial (ICE puro · Híbrido · Full Electric)">← Início</button>
                     <button type="button" class="btn-3d-ctrl ativo" id="btn-top-engine" aria-pressed="true" title="Ver modelo 3D separado do Motor a Combustão">Combustão</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-gearbox" aria-expanded="false" title="Ver modelo separado da Caixa de Velocidades 3D">Caixa de Velocidades</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-exhaust" aria-expanded="false" title="Ver percurso dos gases e Escape 3D">Escape</button>
@@ -3131,8 +3423,13 @@ def gerar_dashboard_html(
 {w3}
     
     </div>
+    </div>
+
+{ev_shell_html}
 
     <script>
+        const btnBackLauncher = document.getElementById('btn-back-launcher');
+        let hybridEnabled = true;
         const selectFormato = document.getElementById('select-formato');
         const selectCilindros = document.getElementById('select-cilindros');
         const selectAdmissao = document.getElementById('select-admissao');
@@ -3301,6 +3598,8 @@ def gerar_dashboard_html(
                 ],
                 pagePrevTitle: 'Página anterior',
                 pageNextTitle: 'Próxima página',
+                backLauncher: '← Início',
+                backLauncherTitle: 'Voltar ao ecrã inicial (ICE puro · Híbrido · Full Electric)',
                 topEngine: 'Combustão',
                 topEngineTitle: 'Ver apenas o modelo 3D e opções do Motor a Combustão',
                 topGearbox: 'Caixa de Velocidades',
@@ -3702,6 +4001,8 @@ def gerar_dashboard_html(
                 ],
                 pagePrevTitle: 'Previous page',
                 pageNextTitle: 'Next page',
+                backLauncher: '← Home',
+                backLauncherTitle: 'Return to start screen (Pure ICE · Hybrid · Full Electric)',
                 topEngine: 'Combustion',
                 topEngineTitle: 'View standalone 3D Combustion Engine model & controls',
                 topGearbox: 'Gearbox',
@@ -4123,11 +4424,22 @@ def gerar_dashboard_html(
             if (dynoEstPowerVal) dynoEstPowerVal.textContent = pStr;
             if (dynoEstTorqueVal) dynoEstTorqueVal.textContent = tStr;
             const t = I18N[currentLang];
-            if (dynoEstPowerRpm) dynoEstPowerRpm.textContent = `@ ${{engineSim.peakPowerRpm}} RPM · ${{t.iceWord}} ${{formatPowerStr(engineSim.icePeakPowerKw)}} + ${{t.evWord}} ${{formatPowerStr(engineSim.evPeakPowerKw)}}`;
-            if (dynoEstTorqueRpm) dynoEstTorqueRpm.textContent = `@ ${{engineSim.peakTorqueRpm}} RPM · ${{t.iceWord}} ${{formatTorqueStr(engineSim.icePeakTorqueNm)}}`;
+            if (dynoEstPowerRpm) {{
+                dynoEstPowerRpm.textContent = hybridEnabled
+                    ? `@ ${{engineSim.peakPowerRpm}} RPM · ${{t.iceWord}} ${{formatPowerStr(engineSim.icePeakPowerKw)}} + ${{t.evWord}} ${{formatPowerStr(engineSim.evPeakPowerKw)}}`
+                    : `@ ${{engineSim.peakPowerRpm}} RPM`;
+            }}
+            if (dynoEstTorqueRpm) {{
+                dynoEstTorqueRpm.textContent = hybridEnabled
+                    ? `@ ${{engineSim.peakTorqueRpm}} RPM · ${{t.iceWord}} ${{formatTorqueStr(engineSim.icePeakTorqueNm)}}`
+                    : `@ ${{engineSim.peakTorqueRpm}} RPM`;
+            }}
             if (dynoPeakBadge) dynoPeakBadge.textContent = `${{pStr}} · ${{tStr}}`;
-            if (dynoLegendPower) dynoLegendPower.textContent = `${{t.powerWord}} ${{t.totalWord}} (${{powerUnitLabel()}})`;
-            if (dynoLegendTorque) dynoLegendTorque.textContent = `${{t.torqueWord}} ${{t.totalWord}} (${{torqueUnitLabel()}})`;
+            if (dynoLegendPower) dynoLegendPower.textContent = hybridEnabled ? `${{t.powerWord}} ${{t.totalWord}} (${{powerUnitLabel()}})` : `${{t.powerWord}} (${{powerUnitLabel()}})`;
+            if (dynoLegendTorque) dynoLegendTorque.textContent = hybridEnabled ? `${{t.torqueWord}} ${{t.totalWord}} (${{torqueUnitLabel()}})` : `${{t.torqueWord}} (${{torqueUnitLabel()}})`;
+            if (dynoLegendIce && dynoLegendIce.parentElement && dynoLegendIce.parentElement.style) {{
+                dynoLegendIce.parentElement.style.display = hybridEnabled ? 'inline-flex' : 'none';
+            }}
 
             if (dynoLiveReadout) {{
                 if (!engineSim.on && engineSim.currentRpm < 20) {{
@@ -4358,7 +4670,9 @@ def gerar_dashboard_html(
 
         function applyLanguage() {{
             const t = I18N[currentLang];
-            document.documentElement.lang = currentLang;
+            if (window.__activePowertrainMode === 'ice' || window.__activePowertrainMode === 'hybrid') {{
+                document.documentElement.lang = currentLang;
+            }}
             const setTxt = (id, val) => {{ const el = document.getElementById(id); if (el) el.textContent = val; }};
             setTxt('btn-3d-autorotate', t.autoRotate);
             setTxt('btn-3d-reset', t.resetView);
@@ -4494,6 +4808,8 @@ def gerar_dashboard_html(
             setTxt('lbl-hv-voltage', t.lblHvVoltage);
             setTxt('lbl-hybrid-mode', t.lblHybridMode);
             setTxt('lbl-cell-format', t.lblCellFormat);
+            setTxt('btn-back-launcher', t.backLauncher);
+            if (btnBackLauncher) btnBackLauncher.title = t.backLauncherTitle;
             setTxt('btn-top-engine', t.topEngine);
             setTxt('btn-top-all', t.topAll);
             setTxt('btn-gb-back-engine', t.viewEngineBtn);
@@ -4518,8 +4834,13 @@ def gerar_dashboard_html(
 
         if (btnLangToggle) {{
             btnLangToggle.addEventListener('click', () => {{
-                currentLang = currentLang === 'pt' ? 'en' : 'pt';
-                applyLanguage();
+                const nextLang = currentLang === 'pt' ? 'en' : 'pt';
+                if (typeof window.__setAppLang === 'function') {{
+                    window.__setAppLang(nextLang);
+                }} else {{
+                    currentLang = nextLang;
+                    applyLanguage();
+                }}
             }});
         }}
 
@@ -4843,6 +5164,7 @@ def gerar_dashboard_html(
             }};
             const hybModeMap = {{ 'Equilibrado': 0.95, 'E-Boost Máximo': 1.06, 'Carga / Eco': 0.78 }};
 
+            const useHybrid = params.hybrid_enabled !== undefined ? Boolean(params.hybrid_enabled) : hybridEnabled;
             const pHyb = hybMap[params.hybrid_type] || hybMap['PHEV P2+P4'];
             const pEm  = emArchMap[params.emotor_arch] || emArchMap['PMSM Radial'];
             const pWind = windMap[params.emotor_winding] || 1.02;
@@ -4853,7 +5175,7 @@ def gerar_dashboard_html(
             const pBa   = batArchMap[params.battery_arch] || 1.00;
             const pBc   = batChemMap[params.battery_chem] || batChemMap['NMC 811'];
             const pHm   = hybModeMap[params.hybrid_mode] || 0.95;
-            const mguHBoost = (pHyb.noLag && ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(admKey)) ? 1.03 : 1.00;
+            const mguHBoost = (useHybrid && pHyb.noLag && ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(admKey)) ? 1.03 : 1.00;
 
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (effCiclo === '2T' ? 1.25 : 1.00);
@@ -4864,10 +5186,13 @@ def gerar_dashboard_html(
 
             const emKwClamped = Math.max(5.0, Math.min(600.0, Number(params.emotor_kw) || 165.0));
             const batKwhClamped = Math.max(0.5, Math.min(60.0, Number(params.battery_kwh) || 18.5));
-            const rawEvKw = emKwClamped * pHyb.eff * pHyb.evShare * pEm.hp * pWind * pCool * pInv * pV * pBa * pBc.m * pHm;
-            const batBurstKw = Math.max(22.0, batKwhClamped * pBc.c) * pV;
-            const batScale = Math.min(1.06, 0.68 + 0.32 * Math.min(1.25, batBurstKw / Math.max(15.0, rawEvKw)));
-            const effEvKw = rawEvKw * batScale;
+            let effEvKw = 0.0;
+            if (useHybrid) {{
+                const rawEvKw = emKwClamped * pHyb.eff * pHyb.evShare * pEm.hp * pWind * pCool * pInv * pV * pBa * pBc.m * pHm;
+                const batBurstKw = Math.max(22.0, batKwhClamped * pBc.c) * pV;
+                const batScale = Math.min(1.06, 0.68 + 0.32 * Math.min(1.25, batBurstKw / Math.max(15.0, rawEvKw)));
+                effEvKw = rawEvKw * batScale;
+            }}
 
             const maxRpm = Math.max(1500, params.max_rpm);
             const startRpm = Math.min(1000, Math.round(maxRpm * 0.15));
@@ -4933,23 +5258,25 @@ def gerar_dashboard_html(
             }});
 
             const evBaseRpm = Math.max(1200.0, maxRpm * pHyb.baseRpmFrac);
-            const evTqBase = (effEvKw * 9549.2966) / evBaseRpm * pEm.tq * pHyb.tqMult;
+            const evTqBase = useHybrid ? ((effEvKw * 9549.2966) / evBaseRpm * pEm.tq * pHyb.tqMult) : 0.0;
             let bestP = {{ val: 0, rpm: maxRpm }};
             let bestT = {{ val: 0, rpm: startRpm }};
             const points = ptsIce.map(p => {{
                 const iceKw = (p.pRaw / maxRawP) * icePeakPowerKw;
                 const iceTq = p.torqueNm;
                 let evKw = 0.0, evTq = 0.0;
-                if (p.rpm <= evBaseRpm) {{
-                    evTq = evTqBase * (0.94 + 0.06 * smoothstep(0.0, evBaseRpm, p.rpm));
-                    evKw = (evTq * p.rpm) / 9549.2966;
-                }} else {{
-                    const hiFrac = Math.max(0.0, (p.rpm - evBaseRpm) / Math.max(1.0, maxRpm - evBaseRpm));
-                    evKw = effEvKw * (1.0 - 0.08 * Math.pow(hiFrac, 1.5));
-                    evTq = (evKw * 9549.2966) / Math.max(1.0, p.rpm);
+                if (useHybrid) {{
+                    if (p.rpm <= evBaseRpm) {{
+                        evTq = evTqBase * (0.94 + 0.06 * smoothstep(0.0, evBaseRpm, p.rpm));
+                        evKw = (evTq * p.rpm) / 9549.2966;
+                    }} else {{
+                        const hiFrac = Math.max(0.0, (p.rpm - evBaseRpm) / Math.max(1.0, maxRpm - evBaseRpm));
+                        evKw = effEvKw * (1.0 - 0.08 * Math.pow(hiFrac, 1.5));
+                        evTq = (evKw * 9549.2966) / Math.max(1.0, p.rpm);
+                    }}
                 }}
-                const powerKw = pHyb.genCap ? (evKw + iceKw * 0.35) : (iceKw + evKw);
-                const torqueNm = pHyb.genCap ? (evTq + iceTq * 0.35) : (iceTq + evTq);
+                const powerKw = !useHybrid ? iceKw : (pHyb.genCap ? (evKw + iceKw * 0.35) : (iceKw + evKw));
+                const torqueNm = !useHybrid ? iceTq : (pHyb.genCap ? (evTq + iceTq * 0.35) : (iceTq + evTq));
                 if (powerKw >= bestP.val) bestP = {{ val: powerKw, rpm: p.rpm }};
                 if (torqueNm >= bestT.val) bestT = {{ val: torqueNm, rpm: p.rpm }};
                 return {{ rpm: p.rpm, torqueNm, powerKw, iceTorqueNm: iceTq, icePowerKw: iceKw }};
@@ -5111,7 +5438,7 @@ def gerar_dashboard_html(
             ctx.fillText(compact ? 'RPM ×1k' : 'RPM (×1000)', padL + pw * 0.5, ch - (compact ? 3 : 4));
 
             // Banda sutil de ganho elétrico entre curva Combustão (ICE) e Híbrido Combinado
-            if (pts[0].icePowerKw !== undefined) {{
+            if (hybridEnabled && pts[0].icePowerKw !== undefined) {{
                 ctx.beginPath();
                 pts.forEach((p, idx) => {{
                     const x = xOf(p.rpm), y = yPower(convertPower(p.powerKw));
@@ -8734,67 +9061,73 @@ def gerar_dashboard_html(
                 }}
 
                 if (viewMode === 'all') {{
+                    const hybOn = this.config.hybridEnabled !== false;
                     const hyb = this.config.hybridType || 'PHEV P2+P4';
                     const emArch = this.config.emotorArch || 'PMSM Radial';
                     const flyAnchorX = halfLenX + 0.22 + fwProf.thick * 0.5 + 0.04;
                     let gbStartX = flyAnchorX;
                     let gbInfo = null;
                     const hvNodes = [];
+                    let xPackCenter = flyAnchorX;
 
-                    if (hyb === 'MHEV 48V') {{
-                        const bsg = this.addEvMguUnit({{ x: -halfLenX - 0.14, y: 0.58, z: 0.56, scale: 0.44, flipDir: 1, includeInverter: true, rotorIdx: 0, isCompactPancake: true }});
-                        this.addPipe(this.staticOpaque, [[-halfLenX - 0.24, 0, 0], [bsg.x, bsg.y, bsg.z]], 0.030, [0.14, 0.16, 0.20, 1.0], [0.22, 16]);
-                        gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
-                        if (bsg.hvPorts) hvNodes.push(bsg.hvPorts.hvInputPos);
-                    }} else if (hyb === 'HEV Paralelo P2' || hyb === 'HEV Power-Split' || hyb === 'PHEV P2+P4' || hyb === 'Hypercar MGU-K+H') {{
-                        const isSplit = hyb === 'HEV Power-Split';
-                        const isHyper = hyb === 'Hypercar MGU-K+H';
-                        const xP2 = flyAnchorX + 0.26;
-                        const p2 = this.addEvMguUnit({{
-                            x: xP2, y: 0, z: 0,
-                            scale: isHyper ? 0.72 : 0.70, flipDir: 1, includeInverter: true, rotorIdx: 0,
-                            isCompactPancake: true,
-                            archOverride: emArch === 'In-Wheel Hub' ? 'PMSM Radial' : emArch
-                        }});
-                        if (isSplit) {{
-                            this.addPart(this.staticTrans, 'cyl', this.matTRS(xP2 + 0.20, 0, 0, 0, 0, Math.PI * 0.5, 0.34, 0.22, 0.34), [0.56, 0.62, 0.70, 1.0], [0.60, 48]);
-                        }}
-                        if (p2.hvPorts) hvNodes.push(p2.hvPorts.hvInputPos);
-                        gbStartX = xP2 + 0.28;
-                        gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
-
-                        if (hyb === 'PHEV P2+P4') {{
-                            const xP4 = gbInfo.xTailEnd + 0.56;
-                            if (emArch === 'In-Wheel Hub') {{
-                                this.addPart(this.staticOpaque, 'cyl', this.matTRS(xP4, -0.06, 0, Math.PI * 0.5, 0, 0, 0.042, 1.48, 0.042), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
-                                const hL = this.addEvMguUnit({{ x: xP4, y: -0.06, z: -0.74, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 1 }});
-                                const hR = this.addEvMguUnit({{ x: xP4, y: -0.06, z: 0.74, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 2 }});
-                                if (hL.hvPorts) hvNodes.push(hL.hvPorts.hvInputPos);
-                                if (hR.hvPorts) hvNodes.push(hR.hvPorts.hvInputPos);
-                            }} else {{
-                                const p4 = this.addEvMguUnit({{ x: xP4, y: -0.06, z: 0, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: true }});
-                                if (p4.hvPorts) hvNodes.push(p4.hvPorts.hvInputPos);
+                    if (hybOn) {{
+                        if (hyb === 'MHEV 48V') {{
+                            const bsg = this.addEvMguUnit({{ x: -halfLenX - 0.14, y: 0.58, z: 0.56, scale: 0.44, flipDir: 1, includeInverter: true, rotorIdx: 0, isCompactPancake: true }});
+                            this.addPipe(this.staticOpaque, [[-halfLenX - 0.24, 0, 0], [bsg.x, bsg.y, bsg.z]], 0.030, [0.14, 0.16, 0.20, 1.0], [0.22, 16]);
+                            gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
+                            if (bsg.hvPorts) hvNodes.push(bsg.hvPorts.hvInputPos);
+                        }} else if (hyb === 'HEV Paralelo P2' || hyb === 'HEV Power-Split' || hyb === 'PHEV P2+P4' || hyb === 'Hypercar MGU-K+H') {{
+                            const isSplit = hyb === 'HEV Power-Split';
+                            const isHyper = hyb === 'Hypercar MGU-K+H';
+                            const xP2 = flyAnchorX + 0.26;
+                            const p2 = this.addEvMguUnit({{
+                                x: xP2, y: 0, z: 0,
+                                scale: isHyper ? 0.72 : 0.70, flipDir: 1, includeInverter: true, rotorIdx: 0,
+                                isCompactPancake: true,
+                                archOverride: emArch === 'In-Wheel Hub' ? 'PMSM Radial' : emArch
+                            }});
+                            if (isSplit) {{
+                                this.addPart(this.staticTrans, 'cyl', this.matTRS(xP2 + 0.20, 0, 0, 0, 0, Math.PI * 0.5, 0.34, 0.22, 0.34), [0.56, 0.62, 0.70, 1.0], [0.60, 48]);
                             }}
-                        }} else if (isHyper) {{
-                            const mguH = this.addEvMguUnit({{ x: -halfLenX * 0.15, y: 0.88, z: 0.74, scale: 0.38, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' }});
-                            hvNodes.push([mguH.x, mguH.y + mguH.rStat * 1.06, mguH.z]);
+                            if (p2.hvPorts) hvNodes.push(p2.hvPorts.hvInputPos);
+                            gbStartX = xP2 + 0.28;
+                            gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
+
+                            if (hyb === 'PHEV P2+P4') {{
+                                const xP4 = gbInfo.xTailEnd + 0.56;
+                                if (emArch === 'In-Wheel Hub') {{
+                                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xP4, -0.06, 0, Math.PI * 0.5, 0, 0, 0.042, 1.48, 0.042), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
+                                    const hL = this.addEvMguUnit({{ x: xP4, y: -0.06, z: -0.74, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 1 }});
+                                    const hR = this.addEvMguUnit({{ x: xP4, y: -0.06, z: 0.74, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 2 }});
+                                    if (hL.hvPorts) hvNodes.push(hL.hvPorts.hvInputPos);
+                                    if (hR.hvPorts) hvNodes.push(hR.hvPorts.hvInputPos);
+                                }} else {{
+                                    const p4 = this.addEvMguUnit({{ x: xP4, y: -0.06, z: 0, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: true }});
+                                    if (p4.hvPorts) hvNodes.push(p4.hvPorts.hvInputPos);
+                                }}
+                            }} else if (isHyper) {{
+                                const mguH = this.addEvMguUnit({{ x: -halfLenX * 0.15, y: 0.88, z: 0.74, scale: 0.38, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' }});
+                                hvNodes.push([mguH.x, mguH.y + mguH.rStat * 1.06, mguH.z]);
+                            }}
+                        }} else {{
+                            // EREV Série: Gerador acoplado ao volante + Motor elétrico de tração traseiro
+                            const xGen = flyAnchorX + 0.30;
+                            const gen = this.addEvMguUnit({{ x: xGen, y: 0, z: 0, scale: 0.68, flipDir: -1, includeInverter: true, rotorIdx: 0, isCompactPancake: true }});
+                            if (gen.hvPorts) hvNodes.push(gen.hvPorts.hvInputPos);
+                            const xTrac = flyAnchorX + 2.25;
+                            const trac = this.addEvMguUnit({{ x: xTrac, y: -0.06, z: 0, scale: 0.80, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: emArch !== 'In-Wheel Hub' }});
+                            if (trac.hvPorts) hvNodes.push(trac.hvPorts.hvInputPos);
+                            gbInfo = {{ xTailEnd: xTrac - 0.15 }};
+                        }}
+
+                        xPackCenter = gbStartX + (hyb === 'MHEV 48V' ? 1.55 : 0.68);
+                        const pack = this.addHvBatteryPack(xPackCenter, -1.04, 0, hyb === 'MHEV 48V' ? 1.05 : 1.75, hyb === 'MHEV 48V' ? 0.85 : 1.18);
+                        for (let hi = 0; hi < hvNodes.length; hi++) {{
+                            const srcHv = (hi % 2 === 0) ? pack.frontHv : pack.rearHv;
+                            this.routeHvConduit(srcHv, hvNodes[hi], 0.022);
                         }}
                     }} else {{
-                        // EREV Série: Gerador acoplado ao volante + Motor elétrico de tração traseiro (sem transmissão mecânica até ao eixo)
-                        const xGen = flyAnchorX + 0.30;
-                        const gen = this.addEvMguUnit({{ x: xGen, y: 0, z: 0, scale: 0.68, flipDir: -1, includeInverter: true, rotorIdx: 0, isCompactPancake: true }});
-                        if (gen.hvPorts) hvNodes.push(gen.hvPorts.hvInputPos);
-                        const xTrac = flyAnchorX + 2.25;
-                        const trac = this.addEvMguUnit({{ x: xTrac, y: -0.06, z: 0, scale: 0.80, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: emArch !== 'In-Wheel Hub' }});
-                        if (trac.hvPorts) hvNodes.push(trac.hvPorts.hvInputPos);
-                        gbInfo = {{ xTailEnd: xTrac - 0.15 }};
-                    }}
-
-                    const xPackCenter = gbStartX + (hyb === 'MHEV 48V' ? 1.55 : 0.68);
-                    const pack = this.addHvBatteryPack(xPackCenter, -1.04, 0, hyb === 'MHEV 48V' ? 1.05 : 1.75, hyb === 'MHEV 48V' ? 0.85 : 1.18);
-                    for (let hi = 0; hi < hvNodes.length; hi++) {{
-                        const srcHv = (hi % 2 === 0) ? pack.frontHv : pack.rearHv;
-                        this.routeHvConduit(srcHv, hvNodes[hi], 0.022);
+                        gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
                     }}
 
                     const {{ exType, tipsMode, exJunc, pipeR, st }} = this.getExhaustParams();
@@ -8822,9 +9155,9 @@ def gerar_dashboard_html(
                     this.addExhaustDownstreamSystem({{ lanesZ, yLine, xStartPipe, xMid, xJunc, xCat, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode, exJunc: effExJunc, placeCatBeforeJunc: true }});
 
                     const xMinAll = -halfLenX - 1.25;
-                    const xMaxAll = Math.max(xTip + 0.42, xPackCenter + 1.25);
+                    const xMaxAll = hybOn ? Math.max(xTip + 0.42, xPackCenter + 1.25) : (xTip + 0.42);
                     this.sceneCenterX = (xMinAll + xMaxAll) * 0.5;
-                    this.baseDist = Math.max(8.4, (xMaxAll - xMinAll) * 1.06 + maxSpanZ * 1.20);
+                    this.baseDist = Math.max(hybOn ? 8.4 : 7.8, (xMaxAll - xMinAll) * 1.06 + maxSpanZ * 1.20);
                 }} else {{
                     this.sceneCenterX = 0;
                     this.baseDist = Math.max(5.5, Math.hypot(halfLenX + 0.90, maxSpanZ) * 2.25 + 1.6);
@@ -8947,7 +9280,22 @@ def gerar_dashboard_html(
                 gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
             }}
 
+            resumeLoop() {{
+                this.resize();
+                this.lastTime = performance.now();
+                if (this._loopPaused) {{
+                    this._loopPaused = false;
+                    requestAnimationFrame(t => this.loop(t));
+                }}
+            }}
+
             loop(now) {{
+                if (window.__activePowertrainMode && window.__activePowertrainMode !== 'ice' && window.__activePowertrainMode !== 'hybrid') {{
+                    this._loopPaused = true;
+                    this.lastTime = now;
+                    return;
+                }}
+                this._loopPaused = false;
                 const dt = Math.min(0.033, Math.max(0.001, (now - this.lastTime) * 0.001));
                 this.lastTime = now;
 
@@ -9039,7 +9387,7 @@ def gerar_dashboard_html(
                     if (vm === 'exhaust' || vm === 'all') {{
                         this.gasFlowPhase = (this.gasFlowPhase + dt * 0.16) % 1000.0;
                     }}
-                    if (vm === 'electric' || vm === 'emotor' || vm === 'battery' || vm === 'all') {{
+                    if (vm === 'electric' || vm === 'emotor' || vm === 'battery' || (vm === 'all' && this.config.hybridEnabled !== false)) {{
                         this.energyPhase = (this.energyPhase + dt * 0.22) % 1000.0;
                     }}
                 }}
@@ -9825,6 +10173,7 @@ def gerar_dashboard_html(
             }});
         }}
         window.addEventListener('keydown', e => {{
+            if (window.__activePowertrainMode && window.__activePowertrainMode !== 'ice' && window.__activePowertrainMode !== 'hybrid') return;
             if (e.code !== 'Space' || !engineSim.on) return;
             const active = document.activeElement;
             if (active && active !== document.body && active !== rangeThrottle && active !== motorCanvas && active.id !== 'motor-bg-stage') return;
@@ -9898,7 +10247,8 @@ def gerar_dashboard_html(
                 battery_chem: selectBatteryChem ? selectBatteryChem.value : 'NMC 811',
                 cell_format: selectCellFormat ? selectCellFormat.value : 'Prismática',
                 battery_kwh: inputBatteryKwh ? Math.max(0.5, Math.min(60, parseFloat(inputBatteryKwh.value) || 18.5)) : 18.5,
-                hybrid_mode: selectHybridMode ? selectHybridMode.value : 'Equilibrado'
+                hybrid_mode: selectHybridMode ? selectHybridMode.value : 'Equilibrado',
+                hybrid_enabled: hybridEnabled
             }};
         }}
 
@@ -9922,12 +10272,18 @@ def gerar_dashboard_html(
 
             motorNumCilindros.textContent = p.cilindros;
             if (motor3dBadge) {{
-                motor3dBadge.textContent = `${{fmtDisplay}} · ${{hybShort.toUpperCase()}}`;
+                motor3dBadge.textContent = hybridEnabled
+                    ? `${{fmtDisplay}} · ${{hybShort.toUpperCase()}}`
+                    : `${{fmtDisplay}} · ${{admLabel.toUpperCase()}}`;
             }}
             if (motor3dSpec) {{
-                motor3dSpec.textContent = isWankel
-                    ? `WANKEL · ${{litros}} L · +${{Math.round(p.emotor_kw)}}kW ${{emArchShort}}`
-                    : `${{p.formato}} · ${{litros}} L · +${{Math.round(p.emotor_kw)}}kW · ${{p.battery_kwh.toFixed(1)}} kWh`;
+                if (hybridEnabled) {{
+                    motor3dSpec.textContent = isWankel
+                        ? `WANKEL · ${{litros}} L · +${{Math.round(p.emotor_kw)}}kW ${{emArchShort}}`
+                        : `${{p.formato}} · ${{litros}} L · +${{Math.round(p.emotor_kw)}}kW · ${{p.battery_kwh.toFixed(1)}} kWh`;
+                }} else {{
+                    motor3dSpec.textContent = isWankel ? `WANKEL · ${{litros}} L` : `${{p.formato}} · ${{litros}} L`;
+                }}
             }}
 
             const matLabel = (t.matOpts && t.matOpts[p.material]) ? t.matOpts[p.material] : p.material;
@@ -9937,20 +10293,27 @@ def gerar_dashboard_html(
             const dmpShort = (t.damperShort && t.damperShort[p.damper]) ? t.damperShort[p.damper] : p.damper;
             const is2T = !isWankel && p.ciclo === '2T';
             if (sumArchVal) {{
+                const hybTag = hybridEnabled ? ` · ${{hybShort}}` : '';
                 if (isWankel) {{
-                    sumArchVal.textContent = `${{fmtDisplay}} · ${{t.rotaryWord}} · ${{hybShort}}`;
+                    sumArchVal.textContent = `${{fmtDisplay}} · ${{t.rotaryWord}}${{hybTag}}`;
                 }} else if (is2T) {{
-                    sumArchVal.textContent = `${{fmtDisplay}} · Reed · ${{hybShort}}`;
+                    sumArchVal.textContent = `${{fmtDisplay}} · Reed${{hybTag}}`;
                 }} else {{
                     const vtShort = p.camshaft === 'Freevalve' ? 'Freevalve' : `${{p.camshaft}} · ${{p.num_valvulas}}V`;
-                    sumArchVal.textContent = `${{fmtDisplay}} · ${{vtShort}} · ${{hybShort}}`;
+                    sumArchVal.textContent = `${{fmtDisplay}} · ${{vtShort}}${{hybTag}}`;
                 }}
             }}
             if (sumArchSub) {{
-                sumArchSub.textContent = `${{p.ciclo}} · ${{t.compShort}} ${{p.compression_ratio.toFixed(1)}}:1 · ${{emArchShort}} (${{p.hv_voltage}}V)`;
+                sumArchSub.textContent = hybridEnabled
+                    ? `${{p.ciclo}} · ${{t.compShort}} ${{p.compression_ratio.toFixed(1)}}:1 · ${{emArchShort}} (${{p.hv_voltage}}V)`
+                    : `${{p.ciclo}} · ${{t.compShort}} ${{p.compression_ratio.toFixed(1)}}:1`;
             }}
-            if (sumDispVal) sumDispVal.textContent = `${{litros}} L · +${{Math.round(p.emotor_kw)}} kW`;
-            if (sumGeoSub) sumGeoSub.textContent = `${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm · ${{p.max_rpm}} RPM · ${{p.battery_kwh.toFixed(1)}} kWh`;
+            if (sumDispVal) sumDispVal.textContent = hybridEnabled ? `${{litros}} L · +${{Math.round(p.emotor_kw)}} kW` : `${{litros}} L`;
+            if (sumGeoSub) {{
+                sumGeoSub.textContent = hybridEnabled
+                    ? `${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm · ${{p.max_rpm}} RPM · ${{p.battery_kwh.toFixed(1)}} kWh`
+                    : `${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm · ${{p.max_rpm}} RPM`;
+            }}
             const intTypeShort = (t.intakeTypeShort && t.intakeTypeShort[p.intake_type]) ? t.intakeTypeShort[p.intake_type] : p.intake_type;
             const intMatShort = (t.intakeMatShort && t.intakeMatShort[p.intake_material]) ? t.intakeMatShort[p.intake_material] : p.intake_material;
             const hasRadiator = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(p.admissao);
@@ -9963,10 +10326,12 @@ def gerar_dashboard_html(
                 else if (p.admissao !== 'Atmosférico') pTxt = `+${{p.turbo_bar.toFixed(1)}} bar`;
                 sumAdmSub.textContent = `${{pTxt}} · ${{intTypeShort}} (${{intMatShort}})${{hasRadiator ? ` · ${{radShort}}` : ''}}`;
             }}
-            if (sumBuildVal) sumBuildVal.textContent = `${{matLabel}} · ${{batArchShort}}`;
+            if (sumBuildVal) sumBuildVal.textContent = hybridEnabled ? `${{matLabel}} · ${{batArchShort}}` : matLabel;
             if (sumBuildSub) {{
                 const pWord = isWankel ? t.rotorMatWord : t.pistonWord;
-                sumBuildSub.textContent = `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}} · ${{p.battery_chem}} · ${{fwShort}} · ${{dmpShort}}`;
+                sumBuildSub.textContent = hybridEnabled
+                    ? `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}} · ${{p.battery_chem}} · ${{fwShort}} · ${{dmpShort}}`
+                    : `${{pWord}}: ${{pMatLabel}} · ${{fuelLabel}} · ${{fwShort}} · ${{dmpShort}}`;
             }}
             syncDamperSuggestionUI(p);
             if (motor3D) {{
@@ -10002,6 +10367,7 @@ def gerar_dashboard_html(
                     cellFormat: p.cell_format,
                     batteryKwh: p.battery_kwh,
                     hybridMode: p.hybrid_mode,
+                    hybridEnabled: hybridEnabled,
                     bore: p.bore,
                     stroke: p.stroke,
                     maxRpm: p.max_rpm,
@@ -10251,6 +10617,7 @@ def gerar_dashboard_html(
                 btnTopExhaust.setAttribute('aria-expanded', activeTopPopover === 'exhaust' ? 'true' : 'false');
             }}
             if (btnTopElectric) {{
+                btnTopElectric.style.display = hybridEnabled ? 'inline-flex' : 'none';
                 btnTopElectric.textContent = `${{t.topElectric}} · ${{emKw}}kW`;
                 btnTopElectric.classList.toggle('ativo', isElectricView || activeTopPopover === 'electric');
                 btnTopElectric.setAttribute('aria-expanded', activeTopPopover === 'electric' ? 'true' : 'false');
@@ -10452,6 +10819,49 @@ def gerar_dashboard_html(
             if (dotBtn) dotBtn.addEventListener('click', () => setActivePage(pi));
         }}
 
+        if (btnBackLauncher) {{
+            btnBackLauncher.addEventListener('click', () => {{
+                if (typeof window.__showLauncher === 'function') window.__showLauncher();
+            }});
+        }}
+
+        window.__iceModule = {{
+            activate(isHybrid, lang) {{
+                hybridEnabled = Boolean(isHybrid);
+                if (!hybridEnabled && (viewMode === 'electric' || viewMode === 'emotor' || viewMode === 'battery')) {{
+                    viewMode = 'engine';
+                }}
+                if (!hybridEnabled && activeTopPopover === 'electric') {{
+                    activeTopPopover = null;
+                    if (popoverElectric) popoverElectric.classList.remove('aberto');
+                }}
+                if ((lang === 'pt' || lang === 'en') && lang !== currentLang) {{
+                    currentLang = lang;
+                    applyLanguage();
+                }}
+                syncSubsystemUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+                if (motor3D) motor3D.resumeLoop();
+                setActivePage(currentPageIdx);
+                drawDynoChart();
+            }},
+            deactivate() {{
+                if (engineSim.on) {{
+                    engineSim.on = false;
+                    syncEnginePowerUI();
+                }}
+                setViewAndPopover(viewMode, null);
+            }},
+            setLang(lang) {{
+                if ((lang === 'pt' || lang === 'en') && lang !== currentLang) {{
+                    currentLang = lang;
+                    applyLanguage();
+                }}
+            }},
+            isHybrid() {{ return hybridEnabled; }}
+        }};
+
         window.addEventListener('resize', () => drawDynoChart());
         syncCylinderOptionsForFormat();
         syncBoostControls(false);
@@ -10460,6 +10870,140 @@ def gerar_dashboard_html(
         setActivePage(0);
         atualizarMotor3D();
         atualizarWidget3();
+    </script>
+
+{ev_script_html}
+
+    <script>
+    (function() {{
+        'use strict';
+        const LAUNCHER_I18N = {{
+            pt: {{
+                brandBadge: 'POWERTRAIN STUDIO',
+                langBtn: 'PT → EN',
+                langTitle: 'Mudar idioma (Português / English)',
+                title: 'Escolha a Arquitetura do Grupo Propulsor',
+                subtitle: 'Selecione entre combustão interna pura, arquitetura híbrida ou propulsão 100% elétrica com simulação 3D interativa e banco de potência em tempo real.',
+                iceBadge: 'COMBUSTÃO PURA',
+                iceTitle: 'ICE puro',
+                iceDesc: 'Motor térmico puro em linha, V, VR, W, Boxer ou Wankel Rotativo · 2T/4T, Freevalve, Turbo/Quad/Twincharge, Radiadores, Caixa, Escape e Dyno ICE.',
+                iceCta: 'Abrir ICE puro →',
+                hybBadge: 'COMBUSTÃO + ELÉTRICO',
+                hybTitle: 'Híbrido',
+                hybDesc: 'Combustão e Parte Elétrica separadas + Ver Tudo Junto · MHEV 48V, Power-Split, P2, PHEV P2+P4, EREV e Hypercar MGU-K+H com curva combinada no Dyno.',
+                hybCta: 'Abrir Híbrido →',
+                evBadge: '100% ELÉTRICO',
+                evTitle: 'Full Electric',
+                evDesc: 'Grupo propulsor 100% EV · Single, Dual AWD, Tri, Quad ou In-Wheel Hub, PMSM/Fluxo Axial/Indução, Redutor EV 1V/2V/E-CVT, Pack Bateria HV e Dyno EV.',
+                evCta: 'Abrir Full Electric →',
+                footerHint: 'Pode regressar a este ecrã inicial a qualquer momento através do botão "← Início" na barra superior.'
+            }},
+            en: {{
+                brandBadge: 'POWERTRAIN STUDIO',
+                langBtn: 'EN → PT',
+                langTitle: 'Switch language (Português / English)',
+                title: 'Choose Powertrain Architecture',
+                subtitle: 'Select between pure internal combustion, hybrid architecture, or 100% full electric propulsion with interactive 3D simulation and real-time dynamometer.',
+                iceBadge: 'PURE COMBUSTION',
+                iceTitle: 'Pure ICE',
+                iceDesc: 'Pure thermal engine in Inline, V, VR, W, Boxer or Wankel Rotary · 2T/4T, Freevalve, Turbo/Quad/Twincharge, Radiators, Gearbox, Exhaust & Pure ICE Dyno.',
+                iceCta: 'Open Pure ICE →',
+                hybBadge: 'COMBUSTION + ELECTRIC',
+                hybTitle: 'Hybrid',
+                hybDesc: 'Separated Combustion & Electric Part views + View All Together · 48V MHEV, Power-Split, P2, PHEV P2+P4, EREV & Hypercar MGU-K+H with combined Dyno curve.',
+                hybCta: 'Open Hybrid →',
+                evBadge: '100% ELECTRIC',
+                evTitle: 'Full Electric',
+                evDesc: '100% EV drivetrain · Single, Dual AWD, Tri, Quad or In-Wheel Hub, PMSM/Axial Flux/Induction, 1-spd/2-spd/E-CVT EV Reducer, HV Battery Pack & EV Dyno.',
+                evCta: 'Open Full Electric →',
+                footerHint: 'You can return to this start screen anytime using the "← Home" button on the top bar.'
+            }}
+        }};
+
+        window.__activePowertrainMode = 'launcher';
+        window.__appLang = 'pt';
+
+        const screenLauncher = document.getElementById('launcher-screen');
+        const shellIce = document.getElementById('app-ice');
+        const shellEv = document.getElementById('app-ev');
+        const btnIce = document.getElementById('btn-launch-ice');
+        const btnHybrid = document.getElementById('btn-launch-hybrid');
+        const btnElectric = document.getElementById('btn-launch-electric');
+        const btnLauncherLang = document.getElementById('launcher-lang-toggle');
+
+        function applyLauncherLang(lang) {{
+            const t = LAUNCHER_I18N[lang] || LAUNCHER_I18N.pt;
+            const setTxt = (id, v) => {{ const el = document.getElementById(id); if (el) el.textContent = v; }};
+            setTxt('launcher-brand-badge', t.brandBadge);
+            setTxt('launcher-title', t.title);
+            setTxt('launcher-subtitle', t.subtitle);
+            setTxt('launcher-ice-badge', t.iceBadge);
+            setTxt('launcher-ice-title', t.iceTitle);
+            setTxt('launcher-ice-desc', t.iceDesc);
+            setTxt('launcher-ice-cta', t.iceCta);
+            setTxt('launcher-hyb-badge', t.hybBadge);
+            setTxt('launcher-hyb-title', t.hybTitle);
+            setTxt('launcher-hyb-desc', t.hybDesc);
+            setTxt('launcher-hyb-cta', t.hybCta);
+            setTxt('launcher-ev-badge', t.evBadge);
+            setTxt('launcher-ev-title', t.evTitle);
+            setTxt('launcher-ev-desc', t.evDesc);
+            setTxt('launcher-ev-cta', t.evCta);
+            setTxt('launcher-footer-hint', t.footerHint);
+            if (btnLauncherLang) {{
+                btnLauncherLang.textContent = t.langBtn;
+                btnLauncherLang.title = t.langTitle;
+                btnLauncherLang.classList.toggle('ativo', lang === 'en');
+                btnLauncherLang.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+            }}
+        }}
+
+        window.__setAppLang = function(lang) {{
+            const next = lang === 'en' ? 'en' : 'pt';
+            window.__appLang = next;
+            document.documentElement.lang = next;
+            applyLauncherLang(next);
+            if (window.__iceModule && typeof window.__iceModule.setLang === 'function') window.__iceModule.setLang(next);
+            if (window.__evModule && typeof window.__evModule.setLang === 'function') window.__evModule.setLang(next);
+        }};
+
+        window.__showLauncher = function() {{
+            if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
+            if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
+            window.__activePowertrainMode = 'launcher';
+            if (shellIce) shellIce.hidden = true;
+            if (shellEv) shellEv.hidden = true;
+            if (screenLauncher) screenLauncher.hidden = false;
+        }};
+
+        window.__enterPowertrainMode = function(mode) {{
+            if (!['ice', 'hybrid', 'electric'].includes(mode)) return;
+            if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
+            if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
+            window.__activePowertrainMode = mode;
+            if (screenLauncher) screenLauncher.hidden = true;
+            if (mode === 'electric') {{
+                if (shellIce) shellIce.hidden = true;
+                if (shellEv) shellEv.hidden = false;
+                if (window.__evModule && typeof window.__evModule.activate === 'function') window.__evModule.activate(window.__appLang);
+            }} else {{
+                if (shellEv) shellEv.hidden = true;
+                if (shellIce) shellIce.hidden = false;
+                if (window.__iceModule && typeof window.__iceModule.activate === 'function') window.__iceModule.activate(mode === 'hybrid', window.__appLang);
+            }}
+        }};
+
+        if (btnIce) btnIce.addEventListener('click', () => window.__enterPowertrainMode('ice'));
+        if (btnHybrid) btnHybrid.addEventListener('click', () => window.__enterPowertrainMode('hybrid'));
+        if (btnElectric) btnElectric.addEventListener('click', () => window.__enterPowertrainMode('electric'));
+        if (btnLauncherLang) {{
+            btnLauncherLang.addEventListener('click', () => {{
+                window.__setAppLang(window.__appLang === 'pt' ? 'en' : 'pt');
+            }});
+        }}
+        window.__setAppLang('pt');
+        window.__showLauncher();
+    }})();
     </script>
 </body>
 </html>
@@ -10517,23 +11061,70 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return
 
         if caminho == "/api/ficha":
-            fmt = str(dados.get("formato") or "I").upper()
-            if fmt not in FORMATOS_MOTOR:
-                fmt = "I"
-            cil = clamp_cilindros_formato(fmt, int(dados.get("cilindros") or 4))
-            adm = str(dados.get("admissao") or "Atmosférico")
-            t_cfg = str(dados.get("turbo_config") or "Paralelo")
-            rad_t = str(dados.get("radiator_type") or "OEM Alumínio")
+            if "topology" in dados or "motor_type" in dados:
+                topo = str(dados.get("topology") or "Single")
+                m_type = str(dados.get("motor_type") or "PMSM")
+                volt = int(dados.get("voltage") or 800)
+                svg, rotulo = gerar_svg_motor_eletrico(topo, m_type, volt)
+                resposta = json.dumps({
+                    "ok": True,
+                    "svg": svg,
+                    "units": EV_TOPOLOGY_UNIT_COUNTS.get(topo, 1),
+                    "rotulo_tipo": rotulo,
+                }).encode("utf-8")
+            else:
+                fmt = str(dados.get("formato") or "I").upper()
+                if fmt not in FORMATOS_MOTOR:
+                    fmt = "I"
+                cil = clamp_cilindros_formato(fmt, int(dados.get("cilindros") or 4))
+                adm = str(dados.get("admissao") or "Atmosférico")
+                t_cfg = str(dados.get("turbo_config") or "Paralelo")
+                rad_t = str(dados.get("radiator_type") or "OEM Alumínio")
 
-            resposta = json.dumps({
-                "cilindros": cil,
-                "formato": fmt,
-                "admissao": adm,
-                "turbo_config": t_cfg,
-                "radiator_type": rad_t,
-                "motor_svg": gerar_svg_motor_inline(cil, fmt, adm, t_cfg, rad_t),
-            }).encode("utf-8")
+                resposta = json.dumps({
+                    "cilindros": cil,
+                    "formato": fmt,
+                    "admissao": adm,
+                    "turbo_config": t_cfg,
+                    "radiator_type": rad_t,
+                    "motor_svg": gerar_svg_motor_inline(cil, fmt, adm, t_cfg, rad_t),
+                }).encode("utf-8")
 
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(resposta)))
+            self.end_headers()
+            self.wfile.write(resposta)
+            return
+
+        if caminho == "/api/eletrico":
+            resultado_ev = processar_eletrico(
+                topology=str(dados.get("topology") or "Single"),
+                motor_type=str(dados.get("motor_type") or "PMSM"),
+                stator_diam=float(dados.get("stator_diam") or 240.0),
+                stack_len=float(dados.get("stack_len") or 165.0),
+                poles=int(dados.get("poles") or 8),
+                winding=str(dados.get("winding") or "Hairpin Cobre"),
+                housing_mat=str(dados.get("housing_mat") or "Alumínio Fundido"),
+                rotor_type=str(dados.get("rotor_type") or "Neodímio N52 (V-Shape)"),
+                cooling=str(dados.get("cooling") or "Glicol (Camisa Água)"),
+                bearing_type=str(dados.get("bearing_type") or "Aço Padrão"),
+                field_weakening=str(dados.get("field_weakening") or "Equilibrado"),
+                regen_mode=str(dados.get("regen_mode") or "One-Pedal Alta (180 kW)"),
+                rotor_mass=float(dados.get("rotor_mass") or 14.5),
+                voltage=int(dados.get("voltage") or 800),
+                inverter=str(dados.get("inverter") or "SiC Dual"),
+                current_limit=float(dados.get("current_limit") or 650.0),
+                battery_chem=str(dados.get("battery_chem") or "NMC 811"),
+                battery_kwh=float(dados.get("battery_kwh") or 85.0),
+                drive_mode=str(dados.get("drive_mode") or "Normal"),
+                max_rpm=int(dados.get("max_rpm") or 16000),
+                gearbox_type=str(dados.get("gearbox_type") or "Redutor 1V Direto"),
+                gearbox_speeds=str(dados.get("gearbox_speeds") or "1"),
+                diff_type=str(dados.get("diff_type") or "Diferencial Aberto"),
+                final_drive=float(dados.get("final_drive") or 9.73),
+            )
+            resposta = json.dumps({"ok": True, **resultado_ev}, ensure_ascii=False).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(resposta)))
@@ -10585,6 +11176,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 cell_format=str(dados.get("cell_format") or "Prismática"),
                 battery_kwh=float(dados.get("battery_kwh") if dados.get("battery_kwh") is not None else 18.5),
                 hybrid_mode=str(dados.get("hybrid_mode") or "Equilibrado"),
+                hybrid_enabled=(dados.get("hybrid_enabled") if dados.get("hybrid_enabled") is not None else True),
             )
             resposta = json.dumps({
                 "torque_nm_val": resultado["torque_nm_val"],
