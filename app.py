@@ -63,6 +63,7 @@ def gerar_svg_motor_inline(
     formato: str = "I",
     admissao: str = "Atmosférico",
     turbo_config: str = "Paralelo",
+    radiator_type: str = "OEM Alumínio",
 ) -> str:
     """
     Desenha o SVG 2D simplista e estilizado do motor de acordo com o formato escolhido
@@ -121,16 +122,24 @@ def gerar_svg_motor_inline(
         )
 
     def desenhar_intercooler(x: float, y: float, w: float, h: float, vertical: bool = False) -> str:
+        rad_col = {
+            "OEM Alumínio": "#94a3b8",
+            "Duplo Núcleo": "#cbd5e1",
+            "Triple-Pass Racing": "#f97316",
+            "Cobre / Latão": "#d97706",
+            "Água-Ar (Charge Cooler)": "#38bdf8",
+        }.get(str(radiator_type), "#94a3b8")
+        divs = 6 if str(radiator_type) == "Duplo Núcleo" else 4
         linhas = ""
-        for k in range(1, 4):
+        for k in range(1, divs):
             if vertical:
-                ly = y + k * (h / 4.0)
+                ly = y + k * (h / float(divs))
                 linhas += f'<line x1="{x + 4:.1f}" y1="{ly:.1f}" x2="{x + w - 4:.1f}" y2="{ly:.1f}" stroke="#475569" stroke-width="1" />\n'
             else:
-                lx = x + k * (w / 4.0)
+                lx = x + k * (w / float(divs))
                 linhas += f'<line x1="{lx:.1f}" y1="{y + 4:.1f}" x2="{lx:.1f}" y2="{y + h - 4:.1f}" stroke="#475569" stroke-width="1" />\n'
         return (
-            f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="4" fill="#090c12" stroke="#94a3b8" stroke-width="1.3" />\n'
+            f'<rect x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="4" fill="#090c12" stroke="{rad_col}" stroke-width="1.3" />\n'
             f'{linhas}'
         )
 
@@ -689,6 +698,7 @@ def processar_combustao(
     exhaust_type: str = "OEM Catalisador",
     exhaust_junction: str = "X-Pipe",
     exhaust_diameter: float = 63.0,
+    radiator_type: str = "OEM Alumínio",
 ) -> dict:
     """
     Calcula automaticamente em Python os parâmetros do motor (potência em kW,
@@ -708,6 +718,20 @@ def processar_combustao(
     t_cfg = "Sequencial" if (has_multi_turbo and str(turbo_config) == "Sequencial") else "Paralelo"
     tcfg_tq = 1.025 if (has_multi_turbo and t_cfg == "Sequencial") else 1.00
     tcfg_hp = 0.985 if (has_multi_turbo and t_cfg == "Sequencial") else 1.00
+
+    has_radiator = admissao_valida in ("Turbo", "Biturbo", "Quad Turbo", "Twincharge")
+    perfis_radiador = {
+        "OEM Alumínio": {"tq": 1.000, "hp": 1.000, "cr_tol": 0.0},
+        "Duplo Núcleo": {"tq": 1.020, "hp": 1.030, "cr_tol": 0.5},
+        "Triple-Pass Racing": {"tq": 1.030, "hp": 1.055, "cr_tol": 1.0},
+        "Cobre / Latão": {"tq": 1.015, "hp": 1.022, "cr_tol": 0.4},
+        "Água-Ar (Charge Cooler)": {"tq": 1.040, "hp": 1.045, "cr_tol": 1.2},
+    }
+    p_rad = (
+        perfis_radiador.get(radiator_type, perfis_radiador["OEM Alumínio"])
+        if has_radiator
+        else {"tq": 1.000, "hp": 1.000, "cr_tol": 0.0}
+    )
 
     if admissao_valida == "Atmosférico":
         adm_mb, adm_mp = 1.00, 1.00
@@ -962,6 +986,7 @@ def processar_combustao(
         * p_exh["tq"]
         * p_junc["tq"]
         * p_ediam["tq"]
+        * p_rad["tq"]
     ))
 
     fator_rpm_potencia = 0.93 if is_wankel else (0.88 if ciclo == "4T" else 0.94)
@@ -986,6 +1011,7 @@ def processar_combustao(
         * (p_exh["hp"] / p_exh["tq"])
         * (p_junc["hp"] / p_junc["tq"])
         * (p_ediam["hp"] / p_ediam["tq"])
+        * (p_rad["hp"] / p_rad["tq"])
         * 1.01387
     )
     potencia_kw = int(round(potencia_cv * 0.73549875))
@@ -996,7 +1022,7 @@ def processar_combustao(
     else:
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * max_rpm) / 60.0
     limite_vm = min(30.0, 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"] + p_fw["tol"] + p_dmp["tol"] + w_tol)
-    limite_cr = perfil_comb["cr_lim"] + p_pis["cr_tol"]
+    limite_cr = perfil_comb["cr_lim"] + p_pis["cr_tol"] + p_rad["cr_tol"]
     motivos_alerta = []
     if velocidade_pistao_mps > limite_vm:
         motivos_alerta.append(f"Vel. média do pistão elevada ({velocidade_pistao_mps:.1f} m/s > {limite_vm:.1f} m/s)")
@@ -1249,7 +1275,17 @@ def widget_3_modular(
                         <label for="input-sc-boost" id="lbl-sc-boost">PRESSÃO SUPERCHARGER (bar)</label>
                         <input type="number" id="input-sc-boost" class="input-cyber" value="{sc_init:.1f}" step="0.1" min="0.1" max="4.0" {"" if has_sc else "disabled"}>
                     </div>
-                    <div class="campo-grupo campo-span-2">
+                    <div class="campo-grupo">
+                        <label for="select-radiator-type" id="lbl-radiator-type">TIPO DE RADIADOR</label>
+                        <select id="select-radiator-type" class="input-cyber" {"" if has_turbo else "disabled"}>
+                            <option value="OEM Alumínio" selected>Alumínio OEM (Tube &amp; Fin)</option>
+                            <option value="Duplo Núcleo">Duplo Núcleo (Bar &amp; Plate)</option>
+                            <option value="Triple-Pass Racing">Triple-Pass Racing (Ventoinhas)</option>
+                            <option value="Cobre / Latão">Cobre / Latão (Clássico)</option>
+                            <option value="Água-Ar (Charge Cooler)">Água-Ar (Charge Cooler)</option>
+                        </select>
+                    </div>
+                    <div class="campo-grupo">
                         <label for="select-combustivel" id="lbl-combustivel">COMBUSTÍVEL</label>
                         <select id="select-combustivel" class="input-cyber">
                             <option value="Gasolina 91">Gasolina 91 RON (Normal)</option>
@@ -2774,6 +2810,7 @@ def gerar_dashboard_html(
         const selectTurboConfig = document.getElementById('select-turbo-config');
         const selectIntakeType = document.getElementById('select-intake-type');
         const selectIntakeMaterial = document.getElementById('select-intake-material');
+        const selectRadiatorType = document.getElementById('select-radiator-type');
         const btnTopEngine = document.getElementById('btn-top-engine');
         const btnTopGearbox = document.getElementById('btn-top-gearbox');
         const btnTopExhaust = document.getElementById('btn-top-exhaust');
@@ -3017,6 +3054,7 @@ def gerar_dashboard_html(
                 lblTurboConfig: 'MULTI-TURBO',
                 lblIntakeType: 'TIPO DE INTAKE',
                 lblIntakeMaterial: 'MATERIAL DA INTAKE',
+                lblRadiatorType: 'TIPO DE RADIADOR',
                 lblCombustivel: 'COMBUSTÍVEL',
                 lblTurboBoost: 'PRESSÃO TURBO (bar)',
                 lblScBoost: 'PRESSÃO SUPERCHARGER (bar)',
@@ -3107,6 +3145,21 @@ def gerar_dashboard_html(
                     'Fibra de Carbono': 'Carbono',
                     'Magnésio': 'Magnésio',
                     'Titânio': 'Titânio'
+                }},
+                radiatorLockedTitle: 'Disponível quando equipado com radiador/intercooler (Turbo, Biturbo, Quad Turbo ou Twincharge)',
+                radiatorOpts: {{
+                    'OEM Alumínio': 'Alumínio OEM (Tube & Fin)',
+                    'Duplo Núcleo': 'Duplo Núcleo (Bar & Plate)',
+                    'Triple-Pass Racing': 'Triple-Pass Racing (Ventoinhas)',
+                    'Cobre / Latão': 'Cobre / Latão (Clássico)',
+                    'Água-Ar (Charge Cooler)': 'Água-Ar (Charge Cooler)'
+                }},
+                radiatorShort: {{
+                    'OEM Alumínio': 'Rad. OEM',
+                    'Duplo Núcleo': 'Duplo Núcleo',
+                    'Triple-Pass Racing': 'Triple-Pass',
+                    'Cobre / Latão': 'Cobre/Latão',
+                    'Água-Ar (Charge Cooler)': 'Água-Ar'
                 }},
                 fuelOpts: {{
                     'Gasolina 91': 'Gasolina 91 RON (Normal)',
@@ -3290,6 +3343,7 @@ def gerar_dashboard_html(
                 lblTurboConfig: 'TURBO LAYOUT',
                 lblIntakeType: 'INTAKE TYPE',
                 lblIntakeMaterial: 'INTAKE MATERIAL',
+                lblRadiatorType: 'RADIATOR TYPE',
                 lblCombustivel: 'FUEL',
                 lblTurboBoost: 'TURBO BOOST (bar)',
                 lblScBoost: 'SUPERCHARGER BOOST (bar)',
@@ -3380,6 +3434,21 @@ def gerar_dashboard_html(
                     'Fibra de Carbono': 'Carbon',
                     'Magnésio': 'Magnesium',
                     'Titânio': 'Titanium'
+                }},
+                radiatorLockedTitle: 'Available when equipped with a front intercooler/radiator (Turbo, Twin-Turbo, Quad-Turbo, or Twincharged)',
+                radiatorOpts: {{
+                    'OEM Alumínio': 'OEM Aluminum (Tube & Fin)',
+                    'Duplo Núcleo': 'Dual-Core Bar & Plate',
+                    'Triple-Pass Racing': 'Triple-Pass Racing (Dual Fans)',
+                    'Cobre / Latão': 'Copper / Brass (Heavy-Duty)',
+                    'Água-Ar (Charge Cooler)': 'Water-to-Air Charge Cooler'
+                }},
+                radiatorShort: {{
+                    'OEM Alumínio': 'OEM Rad.',
+                    'Duplo Núcleo': 'Dual-Core',
+                    'Triple-Pass Racing': 'Triple-Pass',
+                    'Cobre / Latão': 'Copper/Brass',
+                    'Água-Ar (Charge Cooler)': 'Water-to-Air'
                 }},
                 fuelOpts: {{
                     'Gasolina 91': 'Gasoline 91 RON (87 AKI)',
@@ -3628,8 +3697,13 @@ def gerar_dashboard_html(
             const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
             const hasSc = ['Supercompressor', 'Twincharge'].includes(adm);
             const defs = DEFAULT_BOOST_BY_ADM[adm] || DEFAULT_BOOST_BY_ADM['Atmosférico'];
+            const t = I18N[currentLang];
             if (selectTurboConfig) {{
                 selectTurboConfig.disabled = !hasMultiTurbo;
+            }}
+            if (selectRadiatorType) {{
+                selectRadiatorType.disabled = !hasTurbo;
+                selectRadiatorType.title = !hasTurbo ? (t.radiatorLockedTitle || '') : '';
             }}
             if (inputTurboBoost) {{
                 inputTurboBoost.disabled = !hasTurbo;
@@ -3731,6 +3805,7 @@ def gerar_dashboard_html(
             setTxt('lbl-turbo-config', t.lblTurboConfig);
             setTxt('lbl-intake-type', t.lblIntakeType);
             setTxt('lbl-intake-material', t.lblIntakeMaterial);
+            setTxt('lbl-radiator-type', t.lblRadiatorType);
             setTxt('lbl-combustivel', t.lblCombustivel);
             setTxt('lbl-turbo-boost', t.lblTurboBoost);
             setTxt('lbl-sc-boost', t.lblScBoost);
@@ -3775,6 +3850,7 @@ def gerar_dashboard_html(
             mapOpts(selectTurboConfig, t.turboCfgOpts);
             mapOpts(selectIntakeType, t.intakeTypeOpts);
             mapOpts(selectIntakeMaterial, t.intakeMatOpts);
+            mapOpts(selectRadiatorType, t.radiatorOpts);
             mapOpts(selectCombustivel, t.fuelOpts);
             mapOpts(selectGearboxType, t.gbTypeOpts);
             mapOpts(selectGearboxSpeeds, t.gbSpeedOpts);
@@ -3803,6 +3879,7 @@ def gerar_dashboard_html(
             if (btnTopExhaust) btnTopExhaust.title = t.topExhaustTitle;
             if (btnTopAll) btnTopAll.title = t.topAllTitle;
             syncSubsystemUI();
+            syncBoostControls(false);
             syncCylinderOptionsForFormat();
             if (selectValves) {{
                 Array.from(selectValves.options).forEach(opt => {{ opt.textContent = `${{opt.value}} ${{t.valvesUnit}}`; }});
@@ -4076,6 +4153,15 @@ def gerar_dashboard_html(
                 'Y-Pipe':        {{ tq: 1.012, hp: 1.010 }},
                 'Coletor Merge': {{ tq: 1.008, hp: 1.018 }}
             }};
+            const hasRadiator = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(admKey);
+            const radMap = {{
+                'OEM Alumínio':            {{ tq: 1.000, hp: 1.000 }},
+                'Duplo Núcleo':            {{ tq: 1.020, hp: 1.030 }},
+                'Triple-Pass Racing':      {{ tq: 1.030, hp: 1.055 }},
+                'Cobre / Latão':           {{ tq: 1.015, hp: 1.022 }},
+                'Água-Ar (Charge Cooler)': {{ tq: 1.040, hp: 1.045 }}
+            }};
+            const pRad = hasRadiator ? (radMap[params.radiator_type] || radMap['OEM Alumínio']) : {{ tq: 1.000, hp: 1.000 }};
             const pCam = (isWankel || is2T) ? {{ tq: 1.00, hp: 1.00 }} : (isFreevalve ? camMap['Freevalve'] : (camMap[params.camshaft] || camMap['DOHC']));
             const pVal = isWankel ? {{ tq: 1.00, hp: 1.00 }} : (isFreevalve ? valMap['Freevalve'] : (valMap[effValveType] || valMap['Molas']));
             const pMatHp = matHpMap[params.material] || 1.00;
@@ -4104,9 +4190,9 @@ def gerar_dashboard_html(
 
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (effCiclo === '2T' ? 1.25 : 1.00);
-            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq);
+            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq * pRad.tq);
             const fatorRpmHp = isWankel ? 0.93 : (effCiclo === '4T' ? 0.88 : 0.94);
-            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * 1.01387;
+            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * (pRad.hp / pRad.tq) * 1.01387;
             const peakPowerKw = Math.round(peakPowerCv * 0.73549875);
 
             const maxRpm = Math.max(1500, params.max_rpm);
@@ -4464,6 +4550,7 @@ def gerar_dashboard_html(
                     exhaustTips: 'Dupla',
                     exhaustJunction: 'X-Pipe',
                     exhaustDiameter: 63,
+                    radiatorType: 'OEM Alumínio',
                     turboBar: 0.0,
                     scBar: 0.0
                 }};
@@ -6089,17 +6176,81 @@ def gerar_dashboard_html(
             }}
 
             addIntercooler(cx, cy, cz, wX, hY, dZ) {{
-                const C_CORE = [0.74, 0.78, 0.84, 1.0];
-                const C_TANK = [0.42, 0.47, 0.54, 1.0];
-                const C_FIN  = [0.48, 0.52, 0.58, 1.0];
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz, 0, 0, 0, wX, hY, dZ * 0.76), C_CORE, [0.65, 50]);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz - dZ * 0.48, 0, 0, 0, wX * 1.06, hY * 1.04, dZ * 0.20), C_TANK, [0.54, 44]);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz + dZ * 0.48, 0, 0, 0, wX * 1.06, hY * 1.04, dZ * 0.20), C_TANK, [0.54, 44]);
-                for (let k = -3; k <= 3; k++) {{
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + k * (hY * 0.13), cz, 0, 0, 0, wX * 1.05, 0.020, dZ * 0.73), C_FIN, [0.4, 24]);
+                const rType = this.config.radiatorType || 'OEM Alumínio';
+                const isDual = rType === 'Duplo Núcleo';
+                const isRace = rType === 'Triple-Pass Racing';
+                const isCopper = rType === 'Cobre / Latão';
+                const isWater = rType === 'Água-Ar (Charge Cooler)';
+
+                const coreW = isRace ? wX * 1.56 : (isDual ? wX * 1.42 : (isWater ? wX * 1.18 : wX));
+                const coreH = isRace ? hY * 1.12 : (isDual ? hY * 1.08 : (isWater ? hY * 0.90 : hY));
+                const coreD = isRace ? dZ * 1.08 : (isWater ? dZ * 0.88 : dZ);
+
+                const C_CORE = isCopper ? [0.72, 0.42, 0.20, 1.0]
+                             : (isWater ? [0.18, 0.22, 0.28, 1.0]
+                             : (isRace ? [0.80, 0.84, 0.90, 1.0] : [0.74, 0.78, 0.84, 1.0]));
+                const C_TANK = isCopper ? [0.78, 0.58, 0.24, 1.0]
+                             : (isWater ? [0.24, 0.28, 0.35, 1.0]
+                             : (isRace ? [0.68, 0.73, 0.80, 1.0] : [0.42, 0.47, 0.54, 1.0]));
+                const C_FIN  = isCopper ? [0.46, 0.26, 0.14, 1.0]
+                             : (isWater ? [0.28, 0.34, 0.42, 1.0] : [0.48, 0.52, 0.58, 1.0]);
+                const coreSpec = isCopper ? [0.78, 60] : (isRace ? [0.82, 66] : [0.65, 50]);
+                const tankSpec = isCopper ? [0.80, 62] : (isRace ? [0.84, 68] : [0.54, 44]);
+
+                // Núcleo e depósitos laterais adaptados ao tipo de radiador
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz, 0, 0, 0, coreW, coreH, coreD * 0.76), C_CORE, coreSpec);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz - coreD * 0.48, 0, 0, 0, coreW * 1.08, coreH * 1.04, coreD * 0.20), C_TANK, tankSpec);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz + coreD * 0.48, 0, 0, 0, coreW * 1.08, coreH * 1.04, coreD * 0.20), C_TANK, tankSpec);
+
+                const finSpan = (isDual || isRace) ? 5 : 3;
+                const finStep = 1.0 / (finSpan * 2.15);
+                for (let k = -finSpan; k <= finSpan; k++) {{
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + k * (coreH * finStep), cz, 0, 0, 0, coreW * 1.05, isDual || isRace ? 0.015 : 0.020, coreD * 0.73), C_FIN, [0.4, 24]);
                 }}
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + hY * 0.54, cz - dZ * 0.3, 0, 0, 0, wX * 0.6, 0.06, 0.08), C_TANK, [0.5, 36]);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + hY * 0.54, cz + dZ * 0.3, 0, 0, 0, wX * 0.6, 0.06, 0.08), C_TANK, [0.5, 36]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + coreH * 0.54, cz - coreD * 0.3, 0, 0, 0, coreW * 0.62, 0.06, 0.08), C_TANK, [0.5, 36]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + coreH * 0.54, cz + coreD * 0.3, 0, 0, 0, coreW * 0.62, 0.06, 0.08), C_TANK, [0.5, 36]);
+
+                if (isDual) {{
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + coreH * 0.51, cz, 0, 0, 0, coreW * 0.28, 0.028, coreD * 0.92), [0.76, 0.80, 0.86, 1.0], [0.78, 62]);
+                }} else if (isRace) {{
+                    // Triple-Pass Racing: deflectores nos tanques, tampões AN e ventoinhas duplas traseiras
+                    for (const zS of [-1, 1]) {{
+                        const fz = cz + zS * (coreD * 0.22);
+                        const fx = cx + coreW * 0.54;
+                        const fR = Math.min(coreH * 0.42, coreD * 0.19);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + (zS * coreH * 0.16), cz + zS * coreD * 0.56, 0, 0, 0, coreW * 1.12, 0.025, 0.06), [0.86, 0.26, 0.20, 1.0], [0.76, 60]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.57, cz + zS * coreD * 0.44, 0, 0, 0, 0.045, 0.055, 0.045), zS < 0 ? [0.84, 0.24, 0.22, 1.0] : [0.22, 0.52, 0.88, 1.0], [0.80, 62]);
+                        this.addPart(this.staticOpaque, 'torus', this.matTRS(fx, cy, fz, 0, Math.PI * 0.5, 0, fR, fR, 0.036), [0.16, 0.19, 0.24, 1.0], [0.42, 28]);
+                        this.dynamicRotors.push({{
+                            type: 'impeller',
+                            cx: fx + 0.01,
+                            cy: cy,
+                            cz: fz,
+                            r: fR * 0.92,
+                            speedMult: zS * 1.35,
+                            symmetry: 7,
+                            colorHub: [0.82, 0.26, 0.22, 1.0],
+                            colorBlade: [0.24, 0.28, 0.34, 1.0]
+                        }});
+                    }}
+                }} else if (isCopper) {{
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy - coreH * 0.48, cz + coreD * 0.46, 0, 0, 0, 0.028, 0.08, 0.028), [0.86, 0.68, 0.26, 1.0], [0.82, 64]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.57, cz, 0, 0, 0, 0.055, 0.045, 0.055), [0.84, 0.64, 0.24, 1.0], [0.82, 66]);
+                }} else if (isWater) {{
+                    // Água-Ar: bomba de água elétrica + vaso expansor + conexões AN azuis
+                    const C_AN = [0.20, 0.52, 0.88, 1.0];
+                    const C_FIT = [0.84, 0.64, 0.24, 1.0];
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.62, cz - coreD * 0.16, 0, 0, Math.PI * 0.5, 0.068, 0.18, 0.068), [0.22, 0.26, 0.32, 1.0], [0.64, 48]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.60, cz + coreD * 0.22, 0, 0, 0, 0.065, 0.12, 0.065), C_AN, [0.76, 60]);
+                    this.addPipe(this.staticOpaque, [
+                        [cx, cy + coreH * 0.60, cz - coreD * 0.16],
+                        [cx + 0.12, cy + coreH * 0.60, cz + coreD * 0.04],
+                        [cx, cy + coreH * 0.60, cz + coreD * 0.22]
+                    ], 0.024, C_AN, [0.72, 56], [], true);
+                    for (const zS of [-1, 1]) {{
+                        this.addPart(this.staticOpaque, 'hex', this.matTRS(cx + coreW * 0.42, cy - coreH * 0.22, cz + zS * coreD * 0.44, 0, 0, Math.PI * 0.5, 0.035, 0.06, 0.035), C_FIT, [0.82, 64]);
+                    }}
+                }}
             }}
 
             addFreevalveBank(cylSpecs, xValOffs, deckDist, cylR, halfLenX) {{
@@ -8321,6 +8472,7 @@ def gerar_dashboard_html(
                 turbo_config: (hasMultiTurbo && selectTurboConfig && selectTurboConfig.value === 'Sequencial') ? 'Sequencial' : 'Paralelo',
                 intake_type: selectIntakeType ? selectIntakeType.value : 'Plenum OEM',
                 intake_material: selectIntakeMaterial ? selectIntakeMaterial.value : 'Alumínio Fundido',
+                radiator_type: selectRadiatorType ? selectRadiatorType.value : 'OEM Alumínio',
                 flywheel: selectFlywheel ? selectFlywheel.value : 'Monomassa Aço',
                 damper: selectDamper ? selectDamper.value : 'Elastómero OEM',
                 damper_weight: (Number.isFinite(rawDamperWeight) && rawDamperWeight > 0) ? Math.max(0.1, Math.min(2000.0, rawDamperWeight)) : 3.2,
@@ -8391,13 +8543,15 @@ def gerar_dashboard_html(
             if (sumGeoSub) sumGeoSub.textContent = `${{p.bore.toFixed(0)}}×${{p.stroke.toFixed(0)}} mm · ${{p.max_rpm}} RPM`;
             const intTypeShort = (t.intakeTypeShort && t.intakeTypeShort[p.intake_type]) ? t.intakeTypeShort[p.intake_type] : p.intake_type;
             const intMatShort = (t.intakeMatShort && t.intakeMatShort[p.intake_material]) ? t.intakeMatShort[p.intake_material] : p.intake_material;
+            const hasRadiator = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(p.admissao);
+            const radShort = (t.radiatorShort && t.radiatorShort[p.radiator_type]) ? t.radiatorShort[p.radiator_type] : p.radiator_type;
             if (sumAdmVal) sumAdmVal.textContent = fullAdmLabel;
             if (sumAdmSub) {{
                 let pTxt = '0.0 bar';
                 if (p.admissao === 'Supercompressor') pTxt = `+${{p.sc_bar.toFixed(1)}} bar`;
                 else if (p.admissao === 'Twincharge') pTxt = `+${{p.turbo_bar.toFixed(1)}} / +${{p.sc_bar.toFixed(1)}} bar`;
                 else if (p.admissao !== 'Atmosférico') pTxt = `+${{p.turbo_bar.toFixed(1)}} bar`;
-                sumAdmSub.textContent = `${{pTxt}} · ${{intTypeShort}} (${{intMatShort}})`;
+                sumAdmSub.textContent = `${{pTxt}} · ${{intTypeShort}} (${{intMatShort}})${{hasRadiator ? ` · ${{radShort}}` : ''}}`;
             }}
             if (sumBuildVal) sumBuildVal.textContent = matLabel;
             if (sumBuildSub) {{
@@ -8425,6 +8579,7 @@ def gerar_dashboard_html(
                     exhaustTips: p.exhaust_tips,
                     exhaustJunction: p.exhaust_junction,
                     exhaustDiameter: p.exhaust_diameter,
+                    radiatorType: p.radiator_type,
                     bore: p.bore,
                     stroke: p.stroke,
                     maxRpm: p.max_rpm,
@@ -8514,8 +8669,14 @@ def gerar_dashboard_html(
                 'Etanol (E85)': 16.5, 'Metanol': 18.0, 'Nitrometano': 14.5,
                 'Diesel': 22.0, 'Biodiesel': 21.5
             }};
+            const radCrTolMap = {{
+                'OEM Alumínio': 0.0, 'Duplo Núcleo': 0.5, 'Triple-Pass Racing': 1.0,
+                'Cobre / Latão': 0.4, 'Água-Ar (Charge Cooler)': 1.2
+            }};
+            const hasRad = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(payload.admissao);
+            const radCrTol = hasRad ? (radCrTolMap[payload.radiator_type] || 0.0) : 0.0;
             const baseCrLim = crLimMap[payload.combustivel] !== undefined ? crLimMap[payload.combustivel] : 12.5;
-            const limiteCr = baseCrLim + (pisCrTol[payload.piston_material] || 0.0);
+            const limiteCr = baseCrLim + (pisCrTol[payload.piston_material] || 0.0) + radCrTol;
             if (payload.compression_ratio > limiteCr) {{
                 motivosAlerta.push(t.warnCr(Number(limiteCr.toFixed(1))));
             }}
@@ -8529,6 +8690,7 @@ def gerar_dashboard_html(
             const turbo_config = (admissao === 'Biturbo' || admissao === 'Quad Turbo') && selectTurboConfig
                 ? (selectTurboConfig.value || 'Paralelo')
                 : 'Paralelo';
+            const radiator_type = selectRadiatorType ? (selectRadiatorType.value || 'OEM Alumínio') : 'OEM Alumínio';
 
             atualizarMotor3D();
 
@@ -8537,7 +8699,7 @@ def gerar_dashboard_html(
                     const res = await fetch('/api/ficha', {{
                         method: 'POST',
                         headers: {{ 'Content-Type': 'application/json' }},
-                        body: JSON.stringify({{ cilindros, formato, admissao, turbo_config }})
+                        body: JSON.stringify({{ cilindros, formato, admissao, turbo_config, radiator_type }})
                     }});
                     if (res.ok) {{
                         const data = await res.json();
@@ -8768,7 +8930,7 @@ def gerar_dashboard_html(
             }});
         }}
 
-        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial].forEach(el => {{
+        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial, selectRadiatorType].forEach(el => {{
             if (!el) return;
             el.addEventListener('input', () => {{
                 atualizarMotor3D();
@@ -8862,13 +9024,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             cil = clamp_cilindros_formato(fmt, int(dados.get("cilindros") or 4))
             adm = str(dados.get("admissao") or "Atmosférico")
             t_cfg = str(dados.get("turbo_config") or "Paralelo")
+            rad_t = str(dados.get("radiator_type") or "OEM Alumínio")
 
             resposta = json.dumps({
                 "cilindros": cil,
                 "formato": fmt,
                 "admissao": adm,
                 "turbo_config": t_cfg,
-                "motor_svg": gerar_svg_motor_inline(cil, fmt, adm, t_cfg),
+                "radiator_type": rad_t,
+                "motor_svg": gerar_svg_motor_inline(cil, fmt, adm, t_cfg, rad_t),
             }).encode("utf-8")
 
             self.send_response(200)
@@ -8909,6 +9073,7 @@ class DashboardHandler(SimpleHTTPRequestHandler):
                 exhaust_type=str(dados.get("exhaust_type") or "OEM Catalisador"),
                 exhaust_junction=str(dados.get("exhaust_junction") or "X-Pipe"),
                 exhaust_diameter=float(dados.get("exhaust_diameter") if dados.get("exhaust_diameter") is not None else 63.0),
+                radiator_type=str(dados.get("radiator_type") or "OEM Alumínio"),
             )
             resposta = json.dumps({
                 "torque_nm_val": resultado["torque_nm_val"],
