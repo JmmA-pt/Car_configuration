@@ -176,6 +176,33 @@
             display: flex;
         }
 
+        .subsystem-popover.popover-electric {
+            width: min(580px, calc(100vw - 32px));
+            max-height: calc(100vh - 165px);
+            overflow-y: auto;
+            border-top-color: var(--accent-teal);
+        }
+
+        .electric-subview-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .electric-subview-bar .btn-3d-ctrl {
+            flex: 1 1 0;
+            text-align: center;
+            padding: 5px 8px;
+            font-size: 0.68rem;
+            white-space: nowrap;
+        }
+
+        .grid-3-col {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 8px;
+        }
+
         .subsystem-popover-header {
             display: flex;
             align-items: center;
@@ -842,8 +869,9 @@
 
         .dyno-legend {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 12px;
+            gap: 6px 12px;
             font-family: var(--font-mono);
             font-size: 0.68rem;
             color: var(--text-secondary);
@@ -1240,6 +1268,7 @@
             .config-page-grid.grid-cols-6,
             .config-page-grid.grid-cols-5-intake,
             .config-page-grid.grid-cols-4,
+            .grid-3-col,
             .summary-stats-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
@@ -1261,11 +1290,12 @@
     <div class="ui-layer">
         <div class="topbar-row">
             <div class="topbar-subsystems-wrap">
-                <nav class="dashboard-topbar topbar-subsystems" aria-label="Caixa de Velocidades e Escape">
-                    <button type="button" class="btn-3d-ctrl" id="btn-top-engine" style="display:none;" title="Voltar ao modelo 3D do Motor">← Motor</button>
+                <nav class="dashboard-topbar topbar-subsystems" aria-label="Subsistemas do Grupo Propulsor Híbrido">
+                    <button type="button" class="btn-3d-ctrl ativo" id="btn-top-engine" aria-pressed="true" title="Ver modelo 3D separado do Motor a Combustão">Combustão</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-gearbox" aria-expanded="false" title="Ver modelo separado da Caixa de Velocidades 3D">Caixa de Velocidades</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-top-exhaust" aria-expanded="false" title="Ver percurso dos gases e Escape 3D">Escape</button>
-                    <button type="button" class="btn-3d-ctrl" id="btn-top-all" aria-pressed="false" title="Ver Motor, Caixa de Velocidades e Escape juntos em 3D">Ver Tudo Junto</button>
+                    <button type="button" class="btn-3d-ctrl" id="btn-top-electric" aria-expanded="false" title="Ver e configurar a Parte Elétrica 3D (Motor Elétrico, Bateria HV e Sistema Híbrido)">Parte Elétrica · 165kW</button>
+                    <button type="button" class="btn-3d-ctrl" id="btn-top-all" aria-pressed="false" title="Ver Combustão, Caixa, Escape, Motor Elétrico e Bateria ligados em 3D">Ver Tudo Junto</button>
                 </nav>
 
                 <div class="subsystem-popover" id="popover-gearbox" role="region" aria-label="Caixa de Velocidades">
@@ -1370,6 +1400,124 @@
                         <button type="button" class="btn-3d-ctrl" id="btn-exh-back-engine">Ver Motor</button>
                     </div>
                 </div>
+
+                <div class="subsystem-popover popover-electric" id="popover-electric" role="region" aria-label="Parte Elétrica e Híbrida">
+                    <div class="subsystem-popover-header">
+                        <span class="ficha-titulo" id="el-panel-title">PARTE ELÉTRICA &amp; HÍBRIDA</span>
+                        <button type="button" class="btn-popover-close" id="btn-close-electric" aria-label="Fechar">×</button>
+                    </div>
+                    <div class="electric-subview-bar" role="group" aria-label="Vista 3D Elétrica">
+                        <button type="button" class="btn-3d-ctrl ativo" id="btn-el-view-both">Conjunto Elétrico (Motor + Bateria)</button>
+                        <button type="button" class="btn-3d-ctrl" id="btn-el-view-motor">Só Motor Elétrico</button>
+                        <button type="button" class="btn-3d-ctrl" id="btn-el-view-battery">Só Bateria HV</button>
+                    </div>
+                    <div class="grid-3-col">
+                        <div class="campo-grupo">
+                            <label for="select-hybrid-type" id="lbl-hybrid-type">SISTEMA HÍBRIDO</label>
+                            <select id="select-hybrid-type" class="input-cyber">
+                                <option value="MHEV 48V">MHEV 48V (BSG P0/P1)</option>
+                                <option value="HEV Power-Split">HEV Power-Split (Série-Par.)</option>
+                                <option value="HEV Paralelo P2">HEV Paralelo (P2 Inline)</option>
+                                <option value="PHEV P2+P4" selected>PHEV e-AWD (P2 + P4)</option>
+                                <option value="EREV Série">EREV / REEV (Série Puro)</option>
+                                <option value="Hypercar MGU-K+H">Hypercar (MGU-K + MGU-H)</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-hybrid-mode" id="lbl-hybrid-mode">MODO DE ASSISTÊNCIA</label>
+                            <select id="select-hybrid-mode" class="input-cyber">
+                                <option value="Equilibrado" selected>Equilibrado (Auto)</option>
+                                <option value="E-Boost Máximo">Sport / E-Boost Máx.</option>
+                                <option value="Carga / Eco">Carga / Eco Sustain</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-hv-voltage" id="lbl-hv-voltage">TENSÃO HV</label>
+                            <select id="select-hv-voltage" class="input-cyber">
+                                <option value="48">48 V (Mild Hybrid)</option>
+                                <option value="400" selected>400 V (HV Padrão)</option>
+                                <option value="800">800 V (Ultra-Performance)</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-emotor-arch" id="lbl-emotor-arch">MOTOR ELÉTRICO (ARQ.)</label>
+                            <select id="select-emotor-arch" class="input-cyber">
+                                <option value="PMSM Radial" selected>PMSM Radial (Ímanes N52)</option>
+                                <option value="Axial Flux">Fluxo Axial (Disco YASA)</option>
+                                <option value="EESM Bobinado">Rotor Bobinado (EESM)</option>
+                                <option value="Motor Indução">Indução AC (Gaiola Cobre)</option>
+                                <option value="In-Wheel Hub">In-Wheel (Cubo de Roda)</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="input-emotor-kw" id="lbl-emotor-kw">POTÊNCIA ELÉTRICA (kW)</label>
+                            <input type="number" id="input-emotor-kw" class="input-cyber" value="165" step="5" min="5" max="600">
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-emotor-winding" id="lbl-em-winding">ENROLAMENTO</label>
+                            <select id="select-emotor-winding" class="input-cyber">
+                                <option value="Hairpin Cobre" selected>Hairpin Cobre</option>
+                                <option value="Litz Alta Freq.">Fio Litz Alta Freq.</option>
+                                <option value="Concentrado">Bobine Concentrada</option>
+                                <option value="Alumínio Leve">Alumínio Leve</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-emotor-cooling" id="lbl-em-cooling">ARREFECIMENTO EV</label>
+                            <select id="select-emotor-cooling" class="input-cyber">
+                                <option value="Ar (Aletas)">Ar (Aletas + Ventoinha)</option>
+                                <option value="Glicol (Camisa)" selected>Glicol (Camisa Água)</option>
+                                <option value="Óleo Direto">Óleo Direto (Spray)</option>
+                                <option value="Imersão Dielétrica">Imersão Dielétrica</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-inverter-type" id="lbl-inverter-type">INVERSOR / PCU</label>
+                            <select id="select-inverter-type" class="input-cyber">
+                                <option value="MOSFET 48V">MOSFET 48V</option>
+                                <option value="IGBT Silício">IGBT Silício</option>
+                                <option value="SiC Dual 800V" selected>SiC Dual High-Power</option>
+                                <option value="GaN Alta Freq.">GaN Alta Frequência</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-battery-arch" id="lbl-battery-arch">ARQ. DA BATERIA HV</label>
+                            <select id="select-battery-arch" class="input-cyber">
+                                <option value="Sub-Piso" selected>Sub-Piso (Underfloor)</option>
+                                <option value="T-Pack Central">Túnel Central (T-Pack)</option>
+                                <option value="Traseira Compacta">Traseira Compacta</option>
+                                <option value="Estrutural 800V">Estrutural 800V Monobloco</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-battery-chem" id="lbl-battery-chem">QUÍMICA BATERIA</label>
+                            <select id="select-battery-chem" class="input-cyber">
+                                <option value="NMC 811" selected>NMC 811 (Alta Densidade)</option>
+                                <option value="LFP (LiFePO4)">LFP (Ferro-Fosfato)</option>
+                                <option value="NCA Performance">NCA (Alta Descarga)</option>
+                                <option value="NiMH Clássica">NiMH (HEV Clássica)</option>
+                                <option value="Supercondensador">Supercondensador (Burst)</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="select-cell-format" id="lbl-cell-format">FORMATO CÉLULAS</label>
+                            <select id="select-cell-format" class="input-cyber">
+                                <option value="Prismática" selected>Prismática (Módulos)</option>
+                                <option value="Cilíndrica 4680">Cilíndrica 2170 / 4680</option>
+                                <option value="Blade (Lâmina)">Blade (Cell-to-Pack)</option>
+                                <option value="Pouch (Bolsa)">Pouch (Empilhada)</option>
+                            </select>
+                        </div>
+                        <div class="campo-grupo">
+                            <label for="input-battery-kwh" id="lbl-battery-kwh">CAPACIDADE (kWh)</label>
+                            <input type="number" id="input-battery-kwh" class="input-cyber" value="18.5" step="0.5" min="0.5" max="60">
+                        </div>
+                    </div>
+                    <div class="subsystem-footer-row">
+                        <span class="subsystem-readout-pill" id="electric-summary-info">PHEV P2+P4 · PMSM 165 kW · Sub-Piso 18.5 kWh</span>
+                        <button type="button" class="btn-3d-ctrl" id="btn-el-back-engine">Ver Combustão</button>
+                    </div>
+                </div>
             </div>
 
             <header class="dashboard-topbar">
@@ -1439,14 +1587,15 @@
                     <div class="widget-header">
                         <span class="ficha-titulo" id="dyno-title">DYNO CURVES</span>
                         <div class="dyno-header-actions">
-                            <span class="widget-badge" id="dyno-peak-badge">147 kW · 212 Nm</span>
+                            <span class="widget-badge" id="dyno-peak-badge">295 kW · 744 Nm</span>
                             <button type="button" class="btn-3d-ctrl btn-unit-toggle" id="btn-unit-toggle" aria-pressed="false" title="Alternar unidades entre kW / Nm e hp / lb-ft">kW / Nm</button>
                         </div>
                     </div>
                     <div class="dyno-legend-row">
                         <div class="dyno-legend">
-                            <span class="dyno-key"><span class="dyno-swatch" style="background:#ef4444;"></span><span id="dyno-legend-power">Potência (kW)</span></span>
-                            <span class="dyno-key"><span class="dyno-swatch" style="background:#d49b4b;"></span><span id="dyno-legend-torque">Binário (Nm)</span></span>
+                            <span class="dyno-key"><span class="dyno-swatch" style="background:#ef4444;"></span><span id="dyno-legend-power">Potência Total (kW)</span></span>
+                            <span class="dyno-key"><span class="dyno-swatch" style="background:#d49b4b;"></span><span id="dyno-legend-torque">Binário Total (Nm)</span></span>
+                            <span class="dyno-key"><span class="dyno-swatch" style="background:#2dd4bf;"></span><span id="dyno-legend-ice">Base Combustão (tracejado)</span></span>
                         </div>
                         <span class="dyno-readout" id="dyno-live-readout">Motor desligado</span>
                     </div>
@@ -1699,7 +1848,7 @@
                 </div>
             </div>
 
-            <!-- Página 4 (Sempre Última Página): Dados do Motor + Dyno Curves à direita -->
+            <!-- Página 4 (Sempre Última Página): Dados do Conjunto + Dyno Curves à direita -->
             <div class="config-page" id="cfg-page-3" data-page="3">
                 <div class="summary-stats-grid">
                     <div class="summary-pill summary-arch">
@@ -1714,12 +1863,12 @@
                     </div>
                     <div class="summary-pill dyno-est-power">
                         <span id="lbl-est-power">POTÊNCIA EST.</span>
-                        <strong id="dyno-est-power-val">147 kW</strong>
+                        <strong id="dyno-est-power-val">295 kW</strong>
                         <small id="dyno-est-power-rpm">@ 7500 RPM</small>
                     </div>
                     <div class="summary-pill dyno-est-torque">
                         <span id="lbl-est-torque">BINÁRIO EST.</span>
-                        <strong id="dyno-est-torque-val">212 Nm</strong>
+                        <strong id="dyno-est-torque-val">744 Nm</strong>
                         <small id="dyno-est-torque-rpm">@ 5200 RPM</small>
                     </div>
                     <div class="summary-pill">
@@ -1770,13 +1919,33 @@
         const btnTopEngine = document.getElementById('btn-top-engine');
         const btnTopGearbox = document.getElementById('btn-top-gearbox');
         const btnTopExhaust = document.getElementById('btn-top-exhaust');
+        const btnTopElectric = document.getElementById('btn-top-electric');
         const btnTopAll = document.getElementById('btn-top-all');
         const popoverGearbox = document.getElementById('popover-gearbox');
         const popoverExhaust = document.getElementById('popover-exhaust');
+        const popoverElectric = document.getElementById('popover-electric');
         const btnCloseGearbox = document.getElementById('btn-close-gearbox');
         const btnCloseExhaust = document.getElementById('btn-close-exhaust');
+        const btnCloseElectric = document.getElementById('btn-close-electric');
         const btnGbBackEngine = document.getElementById('btn-gb-back-engine');
         const btnExhBackEngine = document.getElementById('btn-exh-back-engine');
+        const btnElBackEngine = document.getElementById('btn-el-back-engine');
+        const btnElViewBoth = document.getElementById('btn-el-view-both');
+        const btnElViewMotor = document.getElementById('btn-el-view-motor');
+        const btnElViewBattery = document.getElementById('btn-el-view-battery');
+        const selectHybridType = document.getElementById('select-hybrid-type');
+        const selectEmotorArch = document.getElementById('select-emotor-arch');
+        const inputEmotorKw = document.getElementById('input-emotor-kw');
+        const selectEmotorWinding = document.getElementById('select-emotor-winding');
+        const selectEmotorCooling = document.getElementById('select-emotor-cooling');
+        const selectInverterType = document.getElementById('select-inverter-type');
+        const selectHvVoltage = document.getElementById('select-hv-voltage');
+        const selectHybridMode = document.getElementById('select-hybrid-mode');
+        const electricSummaryInfo = document.getElementById('electric-summary-info');
+        const selectBatteryArch = document.getElementById('select-battery-arch');
+        const selectBatteryChem = document.getElementById('select-battery-chem');
+        const selectCellFormat = document.getElementById('select-cell-format');
+        const inputBatteryKwh = document.getElementById('input-battery-kwh');
         const selectGearboxType = document.getElementById('select-gearbox-type');
         const selectGearboxSpeeds = document.getElementById('select-gearbox-speeds');
         const selectClutchType = document.getElementById('select-clutch-type');
@@ -1838,6 +2007,7 @@
         const sumBuildSub = document.getElementById('sum-build-sub');
         const dynoLegendPower = document.getElementById('dyno-legend-power');
         const dynoLegendTorque = document.getElementById('dyno-legend-torque');
+        const dynoLegendIce = document.getElementById('dyno-legend-ice');
         let motor3D = null;
         let currentPageIdx = 0;
 
@@ -1871,6 +2041,11 @@
                 estTorque: 'BINÁRIO EST.',
                 powerWord: 'Potência',
                 torqueWord: 'Binário',
+                totalWord: 'Total',
+                iceWord: 'Comb.',
+                evWord: 'EV',
+                hybridWord: 'Híbrido',
+                dynoLegendIce: 'Base Combustão (tracejado)',
                 engineOff: 'Motor desligado',
                 cursorPrefix: 'Cursor',
                 liveBadge: 'TEMPO REAL',
@@ -1878,19 +2053,25 @@
                     '1 · BLOCO & GEOMETRIA',
                     '2 · DISTRIBUIÇÃO & VÁLVULAS',
                     '3 · ADMISSÃO & COMBUSTÃO',
-                    '4 · DADOS DO MOTOR & DYNO'
+                    '4 · DADOS DO CONJUNTO & DYNO'
                 ],
                 pagePrevTitle: 'Página anterior',
                 pageNextTitle: 'Próxima página',
-                topEngine: '← Motor',
-                topEngineTitle: 'Voltar ao modelo 3D do Motor',
+                topEngine: 'Combustão',
+                topEngineTitle: 'Ver apenas o modelo 3D e opções do Motor a Combustão',
                 topGearbox: 'Caixa de Velocidades',
                 topGearboxTitle: 'Ver modelo separado da Caixa de Velocidades 3D',
                 topExhaust: 'Escape',
                 topExhaustTitle: 'Ver percurso dos gases e Escape 3D',
+                topElectric: 'Parte Elétrica',
+                topElectricTitle: 'Ver e configurar a Parte Elétrica 3D (Motor Elétrico, Bateria HV e Sistema Híbrido)',
                 topAll: 'Ver Tudo Junto',
-                topAllTitle: 'Ver Motor, Caixa de Velocidades e Escape juntos em 3D',
-                viewEngineBtn: 'Ver Motor',
+                topAllTitle: 'Ver Combustão, Caixa, Escape, Motor Elétrico e Bateria ligados em 3D',
+                viewEngineBtn: 'Ver Combustão',
+                elPanelTitle: 'PARTE ELÉTRICA & HÍBRIDA',
+                elViewBoth: 'Conjunto Elétrico (Motor + Bateria)',
+                elViewMotor: 'Só Motor Elétrico',
+                elViewBattery: 'Só Bateria HV',
                 gbPanelTitle: 'CAIXA DE VELOCIDADES',
                 lblGbType: 'TIPO DE CAIXA',
                 lblGbSpeeds: 'N.º DE MUDANÇAS',
@@ -2016,6 +2197,107 @@
                 lblScBoost: 'PRESSÃO SUPERCHARGER (bar)',
                 lblCr: 'COMPRESSÃO (:1)',
                 lblRpm: 'ROTAÇÃO MÁX. (RPM)',
+                lblHybridType: 'SISTEMA HÍBRIDO',
+                lblEmotorArch: 'MOTOR ELÉTRICO (ARQ.)',
+                lblEmotorKw: 'POTÊNCIA ELÉTRICA (kW)',
+                lblBatteryArch: 'ARQ. DA BATERIA HV',
+                lblBatteryChem: 'QUÍMICA BATERIA',
+                lblBatteryKwh: 'CAPACIDADE (kWh)',
+                lblEmWinding: 'ENROLAMENTO',
+                lblEmCooling: 'ARREFECIMENTO EV',
+                lblInverterType: 'INVERSOR / PCU',
+                lblHvVoltage: 'TENSÃO HV',
+                lblHybridMode: 'MODO DE ASSISTÊNCIA',
+                lblCellFormat: 'FORMATO CÉLULAS',
+                hybridTypeOpts: {
+                    'MHEV 48V': 'MHEV 48V (BSG P0/P1)',
+                    'HEV Power-Split': 'HEV Power-Split (Série-Par.)',
+                    'HEV Paralelo P2': 'HEV Paralelo (P2 Inline)',
+                    'PHEV P2+P4': 'PHEV e-AWD (P2 + P4)',
+                    'EREV Série': 'EREV / REEV (Série Puro)',
+                    'Hypercar MGU-K+H': 'Hypercar (MGU-K + MGU-H)'
+                },
+                hybridTypeShort: {
+                    'MHEV 48V': 'MHEV 48V',
+                    'HEV Power-Split': 'Power-Split',
+                    'HEV Paralelo P2': 'HEV P2',
+                    'PHEV P2+P4': 'PHEV P2+P4',
+                    'EREV Série': 'EREV Série',
+                    'Hypercar MGU-K+H': 'MGU-K+H'
+                },
+                emotorArchOpts: {
+                    'PMSM Radial': 'PMSM Radial (Ímanes N52)',
+                    'Axial Flux': 'Fluxo Axial (Disco YASA)',
+                    'EESM Bobinado': 'Rotor Bobinado (EESM)',
+                    'Motor Indução': 'Indução AC (Gaiola Cobre)',
+                    'In-Wheel Hub': 'In-Wheel (Cubo de Roda)'
+                },
+                emotorArchShort: {
+                    'PMSM Radial': 'PMSM',
+                    'Axial Flux': 'Axial Flux',
+                    'EESM Bobinado': 'EESM',
+                    'Motor Indução': 'Indução',
+                    'In-Wheel Hub': 'In-Wheel'
+                },
+                emotorWindingOpts: {
+                    'Hairpin Cobre': 'Hairpin Cobre',
+                    'Litz Alta Freq.': 'Fio Litz Alta Freq.',
+                    'Concentrado': 'Bobine Concentrada',
+                    'Alumínio Leve': 'Alumínio Leve'
+                },
+                emotorCoolingOpts: {
+                    'Ar (Aletas)': 'Ar (Aletas + Ventoinha)',
+                    'Glicol (Camisa)': 'Glicol (Camisa Água)',
+                    'Óleo Direto': 'Óleo Direto (Spray)',
+                    'Imersão Dielétrica': 'Imersão Dielétrica'
+                },
+                inverterOpts: {
+                    'MOSFET 48V': 'MOSFET 48V',
+                    'IGBT Silício': 'IGBT Silício',
+                    'SiC Dual 800V': 'SiC Dual High-Power',
+                    'GaN Alta Freq.': 'GaN Alta Frequência'
+                },
+                inverterShort: {
+                    'MOSFET 48V': '48V MOS',
+                    'IGBT Silício': 'IGBT',
+                    'SiC Dual 800V': 'SiC Dual',
+                    'GaN Alta Freq.': 'GaN'
+                },
+                hvVoltageOpts: {
+                    '48': '48 V (Mild Hybrid)',
+                    '400': '400 V (HV Padrão)',
+                    '800': '800 V (Ultra-Performance)'
+                },
+                hybridModeOpts: {
+                    'Equilibrado': 'Equilibrado (Auto)',
+                    'E-Boost Máximo': 'Sport / E-Boost Máx.',
+                    'Carga / Eco': 'Carga / Eco Sustain'
+                },
+                batteryArchOpts: {
+                    'Sub-Piso': 'Sub-Piso (Underfloor)',
+                    'T-Pack Central': 'Túnel Central (T-Pack)',
+                    'Traseira Compacta': 'Traseira Compacta',
+                    'Estrutural 800V': 'Estrutural 800V Monobloco'
+                },
+                batteryArchShort: {
+                    'Sub-Piso': 'Sub-Piso',
+                    'T-Pack Central': 'T-Pack',
+                    'Traseira Compacta': 'Traseira',
+                    'Estrutural 800V': 'Estrutural'
+                },
+                batteryChemOpts: {
+                    'NMC 811': 'NMC 811 (Alta Densidade)',
+                    'LFP (LiFePO4)': 'LFP (Ferro-Fosfato)',
+                    'NCA Performance': 'NCA (Alta Descarga)',
+                    'NiMH Clássica': 'NiMH (HEV Clássica)',
+                    'Supercondensador': 'Supercondensador (Burst)'
+                },
+                cellFormatOpts: {
+                    'Prismática': 'Prismática (Módulos)',
+                    'Cilíndrica 4680': 'Cilíndrica 2170 / 4680',
+                    'Blade (Lâmina)': 'Blade (Cell-to-Pack)',
+                    'Pouch (Bolsa)': 'Pouch (Empilhada)'
+                },
                 cylUnit: 'Cilindros',
                 rotorUnit: 'Rotores',
                 valvesUnit: 'Válvulas',
@@ -2160,6 +2442,11 @@
                 estTorque: 'EST. TORQUE',
                 powerWord: 'Power',
                 torqueWord: 'Torque',
+                totalWord: 'Total',
+                iceWord: 'ICE',
+                evWord: 'EV',
+                hybridWord: 'Hybrid',
+                dynoLegendIce: 'Combustion Base (dashed)',
                 engineOff: 'Engine off',
                 cursorPrefix: 'Cursor',
                 liveBadge: 'REAL TIME',
@@ -2167,19 +2454,25 @@
                     '1 · BLOCK & GEOMETRY',
                     '2 · VALVETRAIN & CYCLE',
                     '3 · INDUCTION & COMBUSTION',
-                    '4 · ENGINE DATA & DYNO'
+                    '4 · POWERTRAIN DATA & DYNO'
                 ],
                 pagePrevTitle: 'Previous page',
                 pageNextTitle: 'Next page',
-                topEngine: '← Engine',
-                topEngineTitle: 'Return to 3D Engine model',
+                topEngine: 'Combustion',
+                topEngineTitle: 'View standalone 3D Combustion Engine model & controls',
                 topGearbox: 'Gearbox',
                 topGearboxTitle: 'View standalone 3D Gearbox model',
                 topExhaust: 'Exhaust',
                 topExhaustTitle: 'View standalone Exhaust Gas Path & 3D Exhaust',
+                topElectric: 'Electric Part',
+                topElectricTitle: 'View and configure standalone 3D Electric Part (E-Motor, HV Battery & Hybrid System)',
                 topAll: 'View All Together',
-                topAllTitle: 'View Engine, Gearbox and Exhaust assembled together in 3D',
-                viewEngineBtn: 'View Engine',
+                topAllTitle: 'View Combustion, Gearbox, Exhaust, Electric Motor & Battery assembled together in 3D',
+                viewEngineBtn: 'View ICE',
+                elPanelTitle: 'ELECTRIC & HYBRID PART',
+                elViewBoth: 'Electric Set (Motor + Battery)',
+                elViewMotor: 'E-Motor Only',
+                elViewBattery: 'HV Battery Only',
                 gbPanelTitle: 'GEARBOX & CLUTCH',
                 lblGbType: 'GEARBOX TYPE',
                 lblGbSpeeds: 'NUMBER OF GEARS',
@@ -2305,6 +2598,107 @@
                 lblScBoost: 'SUPERCHARGER BOOST (bar)',
                 lblCr: 'COMPRESSION (:1)',
                 lblRpm: 'MAX RPM',
+                lblHybridType: 'HYBRID SYSTEM',
+                lblEmotorArch: 'E-MOTOR ARCH.',
+                lblEmotorKw: 'ELECTRIC POWER (kW)',
+                lblBatteryArch: 'HV BATTERY ARCH.',
+                lblBatteryChem: 'BATTERY CHEMISTRY',
+                lblBatteryKwh: 'CAPACITY (kWh)',
+                lblEmWinding: 'WINDING',
+                lblEmCooling: 'EV COOLING',
+                lblInverterType: 'INVERTER / PCU',
+                lblHvVoltage: 'HV VOLTAGE',
+                lblHybridMode: 'ASSIST MODE',
+                lblCellFormat: 'CELL FORMAT',
+                hybridTypeOpts: {
+                    'MHEV 48V': 'MHEV 48V (BSG P0/P1)',
+                    'HEV Power-Split': 'HEV Power-Split (Series-Par.)',
+                    'HEV Paralelo P2': 'HEV Parallel (P2 Inline)',
+                    'PHEV P2+P4': 'PHEV e-AWD (P2 + P4)',
+                    'EREV Série': 'EREV / REEV (Pure Series)',
+                    'Hypercar MGU-K+H': 'Hypercar (MGU-K + MGU-H)'
+                },
+                hybridTypeShort: {
+                    'MHEV 48V': 'MHEV 48V',
+                    'HEV Power-Split': 'Power-Split',
+                    'HEV Paralelo P2': 'HEV P2',
+                    'PHEV P2+P4': 'PHEV P2+P4',
+                    'EREV Série': 'EREV Series',
+                    'Hypercar MGU-K+H': 'MGU-K+H'
+                },
+                emotorArchOpts: {
+                    'PMSM Radial': 'Radial PMSM (N52 Magnets)',
+                    'Axial Flux': 'Axial Flux (YASA Disc)',
+                    'EESM Bobinado': 'Wound Rotor (EESM)',
+                    'Motor Indução': 'AC Induction (Copper Cage)',
+                    'In-Wheel Hub': 'In-Wheel Hub Motors'
+                },
+                emotorArchShort: {
+                    'PMSM Radial': 'PMSM',
+                    'Axial Flux': 'Axial Flux',
+                    'EESM Bobinado': 'EESM',
+                    'Motor Indução': 'Induction',
+                    'In-Wheel Hub': 'In-Wheel'
+                },
+                emotorWindingOpts: {
+                    'Hairpin Cobre': 'Copper Hairpin',
+                    'Litz Alta Freq.': 'High-Freq. Litz Wire',
+                    'Concentrado': 'Concentrated Coil',
+                    'Alumínio Leve': 'Lightweight Aluminum'
+                },
+                emotorCoolingOpts: {
+                    'Ar (Aletas)': 'Air (Finned + Fan)',
+                    'Glicol (Camisa)': 'Glycol Water Jacket',
+                    'Óleo Direto': 'Direct Oil Spray',
+                    'Imersão Dielétrica': 'Dielectric Immersion'
+                },
+                inverterOpts: {
+                    'MOSFET 48V': '48V MOSFET',
+                    'IGBT Silício': 'Silicon IGBT',
+                    'SiC Dual 800V': 'Dual SiC High-Power',
+                    'GaN Alta Freq.': 'High-Freq. GaN'
+                },
+                inverterShort: {
+                    'MOSFET 48V': '48V MOS',
+                    'IGBT Silício': 'IGBT',
+                    'SiC Dual 800V': 'Dual SiC',
+                    'GaN Alta Freq.': 'GaN'
+                },
+                hvVoltageOpts: {
+                    '48': '48 V (Mild Hybrid)',
+                    '400': '400 V (Standard HV)',
+                    '800': '800 V (Ultra-Performance)'
+                },
+                hybridModeOpts: {
+                    'Equilibrado': 'Balanced (Auto)',
+                    'E-Boost Máximo': 'Sport / Max E-Boost',
+                    'Carga / Eco': 'Charge / Eco Sustain'
+                },
+                batteryArchOpts: {
+                    'Sub-Piso': 'Underfloor Skate',
+                    'T-Pack Central': 'Central Tunnel (T-Pack)',
+                    'Traseira Compacta': 'Compact Rear Trunk',
+                    'Estrutural 800V': 'Structural 800V Monocoque'
+                },
+                batteryArchShort: {
+                    'Sub-Piso': 'Underfloor',
+                    'T-Pack Central': 'T-Pack',
+                    'Traseira Compacta': 'Rear Compact',
+                    'Estrutural 800V': 'Structural'
+                },
+                batteryChemOpts: {
+                    'NMC 811': 'NMC 811 (High Density)',
+                    'LFP (LiFePO4)': 'LFP (Lithium Iron)',
+                    'NCA Performance': 'NCA (High C-Rate)',
+                    'NiMH Clássica': 'NiMH (Classic HEV)',
+                    'Supercondensador': 'Supercapacitor (Burst)'
+                },
+                cellFormatOpts: {
+                    'Prismática': 'Prismatic Modules',
+                    'Cilíndrica 4680': 'Cylindrical 2170 / 4680',
+                    'Blade (Lâmina)': 'Blade (Cell-to-Pack)',
+                    'Pouch (Bolsa)': 'Stacked Pouch Cells'
+                },
                 cylUnit: 'Cylinders',
                 rotorUnit: 'Rotors',
                 valvesUnit: 'Valves',
@@ -2443,6 +2837,9 @@
             peakPowerRpm: 6800,
             peakTorqueNm: 212,
             peakTorqueRpm: 5100,
+            icePeakPowerKw: 146,
+            icePeakTorqueNm: 212,
+            evPeakPowerKw: 165,
             hoverRpm: null
         };
 
@@ -2481,12 +2878,12 @@
             }
             if (dynoEstPowerVal) dynoEstPowerVal.textContent = pStr;
             if (dynoEstTorqueVal) dynoEstTorqueVal.textContent = tStr;
-            if (dynoEstPowerRpm) dynoEstPowerRpm.textContent = `@ ${engineSim.peakPowerRpm} RPM`;
-            if (dynoEstTorqueRpm) dynoEstTorqueRpm.textContent = `@ ${engineSim.peakTorqueRpm} RPM`;
-            if (dynoPeakBadge) dynoPeakBadge.textContent = `${pStr} · ${tStr}`;
             const t = I18N[currentLang];
-            if (dynoLegendPower) dynoLegendPower.textContent = `${t.powerWord} (${powerUnitLabel()})`;
-            if (dynoLegendTorque) dynoLegendTorque.textContent = `${t.torqueWord} (${torqueUnitLabel()})`;
+            if (dynoEstPowerRpm) dynoEstPowerRpm.textContent = `@ ${engineSim.peakPowerRpm} RPM · ${t.iceWord} ${formatPowerStr(engineSim.icePeakPowerKw)} + ${t.evWord} ${formatPowerStr(engineSim.evPeakPowerKw)}`;
+            if (dynoEstTorqueRpm) dynoEstTorqueRpm.textContent = `@ ${engineSim.peakTorqueRpm} RPM · ${t.iceWord} ${formatTorqueStr(engineSim.icePeakTorqueNm)}`;
+            if (dynoPeakBadge) dynoPeakBadge.textContent = `${pStr} · ${tStr}`;
+            if (dynoLegendPower) dynoLegendPower.textContent = `${t.powerWord} ${t.totalWord} (${powerUnitLabel()})`;
+            if (dynoLegendTorque) dynoLegendTorque.textContent = `${t.torqueWord} ${t.totalWord} (${torqueUnitLabel()})`;
 
             if (dynoLiveReadout) {
                 if (!engineSim.on && engineSim.currentRpm < 20) {
@@ -2767,6 +3164,13 @@
             setTxt('lbl-sc-boost', t.lblScBoost);
             setTxt('lbl-cr', t.lblCr);
             setTxt('lbl-rpm', t.lblRpm);
+            setTxt('lbl-hybrid-type', t.lblHybridType);
+            setTxt('lbl-emotor-arch', t.lblEmotorArch);
+            setTxt('lbl-emotor-kw', t.lblEmotorKw);
+            setTxt('lbl-battery-arch', t.lblBatteryArch);
+            setTxt('lbl-battery-chem', t.lblBatteryChem);
+            setTxt('lbl-battery-kwh', t.lblBatteryKwh);
+            setTxt('dyno-legend-ice', t.dynoLegendIce);
 
             if (btnLangToggle) {
                 btnLangToggle.textContent = t.langBtn;
@@ -2815,6 +3219,16 @@
             mapOpts(selectExhaustType, t.exhTypeOpts);
             mapOpts(selectExhaustTips, t.exhTipsOpts);
             mapOpts(selectExhaustJunction, t.exhJunctionOpts);
+            mapOpts(selectHybridType, t.hybridTypeOpts);
+            mapOpts(selectEmotorArch, t.emotorArchOpts);
+            mapOpts(selectEmotorWinding, t.emotorWindingOpts);
+            mapOpts(selectEmotorCooling, t.emotorCoolingOpts);
+            mapOpts(selectInverterType, t.inverterOpts);
+            mapOpts(selectHvVoltage, t.hvVoltageOpts);
+            mapOpts(selectHybridMode, t.hybridModeOpts);
+            mapOpts(selectBatteryArch, t.batteryArchOpts);
+            mapOpts(selectBatteryChem, t.batteryChemOpts);
+            mapOpts(selectCellFormat, t.cellFormatOpts);
             setTxt('gb-panel-title', t.gbPanelTitle);
             setTxt('lbl-gb-type', t.lblGbType);
             setTxt('lbl-gb-speeds', t.lblGbSpeeds);
@@ -2826,13 +3240,25 @@
             setTxt('lbl-exh-junction', t.lblExhJunction);
             if (selectExhaustJunction) selectExhaustJunction.title = t.exhJuncTitle;
             setTxt('lbl-exh-diam', t.lblExhDiam);
+            setTxt('el-panel-title', t.elPanelTitle);
+            setTxt('btn-el-view-both', t.elViewBoth);
+            setTxt('btn-el-view-motor', t.elViewMotor);
+            setTxt('btn-el-view-battery', t.elViewBattery);
+            setTxt('lbl-em-winding', t.lblEmWinding);
+            setTxt('lbl-em-cooling', t.lblEmCooling);
+            setTxt('lbl-inverter-type', t.lblInverterType);
+            setTxt('lbl-hv-voltage', t.lblHvVoltage);
+            setTxt('lbl-hybrid-mode', t.lblHybridMode);
+            setTxt('lbl-cell-format', t.lblCellFormat);
             setTxt('btn-top-engine', t.topEngine);
             setTxt('btn-top-all', t.topAll);
             setTxt('btn-gb-back-engine', t.viewEngineBtn);
             setTxt('btn-exh-back-engine', t.viewEngineBtn);
+            setTxt('btn-el-back-engine', t.viewEngineBtn);
             if (btnTopEngine) btnTopEngine.title = t.topEngineTitle;
             if (btnTopGearbox) btnTopGearbox.title = t.topGearboxTitle;
             if (btnTopExhaust) btnTopExhaust.title = t.topExhaustTitle;
+            if (btnTopElectric) btnTopElectric.title = t.topElectricTitle;
             if (btnTopAll) btnTopAll.title = t.topAllTitle;
             syncSubsystemUI();
             syncBoostControls(false);
@@ -3144,12 +3570,60 @@
             const valTq = (isWankel || is2T) ? 1.00 : (nVal === 2 ? 1.02 : 1.00);
             const valHp = (isWankel || is2T) ? 1.00 : (nVal === 2 ? 0.93 : 1.00);
 
+            const hybMap = {
+                'MHEV 48V':         { eff: 0.88, evShare: 0.80, tqMult: 0.90, baseRpmFrac: 0.34, genCap: false, noLag: false },
+                'HEV Power-Split':  { eff: 0.94, evShare: 0.92, tqMult: 1.02, baseRpmFrac: 0.38, genCap: false, noLag: false },
+                'HEV Paralelo P2':  { eff: 0.95, evShare: 0.96, tqMult: 1.05, baseRpmFrac: 0.40, genCap: false, noLag: false },
+                'PHEV P2+P4':       { eff: 0.96, evShare: 1.00, tqMult: 1.12, baseRpmFrac: 0.42, genCap: false, noLag: false },
+                'EREV Série':       { eff: 0.92, evShare: 1.00, tqMult: 1.10, baseRpmFrac: 0.42, genCap: true,  noLag: false },
+                'Hypercar MGU-K+H': { eff: 0.97, evShare: 1.05, tqMult: 1.16, baseRpmFrac: 0.44, genCap: false, noLag: true }
+            };
+            const emArchMap = {
+                'PMSM Radial':   { tq: 1.00, hp: 1.00 },
+                'Axial Flux':    { tq: 1.10, hp: 1.06 },
+                'EESM Bobinado': { tq: 0.96, hp: 1.02 },
+                'Motor Indução': { tq: 0.93, hp: 0.98 },
+                'In-Wheel Hub':  { tq: 1.12, hp: 0.97 }
+            };
+            const windMap = { 'Hairpin Cobre': 1.02, 'Litz Alta Freq.': 1.03, 'Concentrado': 0.99, 'Alumínio Leve': 0.97 };
+            const coolMap = { 'Ar (Aletas)': 0.94, 'Glicol (Camisa)': 1.00, 'Óleo Direto': 1.03, 'Imersão Dielétrica': 1.05 };
+            const invMap  = { 'MOSFET 48V': 0.95, 'IGBT Silício': 0.97, 'SiC Dual 800V': 1.03, 'GaN Alta Freq.': 1.04 };
+            const vMap    = { '48': 0.93, '400': 1.00, '800': 1.04 };
+            const batArchMap = { 'Sub-Piso': 1.00, 'T-Pack Central': 1.01, 'Traseira Compacta': 0.98, 'Estrutural 800V': 1.03 };
+            const batChemMap = {
+                'NMC 811':         { c: 9.0,   m: 1.00 },
+                'LFP (LiFePO4)':   { c: 6.0,   m: 0.94 },
+                'NCA Performance': { c: 12.0,  m: 1.04 },
+                'NiMH Clássica':   { c: 14.0,  m: 0.90 },
+                'Supercondensador':{ c: 110.0, m: 1.08 }
+            };
+            const hybModeMap = { 'Equilibrado': 0.95, 'E-Boost Máximo': 1.06, 'Carga / Eco': 0.78 };
+
+            const pHyb = hybMap[params.hybrid_type] || hybMap['PHEV P2+P4'];
+            const pEm  = emArchMap[params.emotor_arch] || emArchMap['PMSM Radial'];
+            const pWind = windMap[params.emotor_winding] || 1.02;
+            const pCool = coolMap[params.emotor_cooling] || 1.00;
+            const pInv  = invMap[params.inverter_type] || 1.03;
+            const hvVStr = String(parseInt(params.hv_voltage, 10) || 400);
+            const pV    = vMap[hvVStr] || 1.00;
+            const pBa   = batArchMap[params.battery_arch] || 1.00;
+            const pBc   = batChemMap[params.battery_chem] || batChemMap['NMC 811'];
+            const pHm   = hybModeMap[params.hybrid_mode] || 0.95;
+            const mguHBoost = (pHyb.noLag && ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(admKey)) ? 1.03 : 1.00;
+
             const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (effCiclo === '2T' ? 1.25 : 1.00);
-            const peakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq * pRad.tq);
+            const icePeakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq * pRad.tq * mguHBoost);
             const fatorRpmHp = isWankel ? 0.93 : (effCiclo === '4T' ? 0.88 : 0.94);
-            const peakPowerCv = ((peakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * (pRad.hp / pRad.tq) * 1.01387;
-            const peakPowerKw = Math.round(peakPowerCv * 0.73549875);
+            const icePeakPowerCv = ((icePeakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * (pRad.hp / pRad.tq) * mguHBoost * 1.01387;
+            const icePeakPowerKw = Math.round(icePeakPowerCv * 0.73549875);
+
+            const emKwClamped = Math.max(5.0, Math.min(600.0, Number(params.emotor_kw) || 165.0));
+            const batKwhClamped = Math.max(0.5, Math.min(60.0, Number(params.battery_kwh) || 18.5));
+            const rawEvKw = emKwClamped * pHyb.eff * pHyb.evShare * pEm.hp * pWind * pCool * pInv * pV * pBa * pBc.m * pHm;
+            const batBurstKw = Math.max(22.0, batKwhClamped * pBc.c) * pV;
+            const batScale = Math.min(1.06, 0.68 + 0.32 * Math.min(1.25, batBurstKw / Math.max(15.0, rawEvKw)));
+            const effEvKw = rawEvKw * batScale;
 
             const maxRpm = Math.max(1500, params.max_rpm);
             const startRpm = Math.min(1000, Math.round(maxRpm * 0.15));
@@ -3171,13 +3645,13 @@
                     tShape = (0.70 + lowEndBias) + 0.30 * rise - drop;
                 } else if (admKey === 'Turbo') {
                     const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.34 : 0.44), (isDiesel ? 2000 : 2700) + turboBar * 240);
-                    const spool = smoothstep(spoolRpm * 0.42, spoolRpm * 1.05, rpm);
+                    const spool = pHyb.noLag ? 0.88 : smoothstep(spoolRpm * 0.42, spoolRpm * 1.05, rpm);
                     tShape = ((isDiesel ? 0.56 : 0.46) + (isDiesel ? 0.44 : 0.54) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.62 : 0.78)) * (isDiesel ? 0.78 : 0.54) * topFallScale);
                 } else if (admKey === 'Biturbo') {
                     const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.30 : 0.40), (isDiesel ? 1850 : 2500) + turboBar * 180);
-                    if (turboCfg === 'Sequencial') {
-                        const s1 = smoothstep(spoolRpm * 0.18, spoolRpm * 0.62, rpm);
-                        const s2 = smoothstep(maxRpm * 0.36, maxRpm * 0.62, rpm);
+                    if (turboCfg === 'Sequencial' || pHyb.noLag) {
+                        const s1 = pHyb.noLag ? 0.90 : smoothstep(spoolRpm * 0.18, spoolRpm * 0.62, rpm);
+                        const s2 = smoothstep(spoolRpm * 0.68, spoolRpm * 1.00, rpm);
                         tShape = ((isDiesel ? 0.68 : 0.60) + (isDiesel ? 0.24 : 0.30) * s1 + (isDiesel ? 0.08 : 0.10) * s2) * (1.0 - Math.max(0, u - (isDiesel ? 0.68 : 0.80)) * (isDiesel ? 0.68 : 0.48) * topFallScale);
                     } else {
                         const spool = smoothstep(spoolRpm * 0.40, spoolRpm * 1.02, rpm);
@@ -3185,9 +3659,9 @@
                     }
                 } else if (admKey === 'Quad Turbo') {
                     const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.28 : 0.38), (isDiesel ? 1750 : 2400) + turboBar * 160);
-                    if (turboCfg === 'Sequencial') {
-                        const s1 = smoothstep(spoolRpm * 0.16, spoolRpm * 0.56, rpm);
-                        const s2 = smoothstep(maxRpm * 0.38, maxRpm * 0.64, rpm);
+                    if (turboCfg === 'Sequencial' || pHyb.noLag) {
+                        const s1 = pHyb.noLag ? 0.92 : smoothstep(spoolRpm * 0.16, spoolRpm * 0.56, rpm);
+                        const s2 = smoothstep(spoolRpm * 0.64, spoolRpm * 0.96, rpm);
                         tShape = ((isDiesel ? 0.70 : 0.62) + (isDiesel ? 0.22 : 0.28) * s1 + (isDiesel ? 0.08 : 0.10) * s2) * (1.0 - Math.max(0, u - (isDiesel ? 0.70 : 0.82)) * (isDiesel ? 0.60 : 0.40) * topFallScale);
                     } else {
                         const spool = smoothstep(spoolRpm * 0.36, spoolRpm * 0.98, rpm);
@@ -3198,7 +3672,7 @@
                     tShape = (0.83 + lowEndBias * 0.5) + 0.17 * rise - Math.max(0, u - (isDiesel ? 0.60 : 0.72)) * (isDiesel ? 0.72 : 0.50) * topFallScale;
                 } else {
                     // Twincharge: compressor em baixa + turbo em alta
-                    tShape = 0.86 + 0.14 * smoothstep(0.16, 0.54, u) - Math.max(0, u - (isDiesel ? 0.70 : 0.84)) * (isDiesel ? 0.60 : 0.38) * topFallScale;
+                    tShape = (pHyb.noLag ? 0.94 : 0.86) + (pHyb.noLag ? 0.06 : 0.14) * smoothstep(0.16, 0.54, u) - Math.max(0, u - (isDiesel ? 0.70 : 0.84)) * (isDiesel ? 0.60 : 0.38) * topFallScale;
                 }
 
                 tShape = Math.max(0.25, tShape);
@@ -3207,20 +3681,34 @@
             }
 
             let maxRawP = 1e-6;
-            const pts = raw.map(item => {
-                const torqueNm = (item.tShape / maxRawT) * peakTorqueNm;
+            const ptsIce = raw.map(item => {
+                const torqueNm = (item.tShape / maxRawT) * icePeakTorqueNm;
                 const pRaw = torqueNm * item.rpm;
                 if (pRaw > maxRawP) maxRawP = pRaw;
                 return { rpm: item.rpm, torqueNm, pRaw };
             });
 
+            const evBaseRpm = Math.max(1200.0, maxRpm * pHyb.baseRpmFrac);
+            const evTqBase = (effEvKw * 9549.2966) / evBaseRpm * pEm.tq * pHyb.tqMult;
             let bestP = { val: 0, rpm: maxRpm };
             let bestT = { val: 0, rpm: startRpm };
-            const points = pts.map(p => {
-                const powerKw = (p.pRaw / maxRawP) * peakPowerKw;
+            const points = ptsIce.map(p => {
+                const iceKw = (p.pRaw / maxRawP) * icePeakPowerKw;
+                const iceTq = p.torqueNm;
+                let evKw = 0.0, evTq = 0.0;
+                if (p.rpm <= evBaseRpm) {
+                    evTq = evTqBase * (0.94 + 0.06 * smoothstep(0.0, evBaseRpm, p.rpm));
+                    evKw = (evTq * p.rpm) / 9549.2966;
+                } else {
+                    const hiFrac = Math.max(0.0, (p.rpm - evBaseRpm) / Math.max(1.0, maxRpm - evBaseRpm));
+                    evKw = effEvKw * (1.0 - 0.08 * Math.pow(hiFrac, 1.5));
+                    evTq = (evKw * 9549.2966) / Math.max(1.0, p.rpm);
+                }
+                const powerKw = pHyb.genCap ? (evKw + iceKw * 0.35) : (iceKw + evKw);
+                const torqueNm = pHyb.genCap ? (evTq + iceTq * 0.35) : (iceTq + evTq);
                 if (powerKw >= bestP.val) bestP = { val: powerKw, rpm: p.rpm };
-                if (p.torqueNm >= bestT.val) bestT = { val: p.torqueNm, rpm: p.rpm };
-                return { rpm: p.rpm, torqueNm: p.torqueNm, powerKw };
+                if (torqueNm >= bestT.val) bestT = { val: torqueNm, rpm: p.rpm };
+                return { rpm: p.rpm, torqueNm, powerKw, iceTorqueNm: iceTq, icePowerKw: iceKw };
             });
 
             const pisInMap = { 'Alumínio': 1.00, 'Forged': 1.08, 'Forged Heavy': 1.24, 'Titânio': 0.82 };
@@ -3229,10 +3717,13 @@
             engineSim.maxRpm = maxRpm;
             engineSim.idleRpm = Math.min(1150, Math.max(750, Math.round(maxRpm * 0.13)));
             engineSim.dynoPoints = points;
-            engineSim.peakPowerKw = peakPowerKw;
+            engineSim.peakPowerKw = Math.round(bestP.val);
             engineSim.peakPowerRpm = Math.round(bestP.rpm);
-            engineSim.peakTorqueNm = peakTorqueNm;
+            engineSim.peakTorqueNm = Math.round(bestT.val);
             engineSim.peakTorqueRpm = Math.round(bestT.rpm);
+            engineSim.icePeakPowerKw = icePeakPowerKw;
+            engineSim.icePeakTorqueNm = icePeakTorqueNm;
+            engineSim.evPeakPowerKw = Math.round(effEvKw);
 
             syncUnitDisplays();
             updateRpmRedlineVisual(engineSim.currentRpm);
@@ -3375,7 +3866,44 @@
             ctx.fillStyle = '#6b7280';
             ctx.fillText(compact ? 'RPM ×1k' : 'RPM (×1000)', padL + pw * 0.5, ch - (compact ? 3 : 4));
 
-            // Área sutil sob a curva de potência
+            // Banda sutil de ganho elétrico entre curva Combustão (ICE) e Híbrido Combinado
+            if (pts[0].icePowerKw !== undefined) {
+                ctx.beginPath();
+                pts.forEach((p, idx) => {
+                    const x = xOf(p.rpm), y = yPower(convertPower(p.powerKw));
+                    if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                for (let idx = pts.length - 1; idx >= 0; idx--) {
+                    const p = pts[idx];
+                    ctx.lineTo(xOf(p.rpm), yPower(convertPower(p.icePowerKw)));
+                }
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(45, 212, 191, 0.14)';
+                ctx.fill();
+
+                ctx.save();
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                pts.forEach((p, idx) => {
+                    const x = xOf(p.rpm), y = yTorque(convertTorque(p.iceTorqueNm));
+                    if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.strokeStyle = 'rgba(212, 155, 75, 0.45)';
+                ctx.lineWidth = compact ? 1.2 : 1.4;
+                ctx.stroke();
+
+                ctx.beginPath();
+                pts.forEach((p, idx) => {
+                    const x = xOf(p.rpm), y = yPower(convertPower(p.icePowerKw));
+                    if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.strokeStyle = 'rgba(45, 212, 191, 0.72)';
+                ctx.lineWidth = compact ? 1.3 : 1.6;
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Área sutil sob a curva de potência total
             const gradArea = ctx.createLinearGradient(0, padT, 0, padT + ph);
             gradArea.addColorStop(0, 'rgba(239, 68, 68, 0.24)');
             gradArea.addColorStop(1, 'rgba(239, 68, 68, 0.01)');
@@ -3390,7 +3918,7 @@
             ctx.fillStyle = gradArea;
             ctx.fill();
 
-            // Curva de Binário
+            // Curva de Binário Total (Combustão + EV)
             ctx.beginPath();
             pts.forEach((p, idx) => {
                 const x = xOf(p.rpm), y = yTorque(convertTorque(p.torqueNm));
@@ -3400,7 +3928,7 @@
             ctx.lineWidth = compact ? 1.8 : 2.2;
             ctx.stroke();
 
-            // Curva de Potência
+            // Curva de Potência Total (Combustão + EV)
             ctx.beginPath();
             pts.forEach((p, idx) => {
                 const x = xOf(p.rpm), y = yPower(convertPower(p.powerKw));
@@ -3507,6 +4035,18 @@
                     exhaustJunction: 'X-Pipe',
                     exhaustDiameter: 63,
                     radiatorType: 'OEM Alumínio',
+                    hybridType: 'PHEV P2+P4',
+                    emotorArch: 'PMSM Radial',
+                    emotorKw: 165,
+                    emotorWinding: 'Hairpin Cobre',
+                    emotorCooling: 'Glicol (Camisa)',
+                    inverterType: 'SiC Dual 800V',
+                    hvVoltage: 400,
+                    batteryArch: 'Sub-Piso',
+                    batteryChem: 'NMC 811',
+                    cellFormat: 'Prismática',
+                    batteryKwh: 18.5,
+                    hybridMode: 'Equilibrado',
                     turboBar: 0.0,
                     scBar: 0.0
                 };
@@ -3514,6 +4054,9 @@
                 this.exhaustTips = [];
                 this.exhaustGasPaths = [];
                 this.gasFlowPhase = 0;
+                this.dynamicEvRotors = [];
+                this.hvPaths = [];
+                this.energyPhase = 0;
 
                 this.cutaway = true;
                 this.autoRotate = false;
@@ -4496,14 +5039,37 @@
                 };
             }
 
-            samplePolyline(pts, u) {
-                if (!pts || pts.length === 0) return [0, 0, 0];
-                if (pts.length === 1) return pts[0];
-                const t = Math.max(0, Math.min(1, u)) * (pts.length - 1);
-                const idx = Math.min(pts.length - 2, Math.floor(t));
-                const f = t - idx;
-                const a = pts[idx], b = pts[idx + 1];
-                return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+            samplePolyline(pts, t) {
+                if (!pts || !pts.length) return [0, 0, 0];
+                if (pts.length === 1 || t <= 0) return pts[0];
+                if (t >= 1) return pts[pts.length - 1];
+                let totalLen = 0;
+                const segLens = [];
+                for (let i = 0; i < pts.length - 1; i++) {
+                    const d = Math.hypot(
+                        pts[i + 1][0] - pts[i][0],
+                        pts[i + 1][1] - pts[i][1],
+                        pts[i + 1][2] - pts[i][2]
+                    );
+                    segLens.push(d);
+                    totalLen += d;
+                }
+                if (totalLen < 1e-6) return pts[0];
+                let target = Math.max(0, Math.min(1, t)) * totalLen;
+                for (let i = 0; i < segLens.length; i++) {
+                    const seg = segLens[i];
+                    if (target <= seg || i === segLens.length - 1) {
+                        const f = seg > 1e-6 ? Math.max(0, Math.min(1, target / seg)) : 0;
+                        const a = pts[i], b = pts[i + 1];
+                        return [
+                            a[0] + (b[0] - a[0]) * f,
+                            a[1] + (b[1] - a[1]) * f,
+                            a[2] + (b[2] - a[2]) * f
+                        ];
+                    }
+                    target -= seg;
+                }
+                return pts[pts.length - 1];
             }
 
             addGearboxModel(xFront, bellR = 0.68) {
@@ -4908,6 +5474,452 @@
                 this.baseDist = 5.4;
             }
 
+            getWindingStyle(wName) {
+                switch (wName) {
+                    case 'Litz Alta Freq.':
+                        return { col: [0.92, 0.66, 0.24, 1.0], spec: [0.84, 66], barStyle: 'hairpin' };
+                    case 'Concentrado':
+                        return { col: [0.78, 0.36, 0.16, 1.0], spec: [0.74, 54], barStyle: 'bobbin' };
+                    case 'Alumínio Leve':
+                        return { col: [0.76, 0.80, 0.86, 1.0], spec: [0.84, 68], barStyle: 'alu' };
+                    default:
+                        return { col: [0.89, 0.49, 0.20, 1.0], spec: [0.86, 68], barStyle: 'hairpin' };
+                }
+            }
+
+            addInverterUnit(x, y, z, scale = 1.0, phaseTargets = null) {
+                const inv = this.config.inverterType || 'SiC Dual 800V';
+                const s = scale;
+                const isGan = inv === 'GaN Alta Freq.';
+                const isSic = inv === 'SiC Dual 800V';
+                const isMos = inv === 'MOSFET 48V';
+
+                const wX = (isGan ? 0.34 : (isSic ? 0.52 : (isMos ? 0.32 : 0.46))) * s;
+                const hY = (isGan ? 0.11 : (isMos ? 0.10 : 0.15)) * s;
+                const dZ = (isSic ? 0.42 : (isMos ? 0.28 : 0.36)) * s;
+
+                const bodyCol = isSic ? [0.16, 0.19, 0.24, 1.0] : (isGan ? [0.26, 0.32, 0.40, 1.0] : [0.58, 0.63, 0.70, 1.0]);
+                const trimCol = isSic ? [0.52, 0.40, 0.90, 1.0] : (isGan ? [0.18, 0.76, 0.74, 1.0] : (isMos ? [0.78, 0.60, 0.24, 1.0] : [0.38, 0.44, 0.52, 1.0]));
+
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y, z, 0, 0, 0, wX, hY, dZ), bodyCol, [0.68, 52]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y + hY * 0.48, z, 0, 0, 0, wX * 0.90, hY * 0.16, dZ * 0.86), trimCol, [0.76, 60]);
+
+                const finCnt = isGan ? 9 : 6;
+                for (let f = 0; f < finCnt; f++) {
+                    const fz = z + (-0.36 + (0.72 * f) / Math.max(1, finCnt - 1)) * dZ;
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(x, y + hY * 0.59, fz, 0, 0, 0, wX * 0.80, hY * 0.14, 0.012 * s), [0.74, 0.78, 0.84, 1.0], [0.80, 64]);
+                }
+
+                const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
+                const C_COPPER = [0.88, 0.50, 0.20, 1.0];
+                for (const sgn of [-1, 1]) {
+                    const hz = z + sgn * dZ * 0.24;
+                    const hx = x - wX * 0.53;
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(hx, y, hz, 0, 0, Math.PI * 0.5, 0.032 * s, 0.09 * s, 0.032 * s), C_HV_ORANGE, [0.55, 38]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(hx - 0.035 * s, y, hz, 0, 0, Math.PI * 0.5, 0.020 * s, 0.05 * s, 0.020 * s), [0.84, 0.87, 0.92, 1.0], [0.84, 68]);
+                }
+
+                const targets = phaseTargets || [
+                    [x + wX * 0.14, y - hY * 1.45, z - dZ * 0.24],
+                    [x + wX * 0.14, y - hY * 1.45, z],
+                    [x + wX * 0.14, y - hY * 1.45, z + dZ * 0.24]
+                ];
+                for (let p = 0; p < 3; p++) {
+                    const pz = z + (p - 1) * dZ * 0.22;
+                    const pStart = [x + wX * 0.24, y - hY * 0.36, pz];
+                    const pMid = [x + wX * 0.30, (pStart[1] + targets[p][1]) * 0.52, (pz + targets[p][2]) * 0.5];
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(pStart[0], pStart[1], pStart[2], 0, 0, 0, 0.052 * s, 0.038 * s, 0.042 * s), C_HV_ORANGE, [0.52, 36]);
+                    this.addPipe(this.staticOpaque, [pStart, pMid, targets[p]], 0.018 * s, C_COPPER, [0.86, 68], [], true);
+                    this.hvPaths.push({ pts: [pStart, pMid, targets[p]], r: 0.024 * s, phaseOff: p * 0.22, kind: 'phase' });
+                }
+
+                return {
+                    hvInputPos: [x - wX * 0.55, y, z - dZ * 0.24],
+                    hvInputNeg: [x - wX * 0.55, y, z + dZ * 0.24]
+                };
+            }
+
+            addEvMguUnit({ x = 0, y = 0, z = 0, scale = 1.0, flipDir = 1, includeInverter = true, rotorIdx = 0, archOverride = null, includeDiffAxle = false, isCompactPancake = false }) {
+                const s = scale;
+                const mArch = archOverride || this.config.emotorArch || 'PMSM Radial';
+                const isInWheel = mArch === 'In-Wheel Hub';
+                const isAxial = mArch === 'Axial Flux' || isInWheel;
+                const emKw = Math.max(5, Math.min(600, Number(this.config.emotorKw) || 165));
+                const cooling = this.config.emotorCooling || 'Glicol (Camisa)';
+                const wd = this.getWindingStyle(this.config.emotorWinding || 'Hairpin Cobre');
+
+                const kwNorm = Math.min(1.0, emKw / 320.0);
+                const rStat = (isAxial ? 0.44 : 0.36) * (0.86 + kwNorm * 0.24) * s;
+                const lenCore = isCompactPancake
+                    ? Math.max(0.18 * s, 0.24 * s)
+                    : (isAxial ? Math.max(0.16 * s, 0.22 * s) : Math.max(0.32 * s, (0.36 + kwNorm * 0.28) * s));
+                const rRotor = isAxial ? rStat * 0.85 : rStat * 0.62;
+                const rInnerEnd = isAxial ? rStat * 0.34 : rStat * 0.65;
+                const poles = 8;
+
+                const C_CASE = [0.54, 0.59, 0.66, 1.0];
+                const C_BELL = [0.22, 0.25, 0.31, 1.0];
+                const C_CORE = [0.20, 0.24, 0.30, 1.0];
+                const C_STEEL = [0.76, 0.80, 0.86, 1.0];
+                const C_INSUL = [0.90, 0.92, 0.95, 1.0];
+                const C_HV = [0.96, 0.42, 0.08, 1.0];
+
+                const rotorMode = mArch === 'Motor Indução' ? 'cage' : (mArch === 'EESM Bobinado' ? 'eesm' : 'n52');
+
+                if (isInWheel) {
+                    // Motor Hub em eixo Z (roda/cubo)
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, 0.050 * s, lenCore + 0.34 * s, 0.050 * s), C_STEEL, [0.80, 66]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, rStat * 0.94, lenCore * 0.34, rStat * 0.94), C_CORE, [0.44, 32]);
+                    for (let i = 0; i < 12; i++) {
+                        const a = (i * Math.PI * 2) / 12;
+                        const cr = rStat * 0.66;
+                        const coilH = (rStat - rInnerEnd) * 0.72;
+                        const coilW = Math.min(0.10 * s, (rStat * 1.4) / 12);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x + Math.cos(a) * cr, y + Math.sin(a) * cr, z, 0, 0, a, coilH, coilW, lenCore * 0.54), wd.col, wd.spec);
+                    }
+                    this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, rStat * 1.07, lenCore * 1.12, rStat * 1.07), C_CASE, [0.58, 46]);
+                    const sideDir = z >= 0 ? 1 : -1;
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x - rStat * 0.72, y + rStat * 0.54, z + sideDir * lenCore * 0.56, 0, 0, 0.45, 0.14 * s, 0.22 * s, 0.11 * s), [0.84, 0.18, 0.16, 1.0], [0.76, 58]);
+                } else {
+                    // Veio central X + rolamentos internos + estator Radial / Fluxo Axial
+                    const shaftLen = lenCore + (isAxial ? 0.34 : 0.42) * s;
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, 0.052 * s, shaftLen, 0.052 * s), [0.60, 0.65, 0.72, 1.0], [0.80, 68]);
+                    if (isAxial) {
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 0.94, lenCore * 0.34, rStat * 0.94), C_CORE, [0.42, 30]);
+                        for (let i = 0; i < 12; i++) {
+                            const a = (i * Math.PI * 2) / 12;
+                            const cr = rStat * 0.66;
+                            const coilH = (rStat - rInnerEnd) * 0.72;
+                            const coilW = Math.min(0.10 * s, (rStat * 1.45) / 12);
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y + Math.cos(a) * cr, z + Math.sin(a) * cr, a, 0, 0, lenCore * 0.54, coilH, coilW), wd.col, wd.spec);
+                        }
+                        this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.07, lenCore * 1.12, rStat * 1.07), C_CASE, [0.58, 46]);
+                        for (const endS of [-1, 1]) {
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(x + endS * lenCore * 0.58, y, z, 0, 0, Math.PI * 0.5, rStat * 1.07, 0.045 * s, rStat * 1.07), C_BELL, [0.64, 50]);
+                        }
+                    } else {
+                        const lamSlices = 5;
+                        for (let ls = 0; ls < lamSlices; ls++) {
+                            const lx = x + (-0.42 + (0.84 * ls) / (lamSlices - 1)) * lenCore;
+                            const colLam = ls % 2 === 0 ? C_CORE : [0.16, 0.19, 0.24, 1.0];
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(lx, y, z, 0, 0, Math.PI * 0.5, rStat * 0.94, lenCore / lamSlices * 0.92, rStat * 0.94), colLam, [0.38, 28]);
+                        }
+                        const slotCount = 12;
+                        for (let i = 0; i < slotCount; i++) {
+                            const a = (i * Math.PI * 2) / slotCount;
+                            const tr = rStat * 0.82;
+                            const ty = y + Math.cos(a) * tr;
+                            const tz = z + Math.sin(a) * tr;
+                            const toothW = Math.min(0.068 * s, (rStat * 1.35) / slotCount);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(x, ty, tz, a, 0, 0, lenCore * 1.02, rStat * 0.24, toothW), C_CORE, [0.40, 28]);
+                            for (const endS of [-1, 1]) {
+                                const ex = x + endS * (lenCore * 0.52 + 0.025 * s);
+                                const wr = rStat * 0.78;
+                                const wy = y + Math.cos(a) * wr;
+                                const wz = z + Math.sin(a) * wr;
+                                if (wd.barStyle === 'bobbin') {
+                                    this.addPart(this.staticOpaque, 'box', this.matTRS(ex, wy, wz, a, 0, 0, 0.06 * s, rStat * 0.22, toothW), C_INSUL, [0.24, 16]);
+                                }
+                                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(ex, wy, wz, a, 0, 0, 0.075 * s, rStat * 0.20, toothW * 0.86), wd.col, wd.spec);
+                            }
+                        }
+                        this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.07, lenCore * 1.24, rStat * 1.07), C_CASE, [0.58, 46]);
+                        for (const endS of [-1, 1]) {
+                            const bx = x + endS * (lenCore * 0.62);
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(bx, y, z, 0, 0, Math.PI * 0.5, rStat * 1.09, 0.062 * s, rStat * 1.09), C_BELL, [0.64, 50]);
+                        }
+                    }
+
+                    // Arrefecimento EV visível na carcaça
+                    if (cooling === 'Ar (Aletas)') {
+                        const finNum = isAxial ? 4 : 7;
+                        for (let f = 0; f < finNum; f++) {
+                            const fx = x + (-0.42 + (0.84 * f) / Math.max(1, finNum - 1)) * lenCore;
+                            this.addPart(this.staticTrans, 'cyl', this.matTRS(fx, y, z, 0, 0, Math.PI * 0.5, rStat * 1.14, 0.015 * s, rStat * 1.14), C_CASE, [0.56, 44]);
+                        }
+                        this.dynamicRotors.push({
+                            type: 'coolingFan',
+                            cx: x - lenCore * 0.68, cy: y, cz: z,
+                            r: rStat * 0.64, speedMult: flipDir * 1.0, symmetry: 7,
+                            colorHub: C_STEEL, colorBlade: [0.64, 0.70, 0.78, 1.0]
+                        });
+                    } else if (cooling === 'Glicol (Camisa)') {
+                        if (!isAxial) {
+                            this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.10, lenCore * 0.72, rStat * 1.10), [0.34, 0.42, 0.52, 1.0], [0.64, 52]);
+                        }
+                        for (const pSgn of [-1, 1]) {
+                            const px = x + pSgn * lenCore * 0.30, py = y + rStat * 1.08, pz = z - pSgn * rStat * 0.36;
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(px, py, pz, 0, 0, 0, 0.032 * s, 0.09 * s, 0.032 * s), C_STEEL, [0.80, 64]);
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(px, py + 0.05 * s, pz, 0, 0, 0, 0.040 * s, 0.032 * s, 0.040 * s), [0.22, 0.42, 0.64, 1.0], [0.78, 60]);
+                        }
+                    } else if (cooling === 'Óleo Direto') {
+                        const C_BRASS = [0.82, 0.64, 0.24, 1.0];
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y - rStat * 1.04, z, 0, 0, 0, lenCore * 0.90, 0.08 * s, rStat * 0.80), [0.18, 0.21, 0.26, 1.0], [0.46, 34]);
+                        this.addPipe(this.staticOpaque, [
+                            [x - lenCore * 0.42, y - rStat * 0.96, z + rStat * 0.35],
+                            [x - lenCore * 0.42, y + rStat * 0.10, z + rStat * 1.02],
+                            [x + lenCore * 0.42, y + rStat * 0.10, z + rStat * 1.02],
+                            [x + lenCore * 0.42, y + rStat * 0.62, z + rStat * 0.62]
+                        ], 0.020 * s, C_BRASS, [0.78, 60], [], true);
+                    } else if (cooling === 'Imersão Dielétrica') {
+                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(x, y, z, 0, 0, 0, lenCore * 1.14, rStat * 2.12, rStat * 2.12), [0.16, 0.24, 0.40, 1.0], [0.65, 50]);
+                        for (const sgn of [-1, 1]) {
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y, z + sgn * rStat * 1.12, 0, 0, 0, lenCore * 0.92, 0.12 * s, 0.06 * s), [0.42, 0.28, 0.86, 1.0], [0.72, 56]);
+                        }
+                    }
+                }
+
+                this.dynamicEvRotors.push({
+                    cx: x, cy: y, cz: z,
+                    rRotor, lenCore, poles,
+                    rotorMode, isAxial, isInWheel,
+                    scale: s, speedMult: flipDir, angle: rotorIdx * 0.45
+                });
+
+                if (includeDiffAxle) {
+                    const xDiff = x + lenCore * 0.68 + 0.16 * s;
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xDiff, y, z, 0, 0, 0, 0.36 * s, rStat * 1.45, rStat * 1.45), C_CASE, [0.48, 36]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xDiff, y, z, Math.PI * 0.5, 0, 0, 0.038 * s, 1.48 * s, 0.038 * s), [0.22, 0.26, 0.34, 1.0], [0.68, 52]);
+                    this.dynamicRotors.push({ type: 'gearboxGear', symmetry: 18, cx: xDiff, cy: y, cz: z, r: rStat * 0.58, thick: 0.08 * s, speedMult: 0.72, colorRim: C_STEEL });
+                    for (const side of [-1, 1]) {
+                        const hubZ = z + side * 0.74 * s;
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xDiff, y, hubZ, Math.PI * 0.5, 0, 0, 0.095 * s, 0.055 * s, 0.095 * s), C_STEEL, [0.80, 64]);
+                    }
+                }
+
+                const termY = y + rStat * 1.06;
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, termY, z, 0, 0, 0, 0.15 * s, 0.065 * s, 0.22 * s), C_HV, [0.54, 40]);
+
+                let hvPorts = null;
+                if (includeInverter) {
+                    const phaseTargets = [
+                        [x, termY + 0.02 * s, z - 0.06 * s],
+                        [x, termY + 0.02 * s, z],
+                        [x, termY + 0.02 * s, z + 0.06 * s]
+                    ];
+                    hvPorts = this.addInverterUnit(x - 0.03 * s, termY + 0.24 * s, z, s * 0.86, phaseTargets);
+                }
+
+                return { x, y, z, rStat, lenCore, hvPorts };
+            }
+
+            addHvBatteryPack(cx, cy, cz, lenXBase, widthZBase) {
+                const chem = this.config.batteryChem || 'NMC 811';
+                const cellFmt = this.config.cellFormat || 'Prismática';
+                const packArch = this.config.batteryArch || 'Sub-Piso';
+                const kwh = Math.max(0.5, Math.min(60.0, Number(this.config.batteryKwh) || 18.5));
+                const capNorm = (kwh - 0.5) / 59.5;
+                const isRearPack = packArch === 'Traseira Compacta';
+                const isTPack = packArch === 'T-Pack Central';
+
+                const lenX = lenXBase * (isRearPack ? 0.58 : (0.76 + capNorm * 0.26));
+                const widthZ = widthZBase * (isRearPack ? 0.74 : (0.82 + capNorm * 0.20));
+                const thickY = (isRearPack ? 0.28 : 0.20) + capNorm * 0.11;
+
+                const C_TRAY = packArch === 'Estrutural 800V' ? [0.15, 0.18, 0.24, 1.0] : [0.22, 0.26, 0.32, 1.0];
+                const C_COOLPLATE = [0.22, 0.38, 0.48, 1.0];
+                const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
+                const C_COPPER = [0.86, 0.52, 0.22, 1.0];
+                const C_STEEL = [0.76, 0.80, 0.86, 1.0];
+
+                let cellCol = [0.46, 0.38, 0.86, 1.0];
+                let cellSpec = [0.68, 52];
+                if (chem === 'LFP (LiFePO4)') {
+                    cellCol = [0.24, 0.62, 0.66, 1.0];
+                    cellSpec = [0.56, 42];
+                } else if (chem === 'NCA Performance') {
+                    cellCol = [0.22, 0.48, 0.84, 1.0];
+                    cellSpec = [0.76, 60];
+                } else if (chem === 'NiMH Clássica') {
+                    cellCol = [0.80, 0.66, 0.28, 1.0];
+                    cellSpec = [0.74, 58];
+                } else if (chem === 'Supercondensador') {
+                    cellCol = [0.16, 0.78, 0.72, 1.0];
+                    cellSpec = [0.82, 64];
+                }
+
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy - thickY * 0.46, cz, 0, 0, 0, lenX * 1.04, 0.044, widthZ * 1.04), C_TRAY, [0.52, 38]);
+                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy - thickY * 0.36, cz, 0, 0, 0, lenX * 0.96, 0.020, widthZ * 0.96), C_COOLPLATE, [0.64, 48]);
+                this.addPart(this.staticTrans, 'bevelBox', this.matTRS(cx, cy + 0.02, cz, 0, 0, 0, lenX, thickY, widthZ), [0.32, 0.38, 0.48, 1.0], [0.56, 46]);
+
+                for (const sz of [-1, 1]) {
+                    const railZ = cz + sz * widthZ * 0.51;
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, railZ, 0, 0, 0, lenX * 1.03, thickY * 0.85, 0.052), [0.44, 0.48, 0.54, 1.0], [0.62, 46]);
+                    for (let lb = 0; lb < 5; lb++) {
+                        const lx = cx + (-0.42 + (0.84 * lb) / 4) * lenX;
+                        this.addPart(this.staticOpaque, 'hex', this.matTRS(lx, cy + thickY * 0.44, railZ, 0, 0, 0, 0.020, 0.030, 0.020), C_STEEL, [0.84, 68]);
+                    }
+                }
+
+                for (const sz of [-1, 1]) {
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - lenX * 0.54, cy - thickY * 0.28, cz + sz * widthZ * 0.26, 0, 0, Math.PI * 0.5, 0.024, 0.10, 0.024), [0.54, 0.62, 0.72, 1.0], [0.80, 62]);
+                }
+
+                if (packArch === 'Estrutural 800V') {
+                    for (let r = 0; r < 3; r++) {
+                        const rxPos = cx + (-0.26 + r * 0.26) * lenX;
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(rxPos, cy + thickY * 0.05, cz, 0, 0, 0, 0.032, thickY * 0.80, widthZ * 0.94), [0.28, 0.32, 0.38, 1.0], [0.64, 48]);
+                    }
+                }
+
+                if (cellFmt === 'Cilíndrica 4680') {
+                    const rows = 8, cols = 5;
+                    const cellH = thickY * 0.68;
+                    for (let rx = 0; rx < rows; rx++) {
+                        const mx = cx + (-0.39 + (0.72 * rx) / (rows - 1)) * lenX;
+                        for (let czIdx = 0; czIdx < cols; czIdx++) {
+                            const mz = cz + (-0.36 + (0.72 * czIdx) / (cols - 1)) * widthZ;
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, 0.044, cellH, 0.044), [0.74, 0.79, 0.86, 1.0], [0.84, 68]);
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, cy + cellH * 0.50, mz, 0, 0, 0, 0.022, 0.014, 0.022), cellCol, cellSpec);
+                        }
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + cellH * 0.53, cz, 0, 0, 0, 0.024, 0.012, widthZ * 0.78), C_COPPER, [0.84, 64]);
+                    }
+                } else if (cellFmt === 'Blade (Lâmina)') {
+                    const blades = 10;
+                    const bladeH = thickY * 0.66;
+                    for (let bx = 0; bx < blades; bx++) {
+                        const mx = cx + (-0.40 + (0.74 * bx) / (blades - 1)) * lenX;
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, cz, 0, 0, 0, (lenX * 0.64) / blades, bladeH, widthZ * 0.84), cellCol, cellSpec);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + bladeH * 0.51, cz + widthZ * 0.34, 0, 0, 0, (lenX * 0.52) / blades, 0.014, 0.060), C_COPPER, [0.82, 62]);
+                    }
+                } else if (cellFmt === 'Pouch (Bolsa)') {
+                    const stacks = 6;
+                    const pouchH = thickY * 0.70;
+                    for (let sx = 0; sx < stacks; sx++) {
+                        const mx = cx + (-0.39 + (0.72 * sx) / (stacks - 1)) * lenX;
+                        for (const sgn of [-1, 1]) {
+                            const mz = cz + sgn * widthZ * 0.23;
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, (lenX * 0.62) / stacks, pouchH, widthZ * 0.38), [0.76, 0.79, 0.84, 1.0], [0.80, 62]);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + pouchH * 0.52, mz, 0, 0, 0, (lenX * 0.48) / stacks, 0.020, widthZ * 0.14), C_COPPER, [0.84, 66]);
+                        }
+                    }
+                } else {
+                    const rowsX = chem === 'LFP (LiFePO4)' ? 7 : 5;
+                    const colsZ = chem === 'LFP (LiFePO4)' ? 1 : 2;
+                    for (let rx = 0; rx < rowsX; rx++) {
+                        const mx = cx + (-0.39 + (0.72 * rx) / Math.max(1, rowsX - 1)) * lenX;
+                        for (let czIdx = 0; czIdx < colsZ; czIdx++) {
+                            const mz = colsZ === 1 ? cz : cz + (czIdx === 0 ? -0.23 : 0.23) * widthZ;
+                            const mwX = (lenX * 0.66) / rowsX;
+                            const mwZ = (widthZ * 0.80) / colsZ;
+                            const mhY = thickY * 0.68;
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, mwX, mhY, mwZ), cellCol, cellSpec);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + mhY * 0.52, mz, 0, 0, 0, mwX * 0.84, 0.014, mwZ * 0.28), C_COPPER, [0.80, 62]);
+                        }
+                    }
+                }
+
+                if (isTPack) {
+                    const spineH = thickY * 0.74;
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx - lenX * 0.04, cy + thickY * 0.78, cz, 0, 0, 0, lenX * 0.56, spineH, widthZ * 0.26), cellCol, cellSpec);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(cx - lenX * 0.04, cy + thickY * 0.80, cz, 0, 0, 0, lenX * 0.60, spineH * 1.15, widthZ * 0.30), C_TRAY, [0.56, 44]);
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx - lenX * 0.04, cy + thickY * 1.16, cz, 0, 0, 0, lenX * 0.50, 0.022, 0.056), C_HV_ORANGE, [0.58, 42]);
+                }
+
+                if (chem === 'Supercondensador') {
+                    for (let sc = 0; sc < 5; sc++) {
+                        const scz = cz + (-0.30 + (0.60 * sc) / 4) * widthZ;
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - lenX * 0.32, cy + thickY * 0.32, scz, 0, 0, Math.PI * 0.5, 0.040, 0.20, 0.040), [0.18, 0.80, 0.74, 1.0], [0.82, 66]);
+                    }
+                }
+
+                const xBdu = cx + lenX * 0.40;
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xBdu, cy + thickY * 0.42, cz, 0, 0, 0, 0.24, 0.13, 0.32), [0.14, 0.16, 0.22, 1.0], [0.46, 36]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xBdu, cy + thickY * 0.52, cz, 0, 0, 0, 0.16, 0.04, 0.20), C_HV_ORANGE, [0.58, 42]);
+                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + thickY * 0.36, cz, 0, 0, 0, lenX * 0.74, 0.018, 0.042), C_HV_ORANGE, [0.56, 40]);
+
+                return {
+                    frontHv: [cx - lenX * 0.48, cy + thickY * 0.22, cz],
+                    rearHv: [cx + lenX * 0.48, cy + thickY * 0.22, cz]
+                };
+            }
+
+            routeHvConduit(pA, pB, r = 0.025) {
+                const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
+                const mx = (pA[0] + pB[0]) * 0.5;
+                const my = Math.max(pA[1], pB[1]) + 0.08;
+                const mz = (pA[2] + pB[2]) * 0.5;
+                const pts = [pA, [mx, my, mz], pB];
+                this.addPipe(this.staticOpaque, pts, r, C_HV_ORANGE, [0.58, 42], [], true);
+                this.hvPaths.push({ pts, r: r * 1.45, phaseOff: 0.15, kind: 'hv' });
+            }
+
+            buildStandaloneElectricScene() {
+                const hyb = this.config.hybridType || 'PHEV P2+P4';
+                const arch = this.config.emotorArch || 'PMSM Radial';
+                const hvNodes = [];
+                const yMotor = 0.42;
+
+                if (arch === 'In-Wheel Hub') {
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0.18, yMotor, 0, Math.PI * 0.5, 0, 0, 0.045, 1.48, 0.045), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
+                    const uL = this.addEvMguUnit({ x: 0.18, y: yMotor, z: -0.74, scale: 0.86, flipDir: 1, includeInverter: true, rotorIdx: 0 });
+                    const uR = this.addEvMguUnit({ x: 0.18, y: yMotor, z: 0.74, scale: 0.86, flipDir: 1, includeInverter: true, rotorIdx: 1 });
+                    if (uL.hvPorts) hvNodes.push(uL.hvPorts.hvInputPos);
+                    if (uR.hvPorts) hvNodes.push(uR.hvPorts.hvInputPos);
+                } else if (hyb === 'Hypercar MGU-K+H') {
+                    const mguK = this.addEvMguUnit({ x: -0.14, y: yMotor, z: 0, scale: 0.94, flipDir: 1, includeInverter: true, rotorIdx: 0 });
+                    const mguH = this.addEvMguUnit({ x: 0.78, y: yMotor + 0.14, z: 0.54, scale: 0.54, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' });
+                    if (mguK.hvPorts) hvNodes.push(mguK.hvPorts.hvInputPos);
+                    hvNodes.push([mguH.x, mguH.y + mguH.rStat * 1.08, mguH.z]);
+                } else if (hyb === 'HEV Power-Split') {
+                    const mg1 = this.addEvMguUnit({ x: -0.34, y: yMotor, z: 0, scale: 0.80, flipDir: -1, includeInverter: false, rotorIdx: 0, isCompactPancake: true });
+                    const mg2 = this.addEvMguUnit({ x: 0.44, y: yMotor, z: 0, scale: 0.92, flipDir: 1, includeInverter: true, rotorIdx: 1 });
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0.05, yMotor, 0, 0, 0, Math.PI * 0.5, 0.11, 0.40, 0.11), [0.76, 0.80, 0.86, 1.0], [0.78, 62]);
+                    hvNodes.push([mg1.x, mg1.y + mg1.rStat * 1.08, mg1.z]);
+                    if (mg2.hvPorts) hvNodes.push(mg2.hvPorts.hvInputPos);
+                } else if (hyb === 'EREV Série') {
+                    const gen = this.addEvMguUnit({ x: -0.52, y: yMotor, z: 0, scale: 0.72, flipDir: -1, includeInverter: false, rotorIdx: 0, isCompactPancake: true });
+                    const trac = this.addEvMguUnit({ x: 0.42, y: yMotor, z: 0, scale: 0.96, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: true });
+                    hvNodes.push([gen.x, gen.y + gen.rStat * 1.08, gen.z]);
+                    if (trac.hvPorts) hvNodes.push(trac.hvPorts.hvInputPos);
+                } else {
+                    const mgu = this.addEvMguUnit({ x: 0.14, y: yMotor, z: 0, scale: 0.98, flipDir: 1, includeInverter: true, rotorIdx: 0, includeDiffAxle: hyb === 'PHEV P2+P4' });
+                    if (mgu.hvPorts) hvNodes.push(mgu.hvPorts.hvInputPos);
+                }
+
+                const pack = this.addHvBatteryPack(-0.08, -0.78, 0, hyb === 'MHEV 48V' ? 1.25 : 2.05, hyb === 'MHEV 48V' ? 0.96 : 1.28);
+                for (let hi = 0; hi < hvNodes.length; hi++) {
+                    const srcHv = (hi % 2 === 0) ? pack.frontHv : pack.rearHv;
+                    this.routeHvConduit(srcHv, hvNodes[hi], 0.024);
+                }
+                this.sceneCenterX = 0;
+                this.baseDist = 4.6;
+            }
+
+            buildStandaloneEmotorScene() {
+                const hyb = this.config.hybridType || 'PHEV P2+P4';
+                const arch = this.config.emotorArch || 'PMSM Radial';
+                if (arch === 'In-Wheel Hub') {
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, 0, 0, Math.PI * 0.5, 0, 0, 0.045, 1.48, 0.045), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
+                    const uL = this.addEvMguUnit({ x: 0, y: 0, z: -0.74, scale: 0.92, flipDir: 1, includeInverter: true, rotorIdx: 0 });
+                    const uR = this.addEvMguUnit({ x: 0, y: 0, z: 0.74, scale: 0.92, flipDir: 1, includeInverter: true, rotorIdx: 1 });
+                    this.routeHvConduit([0, 0.12, 0], uL.hvPorts.hvInputPos, 0.022);
+                    this.routeHvConduit([0, 0.12, 0], uR.hvPorts.hvInputPos, 0.022);
+                    this.baseDist = 3.8;
+                } else if (hyb === 'Hypercar MGU-K+H') {
+                    const mguK = this.addEvMguUnit({ x: -0.22, y: 0, z: 0, scale: 1.05, flipDir: 1, includeInverter: true, rotorIdx: 0 });
+                    const mguH = this.addEvMguUnit({ x: 0.82, y: 0.18, z: 0.62, scale: 0.62, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' });
+                    this.routeHvConduit(mguK.hvPorts.hvInputPos, [mguH.x, mguH.y + mguH.rStat * 1.08, mguH.z], 0.024);
+                    this.baseDist = 4.1;
+                } else if (hyb === 'HEV Power-Split') {
+                    const mg1 = this.addEvMguUnit({ x: -0.46, y: 0, z: 0, scale: 0.88, flipDir: -1, includeInverter: false, rotorIdx: 0, isCompactPancake: true });
+                    const mg2 = this.addEvMguUnit({ x: 0.42, y: 0, z: 0, scale: 1.02, flipDir: 1, includeInverter: true, rotorIdx: 1 });
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-0.02, 0, 0, 0, 0, Math.PI * 0.5, 0.12, 0.42, 0.12), [0.76, 0.80, 0.86, 1.0], [0.78, 62]);
+                    this.routeHvConduit([mg1.x, mg1.y + mg1.rStat * 1.08, mg1.z], mg2.hvPorts.hvInputPos, 0.024);
+                    this.baseDist = 3.9;
+                } else {
+                    this.addEvMguUnit({ x: 0, y: 0, z: 0, scale: 1.15, flipDir: 1, includeInverter: true, rotorIdx: 0, includeDiffAxle: hyb === 'PHEV P2+P4' || hyb === 'EREV Série' });
+                    this.baseDist = 3.5;
+                }
+                this.sceneCenterX = 0;
+            }
+
+            buildStandaloneBatteryScene() {
+                this.addHvBatteryPack(0, 0, 0, 2.25, 1.40);
+                this.sceneCenterX = 0;
+                this.baseDist = 3.8;
+            }
+
             addSequentialCrossover(pA, pB, dropY = -0.14, rad = 0.052) {
                 const mx = (pA[0] + pB[0]) * 0.5;
                 const my = (pA[1] + pB[1]) * 0.5 + dropY;
@@ -5255,10 +6267,12 @@
                 this.dynamicCyls = [];
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
+                this.dynamicEvRotors = [];
                 this.dynamicCams = [];
                 this.dynamicValves = [];
                 this.exhaustTips = [];
                 this.exhaustGasPaths = [];
+                this.hvPaths = [];
                 this.sceneCenterX = 0;
                 const viewMode = this.config.viewMode || 'engine';
                 if (viewMode === 'gearbox') {
@@ -5267,6 +6281,18 @@
                 }
                 if (viewMode === 'exhaust') {
                     this.buildStandaloneExhaustScene();
+                    return;
+                }
+                if (viewMode === 'electric') {
+                    this.buildStandaloneElectricScene();
+                    return;
+                }
+                if (viewMode === 'emotor') {
+                    this.buildStandaloneEmotorScene();
+                    return;
+                }
+                if (viewMode === 'battery') {
+                    this.buildStandaloneBatteryScene();
                     return;
                 }
 
@@ -6464,8 +7490,68 @@
                 }
 
                 if (viewMode === 'all') {
-                    const gbStartX = halfLenX + 0.22 + fwProf.thick * 0.5 + 0.04;
-                    const gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
+                    const hyb = this.config.hybridType || 'PHEV P2+P4';
+                    const emArch = this.config.emotorArch || 'PMSM Radial';
+                    const flyAnchorX = halfLenX + 0.22 + fwProf.thick * 0.5 + 0.04;
+                    let gbStartX = flyAnchorX;
+                    let gbInfo = null;
+                    const hvNodes = [];
+
+                    if (hyb === 'MHEV 48V') {
+                        const bsg = this.addEvMguUnit({ x: -halfLenX - 0.14, y: 0.58, z: 0.56, scale: 0.44, flipDir: 1, includeInverter: true, rotorIdx: 0, isCompactPancake: true });
+                        this.addPipe(this.staticOpaque, [[-halfLenX - 0.24, 0, 0], [bsg.x, bsg.y, bsg.z]], 0.030, [0.14, 0.16, 0.20, 1.0], [0.22, 16]);
+                        gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
+                        if (bsg.hvPorts) hvNodes.push(bsg.hvPorts.hvInputPos);
+                    } else if (hyb === 'HEV Paralelo P2' || hyb === 'HEV Power-Split' || hyb === 'PHEV P2+P4' || hyb === 'Hypercar MGU-K+H') {
+                        const isSplit = hyb === 'HEV Power-Split';
+                        const isHyper = hyb === 'Hypercar MGU-K+H';
+                        const xP2 = flyAnchorX + 0.26;
+                        const p2 = this.addEvMguUnit({
+                            x: xP2, y: 0, z: 0,
+                            scale: isHyper ? 0.72 : 0.70, flipDir: 1, includeInverter: true, rotorIdx: 0,
+                            isCompactPancake: true,
+                            archOverride: emArch === 'In-Wheel Hub' ? 'PMSM Radial' : emArch
+                        });
+                        if (isSplit) {
+                            this.addPart(this.staticTrans, 'cyl', this.matTRS(xP2 + 0.20, 0, 0, 0, 0, Math.PI * 0.5, 0.34, 0.22, 0.34), [0.56, 0.62, 0.70, 1.0], [0.60, 48]);
+                        }
+                        if (p2.hvPorts) hvNodes.push(p2.hvPorts.hvInputPos);
+                        gbStartX = xP2 + 0.28;
+                        gbInfo = this.addGearboxModel(gbStartX, Math.max(0.56, fwProf.r * 1.14));
+
+                        if (hyb === 'PHEV P2+P4') {
+                            const xP4 = gbInfo.xTailEnd + 0.56;
+                            if (emArch === 'In-Wheel Hub') {
+                                this.addPart(this.staticOpaque, 'cyl', this.matTRS(xP4, -0.06, 0, Math.PI * 0.5, 0, 0, 0.042, 1.48, 0.042), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
+                                const hL = this.addEvMguUnit({ x: xP4, y: -0.06, z: -0.74, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 1 });
+                                const hR = this.addEvMguUnit({ x: xP4, y: -0.06, z: 0.74, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 2 });
+                                if (hL.hvPorts) hvNodes.push(hL.hvPorts.hvInputPos);
+                                if (hR.hvPorts) hvNodes.push(hR.hvPorts.hvInputPos);
+                            } else {
+                                const p4 = this.addEvMguUnit({ x: xP4, y: -0.06, z: 0, scale: 0.72, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: true });
+                                if (p4.hvPorts) hvNodes.push(p4.hvPorts.hvInputPos);
+                            }
+                        } else if (isHyper) {
+                            const mguH = this.addEvMguUnit({ x: -halfLenX * 0.15, y: 0.88, z: 0.74, scale: 0.38, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' });
+                            hvNodes.push([mguH.x, mguH.y + mguH.rStat * 1.06, mguH.z]);
+                        }
+                    } else {
+                        // EREV Série: Gerador acoplado ao volante + Motor elétrico de tração traseiro (sem transmissão mecânica até ao eixo)
+                        const xGen = flyAnchorX + 0.30;
+                        const gen = this.addEvMguUnit({ x: xGen, y: 0, z: 0, scale: 0.68, flipDir: -1, includeInverter: true, rotorIdx: 0, isCompactPancake: true });
+                        if (gen.hvPorts) hvNodes.push(gen.hvPorts.hvInputPos);
+                        const xTrac = flyAnchorX + 2.25;
+                        const trac = this.addEvMguUnit({ x: xTrac, y: -0.06, z: 0, scale: 0.80, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: emArch !== 'In-Wheel Hub' });
+                        if (trac.hvPorts) hvNodes.push(trac.hvPorts.hvInputPos);
+                        gbInfo = { xTailEnd: xTrac - 0.15 };
+                    }
+
+                    const xPackCenter = gbStartX + (hyb === 'MHEV 48V' ? 1.55 : 0.68);
+                    const pack = this.addHvBatteryPack(xPackCenter, -1.04, 0, hyb === 'MHEV 48V' ? 1.05 : 1.75, hyb === 'MHEV 48V' ? 0.85 : 1.18);
+                    for (let hi = 0; hi < hvNodes.length; hi++) {
+                        const srcHv = (hi % 2 === 0) ? pack.frontHv : pack.rearHv;
+                        this.routeHvConduit(srcHv, hvNodes[hi], 0.022);
+                    }
 
                     const { exType, tipsMode, exJunc, pipeR, st } = this.getExhaustParams();
                     const supportsExhJunc = EXHAUST_JUNCTION_FORMATS.includes(fmt);
@@ -6477,7 +7563,7 @@
                         : [-0.64];
                     const xMid = gbStartX + 0.28;
                     const xCat = gbStartX + 0.82;
-                    const xJunc = gbInfo.xTailEnd + 0.18;
+                    const xJunc = (gbInfo ? gbInfo.xTailEnd : gbStartX + 1.8) + 0.22;
                     const xMuf = xJunc + 0.58;
                     const xTip = xJunc + 1.22;
                     const xStartPipe = [];
@@ -6492,9 +7578,9 @@
                     this.addExhaustDownstreamSystem({ lanesZ, yLine, xStartPipe, xMid, xJunc, xCat, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode, exJunc: effExJunc, placeCatBeforeJunc: true });
 
                     const xMinAll = -halfLenX - 1.25;
-                    const xMaxAll = xTip + 0.38;
+                    const xMaxAll = Math.max(xTip + 0.42, xPackCenter + 1.25);
                     this.sceneCenterX = (xMinAll + xMaxAll) * 0.5;
-                    this.baseDist = Math.max(8.0, (xMaxAll - xMinAll) * 1.04 + maxSpanZ * 1.15);
+                    this.baseDist = Math.max(8.4, (xMaxAll - xMinAll) * 1.06 + maxSpanZ * 1.20);
                 } else {
                     this.sceneCenterX = 0;
                     this.baseDist = Math.max(5.5, Math.hypot(halfLenX + 0.90, maxSpanZ) * 2.25 + 1.6);
@@ -6694,10 +7780,24 @@
                         const rotorStep = Math.min(maxSafeStep, crankStep * mult);
                         r.angle = ((r.angle || 0) + rotorStep) % (Math.PI * 2);
                     }
+                    for (const er of this.dynamicEvRotors) {
+                        const nP = Math.max(4, Math.min(16, er.poles || 8));
+                        const maxSafe = (Math.PI * 0.42) / nP;
+                        const evStep = Math.sign(er.speedMult || 1) * Math.min(maxSafe, Math.abs(crankStep * (er.speedMult || 1)));
+                        er.angle = ((er.angle || 0) + evStep) % (Math.PI * 2);
+                    }
                     const gasSpeed = 0.45 + Math.min(2.2, (rpm / Math.max(1500, engineSim.maxRpm || 7500)) * 2.0);
                     this.gasFlowPhase = (this.gasFlowPhase + (dt * gasSpeed) / slowDiv) % 1000.0;
-                } else if ((this.config.viewMode || 'engine') === 'exhaust' || (this.config.viewMode || 'engine') === 'all') {
-                    this.gasFlowPhase = (this.gasFlowPhase + dt * 0.16) % 1000.0;
+                    const eDir = (engineSim.throttlePct <= 0.5 && rpm > (engineSim.idleRpm || 950) + 120) ? -1.0 : 1.0;
+                    this.energyPhase = ((this.energyPhase + (eDir * dt * gasSpeed * 1.15) / slowDiv) % 1000.0 + 1000.0) % 1000.0;
+                } else {
+                    const vm = this.config.viewMode || 'engine';
+                    if (vm === 'exhaust' || vm === 'all') {
+                        this.gasFlowPhase = (this.gasFlowPhase + dt * 0.16) % 1000.0;
+                    }
+                    if (vm === 'electric' || vm === 'emotor' || vm === 'battery' || vm === 'all') {
+                        this.energyPhase = (this.energyPhase + dt * 0.22) % 1000.0;
+                    }
                 }
 
                 if (liveRpmValue) {
@@ -7066,6 +8166,11 @@
                         r.gearAngle = ((r.gearAngle || 0) + Math.max(-0.11, Math.min(0.11, gStep * (r.speedMult || 1)))) % (Math.PI * 2);
                         const gearM = this.matSpinX(r.cx, r.cy, r.cz, r.gearAngle, 0, 0, Math.PI * 0.5, r.r, r.thick, r.r);
                         this.drawItem(this.meshes.gear, gearM, r.colorRim, [0.74, 58], viewProj);
+                    } else if (r.type === 'coolingFan') {
+                        const hubM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.26, 0.045, r.r * 0.26);
+                        this.drawItem(this.meshes.cyl, hubM, r.colorHub, [0.78, 62], viewProj);
+                        const wheelM = this.matSpinX(r.cx, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r, 0.068, r.r);
+                        this.drawItem(this.meshes.impeller, wheelM, r.colorBlade, [0.82, 66], viewProj);
                     } else if (r.type === 'driveshaft') {
                         const yokeM = this.matTRS(r.cx, r.cy, r.cz, ang, 0, 0, 0.09, r.r * 1.45, r.r * 1.45);
                         this.drawItem(this.meshes.bevelBox, yokeM, r.colorHub, [0.72, 56], viewProj);
@@ -7076,8 +8181,97 @@
                     }
                 }
 
-                // Fluxo animado dos gases de escape (no modo Escape ou Tudo Junto) + chamas nas ponteiras
+                // Rotores elétricos dinâmicos (PMSM, Fluxo Axial, EESM, Indução, In-Wheel)
+                for (const er of this.dynamicEvRotors) {
+                    const ang = er.angle || 0;
+                    const s = er.scale || 1.0;
+                    const nP = Math.max(4, Math.min(16, er.poles || 8));
+                    if (er.isInWheel) {
+                        for (const discSide of [-1, 1]) {
+                            const dz = er.cz + discSide * er.lenCore * 0.36;
+                            const discM = this.matTRS(er.cx, er.cy, dz, Math.PI * 0.5, 0, ang, er.rRotor, er.lenCore * 0.18, er.rRotor);
+                            this.drawItem(this.meshes.cyl, discM, [0.36, 0.40, 0.48, 1.0], [0.68, 52], viewProj);
+                            for (let p = 0; p < nP; p++) {
+                                const pa = ang + (p * Math.PI * 2) / nP;
+                                const mr = er.rRotor * 0.72;
+                                const magM = this.matTRS(er.cx + Math.cos(pa) * mr, er.cy + Math.sin(pa) * mr, dz - discSide * er.lenCore * 0.06, 0, 0, pa, er.rRotor * 0.32, Math.min(0.10 * s, (er.rRotor * 1.4) / nP), 0.032 * s);
+                                this.drawItem(this.meshes.box, magM, [0.84, 0.88, 0.94, 1.0], [0.84, 68], viewProj);
+                            }
+                        }
+                    } else if (er.isAxial) {
+                        for (const discSide of [-1, 1]) {
+                            const dx = er.cx + discSide * er.lenCore * 0.36;
+                            const discM = this.matSpinX(dx, er.cy, er.cz, ang, 0, 0, Math.PI * 0.5, er.rRotor, er.lenCore * 0.18, er.rRotor);
+                            this.drawItem(this.meshes.cyl, discM, [0.36, 0.40, 0.48, 1.0], [0.68, 52], viewProj);
+                            for (let p = 0; p < nP; p++) {
+                                const pa = ang + (p * Math.PI * 2) / nP;
+                                const mr = er.rRotor * 0.72;
+                                const magM = this.matTRS(dx - discSide * er.lenCore * 0.06, er.cy + Math.cos(pa) * mr, er.cz + Math.sin(pa) * mr, pa, 0, 0, 0.032 * s, er.rRotor * 0.32, Math.min(0.10 * s, (er.rRotor * 1.4) / nP));
+                                this.drawItem(this.meshes.box, magM, [0.84, 0.88, 0.94, 1.0], [0.84, 68], viewProj);
+                            }
+                        }
+                    } else {
+                        const rCore = er.rotorMode === 'n52' ? er.rRotor * 0.80 : (er.rotorMode === 'eesm' ? er.rRotor * 0.78 : er.rRotor * 0.88);
+                        const coreM = this.matSpinX(er.cx, er.cy, er.cz, ang, 0, 0, Math.PI * 0.5, rCore, er.lenCore * 0.96, rCore);
+                        this.drawItem(this.meshes.cyl, coreM, [0.36, 0.40, 0.48, 1.0], [0.64, 50], viewProj);
+                        if (er.rotorMode === 'cage') {
+                            for (const eS of [-1, 1]) {
+                                const endRM = this.matSpinX(er.cx + eS * er.lenCore * 0.48, er.cy, er.cz, ang, 0, 0, Math.PI * 0.5, er.rRotor * 0.96, 0.032 * s, er.rRotor * 0.96);
+                                this.drawItem(this.meshes.cyl, endRM, [0.88, 0.48, 0.20, 1.0], [0.86, 68], viewProj);
+                            }
+                            for (let b = 0; b < 12; b++) {
+                                const ba = ang + (b * Math.PI * 2) / 12;
+                                const br = er.rRotor * 0.90;
+                                const barM = this.matTRS(er.cx, er.cy + Math.cos(ba) * br, er.cz + Math.sin(ba) * br, ba, 0, 0, er.lenCore * 0.98, 0.025 * s, 0.022 * s);
+                                this.drawItem(this.meshes.box, barM, [0.88, 0.48, 0.20, 1.0], [0.86, 68], viewProj);
+                            }
+                        } else if (er.rotorMode === 'eesm') {
+                            for (let p = 0; p < nP; p++) {
+                                const pa = ang + (p * Math.PI * 2) / nP;
+                                const pr = er.rRotor * 0.86;
+                                const poleM = this.matTRS(er.cx, er.cy + Math.cos(pa) * pr, er.cz + Math.sin(pa) * pr, pa, 0, 0, er.lenCore * 0.84, er.rRotor * 0.24, Math.min(0.08 * s, (er.rRotor * 1.3) / nP));
+                                this.drawItem(this.meshes.bevelBox, poleM, [0.88, 0.48, 0.20, 1.0], [0.82, 62], viewProj);
+                            }
+                        } else {
+                            for (let p = 0; p < nP; p++) {
+                                const pa = ang + (p * Math.PI * 2) / nP;
+                                const mr = er.rRotor * 0.88;
+                                for (const vSign of [-1, 1]) {
+                                    const va = pa + vSign * 0.16;
+                                    const magM = this.matTRS(er.cx, er.cy + Math.cos(va) * mr, er.cz + Math.sin(va) * mr, va + vSign * 0.36, 0, 0, er.lenCore * 0.90, 0.070 * s, 0.022 * s);
+                                    this.drawItem(this.meshes.box, magM, [0.84, 0.88, 0.94, 1.0], [0.86, 72], viewProj);
+                                }
+                            }
+                        }
+                        const markerM = this.matTRS(er.cx, er.cy + Math.cos(ang) * (er.rRotor * 0.28), er.cz + Math.sin(ang) * (er.rRotor * 0.28), ang, 0, 0, er.lenCore * 1.02, 0.028 * s, 0.028 * s);
+                        this.drawItem(this.meshes.box, markerM, [0.92, 0.38, 0.24, 1.0], [0.70, 52], viewProj);
+                    }
+                }
+
+                // Pulsos HV nas cablagens entre Bateria HV / Inversores / Motor Elétrico
                 const curViewMode = this.config.viewMode || 'engine';
+                if (this.hvPaths.length && (curViewMode === 'electric' || curViewMode === 'emotor' || curViewMode === 'battery' || curViewMode === 'all')) {
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+                    gl.depthMask(false);
+                    const isActiveHv = engineSim.on && engineSim.currentRpm > 5;
+                    const isRegenHv = isActiveHv && engineSim.throttlePct <= 0.5 && engineSim.currentRpm > (engineSim.idleRpm || 950) + 120;
+                    const pAlpha = isActiveHv ? 0.88 : 0.32;
+                    const pCol = isRegenHv ? [0.14, 0.95, 0.56, pAlpha] : [1.0, 0.64, 0.22, pAlpha];
+                    for (const hp of this.hvPaths) {
+                        for (let k = 0; k < 2; k++) {
+                            const s = ((this.energyPhase * 0.85 + hp.phaseOff + k * 0.5) % 1.0 + 1.0) % 1.0;
+                            const pt = this.samplePolyline(hp.pts, s);
+                            const pm = this.matTRS(pt[0], pt[1], pt[2], 0, 0, 0, hp.r, hp.r, hp.r);
+                            this.drawItem(this.meshes.sphere, pm, pCol, [0.0, 1.0], viewProj);
+                        }
+                    }
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                    gl.depthMask(true);
+                    gl.disable(gl.BLEND);
+                }
+
+                // Fluxo animado dos gases de escape (no modo Escape ou Tudo Junto) + chamas nas ponteiras
                 if (this.exhaustGasPaths.length && (curViewMode === 'exhaust' || curViewMode === 'all')) {
                     gl.enable(gl.BLEND);
                     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -7448,7 +8642,19 @@
                 valve_type: is2tVal ? 'Reed Valve' : (selectValveType ? selectValveType.value : 'Molas'),
                 num_valvulas: selectValves ? parseInt(selectValves.value, 10) : 4,
                 turbo_bar: (inputTurboBoost && !inputTurboBoost.disabled && Number.isFinite(rawTurbo)) ? Math.max(0, rawTurbo) : 0.0,
-                sc_bar: (inputScBoost && !inputScBoost.disabled && Number.isFinite(rawSc)) ? Math.max(0, rawSc) : 0.0
+                sc_bar: (inputScBoost && !inputScBoost.disabled && Number.isFinite(rawSc)) ? Math.max(0, rawSc) : 0.0,
+                hybrid_type: selectHybridType ? selectHybridType.value : 'PHEV P2+P4',
+                emotor_arch: selectEmotorArch ? selectEmotorArch.value : 'PMSM Radial',
+                emotor_kw: inputEmotorKw ? Math.max(5, Math.min(600, parseFloat(inputEmotorKw.value) || 165)) : 165,
+                emotor_winding: selectEmotorWinding ? selectEmotorWinding.value : 'Hairpin Cobre',
+                emotor_cooling: selectEmotorCooling ? selectEmotorCooling.value : 'Glicol (Camisa)',
+                inverter_type: selectInverterType ? selectInverterType.value : 'SiC Dual 800V',
+                hv_voltage: selectHvVoltage ? (parseInt(selectHvVoltage.value, 10) || 400) : 400,
+                battery_arch: selectBatteryArch ? selectBatteryArch.value : 'Sub-Piso',
+                battery_chem: selectBatteryChem ? selectBatteryChem.value : 'NMC 811',
+                cell_format: selectCellFormat ? selectCellFormat.value : 'Prismática',
+                battery_kwh: inputBatteryKwh ? Math.max(0.5, Math.min(60, parseFloat(inputBatteryKwh.value) || 18.5)) : 18.5,
+                hybrid_mode: selectHybridMode ? selectHybridMode.value : 'Equilibrado'
             };
         }
 
@@ -7466,14 +8672,18 @@
             const unitCc = (Math.PI / 4.0) * Math.pow(p.bore / 10.0, 2) * (p.stroke / 10.0);
             const litros = ((unitCc * (isWankel ? 1.308 : 1.0) * p.cilindros) / 1000.0).toFixed(2);
 
+            const hybShort = (t.hybridTypeShort && t.hybridTypeShort[p.hybrid_type]) ? t.hybridTypeShort[p.hybrid_type] : p.hybrid_type;
+            const emArchShort = (t.emotorArchShort && t.emotorArchShort[p.emotor_arch]) ? t.emotorArchShort[p.emotor_arch] : p.emotor_arch;
+            const batArchShort = (t.batteryArchShort && t.batteryArchShort[p.battery_arch]) ? t.batteryArchShort[p.battery_arch] : p.battery_arch;
+
             motorNumCilindros.textContent = p.cilindros;
             if (motor3dBadge) {
-                motor3dBadge.textContent = `${fmtDisplay} · ${fullAdmLabel.toUpperCase()}`;
+                motor3dBadge.textContent = `${fmtDisplay} · ${hybShort.toUpperCase()}`;
             }
             if (motor3dSpec) {
                 motor3dSpec.textContent = isWankel
-                    ? `WANKEL · ${litros} L · ${p.cilindros}R`
-                    : `${p.formato} · ${litros} L · ${p.bore.toFixed(0)}×${p.stroke.toFixed(0)} mm`;
+                    ? `WANKEL · ${litros} L · +${Math.round(p.emotor_kw)}kW ${emArchShort}`
+                    : `${p.formato} · ${litros} L · +${Math.round(p.emotor_kw)}kW · ${p.battery_kwh.toFixed(1)} kWh`;
             }
 
             const matLabel = (t.matOpts && t.matOpts[p.material]) ? t.matOpts[p.material] : p.material;
@@ -7484,19 +8694,19 @@
             const is2T = !isWankel && p.ciclo === '2T';
             if (sumArchVal) {
                 if (isWankel) {
-                    sumArchVal.textContent = `${fmtDisplay} · ${t.rotaryWord}`;
+                    sumArchVal.textContent = `${fmtDisplay} · ${t.rotaryWord} · ${hybShort}`;
                 } else if (is2T) {
-                    sumArchVal.textContent = `${fmtDisplay} · Reed Valve`;
+                    sumArchVal.textContent = `${fmtDisplay} · Reed · ${hybShort}`;
                 } else {
                     const vtShort = p.camshaft === 'Freevalve' ? 'Freevalve' : `${p.camshaft} · ${p.num_valvulas}V`;
-                    sumArchVal.textContent = `${fmtDisplay} · ${vtShort}`;
+                    sumArchVal.textContent = `${fmtDisplay} · ${vtShort} · ${hybShort}`;
                 }
             }
             if (sumArchSub) {
-                sumArchSub.textContent = `${p.ciclo} · ${t.compShort} ${p.compression_ratio.toFixed(1)}:1${!isWankel && (is2T || p.camshaft !== 'Freevalve') ? ` · ${p.valve_type}` : ''}`;
+                sumArchSub.textContent = `${p.ciclo} · ${t.compShort} ${p.compression_ratio.toFixed(1)}:1 · ${emArchShort} (${p.hv_voltage}V)`;
             }
-            if (sumDispVal) sumDispVal.textContent = `${litros} L`;
-            if (sumGeoSub) sumGeoSub.textContent = `${p.bore.toFixed(0)}×${p.stroke.toFixed(0)} mm · ${p.max_rpm} RPM`;
+            if (sumDispVal) sumDispVal.textContent = `${litros} L · +${Math.round(p.emotor_kw)} kW`;
+            if (sumGeoSub) sumGeoSub.textContent = `${p.bore.toFixed(0)}×${p.stroke.toFixed(0)} mm · ${p.max_rpm} RPM · ${p.battery_kwh.toFixed(1)} kWh`;
             const intTypeShort = (t.intakeTypeShort && t.intakeTypeShort[p.intake_type]) ? t.intakeTypeShort[p.intake_type] : p.intake_type;
             const intMatShort = (t.intakeMatShort && t.intakeMatShort[p.intake_material]) ? t.intakeMatShort[p.intake_material] : p.intake_material;
             const hasRadiator = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(p.admissao);
@@ -7509,10 +8719,10 @@
                 else if (p.admissao !== 'Atmosférico') pTxt = `+${p.turbo_bar.toFixed(1)} bar`;
                 sumAdmSub.textContent = `${pTxt} · ${intTypeShort} (${intMatShort})${hasRadiator ? ` · ${radShort}` : ''}`;
             }
-            if (sumBuildVal) sumBuildVal.textContent = matLabel;
+            if (sumBuildVal) sumBuildVal.textContent = `${matLabel} · ${batArchShort}`;
             if (sumBuildSub) {
                 const pWord = isWankel ? t.rotorMatWord : t.pistonWord;
-                sumBuildSub.textContent = `${pWord}: ${pMatLabel} · ${fuelLabel} · ${fwShort} · ${dmpShort} (${p.damper_weight.toFixed(1)} kg)`;
+                sumBuildSub.textContent = `${pWord}: ${pMatLabel} · ${fuelLabel} · ${p.battery_chem} · ${fwShort} · ${dmpShort}`;
             }
             syncDamperSuggestionUI(p);
             if (motor3D) {
@@ -7536,6 +8746,18 @@
                     exhaustJunction: p.exhaust_junction,
                     exhaustDiameter: p.exhaust_diameter,
                     radiatorType: p.radiator_type,
+                    hybridType: p.hybrid_type,
+                    emotorArch: p.emotor_arch,
+                    emotorKw: p.emotor_kw,
+                    emotorWinding: p.emotor_winding,
+                    emotorCooling: p.emotor_cooling,
+                    inverterType: p.inverter_type,
+                    hvVoltage: p.hv_voltage,
+                    batteryArch: p.battery_arch,
+                    batteryChem: p.battery_chem,
+                    cellFormat: p.cell_format,
+                    batteryKwh: p.battery_kwh,
+                    hybridMode: p.hybrid_mode,
                     bore: p.bore,
                     stroke: p.stroke,
                     maxRpm: p.max_rpm,
@@ -7754,8 +8976,25 @@
                 exhaustSoundNote.textContent = `${noteTxt} · ${juncShort} · ${exDiam} mm`;
             }
 
+            const hybType = selectHybridType ? selectHybridType.value : 'PHEV P2+P4';
+            const hybShort = (t.hybridTypeShort && t.hybridTypeShort[hybType]) ? t.hybridTypeShort[hybType] : hybType;
+            const emArch = selectEmotorArch ? selectEmotorArch.value : 'PMSM Radial';
+            const emArchShort = (t.emotorArchShort && t.emotorArchShort[emArch]) ? t.emotorArchShort[emArch] : emArch;
+            const emKw = inputEmotorKw ? Math.max(5, Math.min(600, Math.round(parseFloat(inputEmotorKw.value) || 165))) : 165;
+            const batArch = selectBatteryArch ? selectBatteryArch.value : 'Sub-Piso';
+            const batArchShort = (t.batteryArchShort && t.batteryArchShort[batArch]) ? t.batteryArchShort[batArch] : batArch;
+            const batChem = selectBatteryChem ? selectBatteryChem.value : 'NMC 811';
+            const batKwhRaw = inputBatteryKwh ? Math.max(0.5, Math.min(60, parseFloat(inputBatteryKwh.value) || 18.5)) : 18.5;
+            const batKwhStr = batKwhRaw.toFixed(1);
+            if (electricSummaryInfo) {
+                electricSummaryInfo.textContent = `${hybShort} · ${emArchShort} ${emKw} kW · ${batArchShort} ${batKwhStr} kWh`;
+            }
+
+            const isElectricView = viewMode === 'electric' || viewMode === 'emotor' || viewMode === 'battery';
             if (btnTopEngine) {
-                btnTopEngine.style.display = viewMode === 'engine' ? 'none' : 'inline-flex';
+                btnTopEngine.style.display = 'inline-flex';
+                btnTopEngine.classList.toggle('ativo', viewMode === 'engine');
+                btnTopEngine.setAttribute('aria-pressed', viewMode === 'engine' ? 'true' : 'false');
             }
             if (btnTopGearbox) {
                 btnTopGearbox.textContent = `${t.topGearbox} · ${gbSpdBtn}`;
@@ -7767,6 +9006,14 @@
                 btnTopExhaust.classList.toggle('ativo', viewMode === 'exhaust' || activeTopPopover === 'exhaust');
                 btnTopExhaust.setAttribute('aria-expanded', activeTopPopover === 'exhaust' ? 'true' : 'false');
             }
+            if (btnTopElectric) {
+                btnTopElectric.textContent = `${t.topElectric} · ${emKw}kW`;
+                btnTopElectric.classList.toggle('ativo', isElectricView || activeTopPopover === 'electric');
+                btnTopElectric.setAttribute('aria-expanded', activeTopPopover === 'electric' ? 'true' : 'false');
+            }
+            if (btnElViewBoth) btnElViewBoth.classList.toggle('ativo', viewMode === 'electric');
+            if (btnElViewMotor) btnElViewMotor.classList.toggle('ativo', viewMode === 'emotor');
+            if (btnElViewBattery) btnElViewBattery.classList.toggle('ativo', viewMode === 'battery');
             if (btnTopAll) {
                 const isAll = viewMode === 'all';
                 btnTopAll.classList.toggle('ativo', isAll);
@@ -7781,6 +9028,7 @@
             activeTopPopover = popoverWhich;
             if (popoverGearbox) popoverGearbox.classList.toggle('aberto', activeTopPopover === 'gearbox');
             if (popoverExhaust) popoverExhaust.classList.toggle('aberto', activeTopPopover === 'exhaust');
+            if (popoverElectric) popoverElectric.classList.toggle('aberto', activeTopPopover === 'electric');
             syncSubsystemUI();
             atualizarMotor3D();
         }
@@ -7793,26 +9041,63 @@
         }
         if (btnGbBackEngine) btnGbBackEngine.addEventListener('click', () => setViewAndPopover('engine', null));
         if (btnExhBackEngine) btnExhBackEngine.addEventListener('click', () => setViewAndPopover('engine', null));
-        if (btnTopGearbox) {
-            btnTopGearbox.addEventListener('click', () => {
-                if (viewMode !== 'gearbox') {
-                    setViewAndPopover('gearbox', 'gearbox');
+        if (btnElBackEngine) btnElBackEngine.addEventListener('click', () => setViewAndPopover('engine', null));
+        const bindSubViewBtn = (btn, modeName) => {
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                if (viewMode !== modeName) {
+                    setViewAndPopover(modeName, modeName);
                 } else {
-                    setViewAndPopover('gearbox', activeTopPopover === 'gearbox' ? null : 'gearbox');
+                    setViewAndPopover(modeName, activeTopPopover === modeName ? null : modeName);
+                }
+            });
+        };
+        bindSubViewBtn(btnTopGearbox, 'gearbox');
+        bindSubViewBtn(btnTopExhaust, 'exhaust');
+        if (btnTopElectric) {
+            btnTopElectric.addEventListener('click', () => {
+                const inElectric = viewMode === 'electric' || viewMode === 'emotor' || viewMode === 'battery';
+                if (!inElectric) {
+                    setViewAndPopover('electric', 'electric');
+                } else {
+                    setViewAndPopover(viewMode, activeTopPopover === 'electric' ? null : 'electric');
                 }
             });
         }
-        if (btnTopExhaust) {
-            btnTopExhaust.addEventListener('click', () => {
-                if (viewMode !== 'exhaust') {
-                    setViewAndPopover('exhaust', 'exhaust');
-                } else {
-                    setViewAndPopover('exhaust', activeTopPopover === 'exhaust' ? null : 'exhaust');
-                }
-            });
-        }
+        if (btnElViewBoth) btnElViewBoth.addEventListener('click', () => setViewAndPopover('electric', 'electric'));
+        if (btnElViewMotor) btnElViewMotor.addEventListener('click', () => setViewAndPopover('emotor', 'electric'));
+        if (btnElViewBattery) btnElViewBattery.addEventListener('click', () => setViewAndPopover('battery', 'electric'));
         if (btnCloseGearbox) btnCloseGearbox.addEventListener('click', () => setViewAndPopover(null, null));
         if (btnCloseExhaust) btnCloseExhaust.addEventListener('click', () => setViewAndPopover(null, null));
+        if (btnCloseElectric) btnCloseElectric.addEventListener('click', () => setViewAndPopover(null, null));
+
+        const HYBRID_PRESETS = {
+            'MHEV 48V':         { kw: 22,  kwh: 1.5,  v: '48',  chem: 'NMC 811',         bArch: 'Traseira Compacta', eArch: 'PMSM Radial',   inv: 'MOSFET 48V',    cool: 'Ar (Aletas)' },
+            'HEV Power-Split':  { kw: 88,  kwh: 2.0,  v: '400', chem: 'NiMH Clássica',   bArch: 'Traseira Compacta', eArch: 'PMSM Radial',   inv: 'IGBT Silício',  cool: 'Glicol (Camisa)' },
+            'HEV Paralelo P2':  { kw: 95,  kwh: 2.8,  v: '400', chem: 'NMC 811',         bArch: 'T-Pack Central',    eArch: 'Axial Flux',    inv: 'IGBT Silício',  cool: 'Óleo Direto' },
+            'PHEV P2+P4':       { kw: 165, kwh: 18.5, v: '400', chem: 'NMC 811',         bArch: 'Sub-Piso',          eArch: 'PMSM Radial',   inv: 'SiC Dual 800V', cool: 'Glicol (Camisa)' },
+            'EREV Série':       { kw: 180, kwh: 32.0, v: '400', chem: 'LFP (LiFePO4)',   bArch: 'Sub-Piso',          eArch: 'Motor Indução', inv: 'SiC Dual 800V', cool: 'Glicol (Camisa)' },
+            'Hypercar MGU-K+H': { kw: 260, kwh: 7.5,  v: '800', chem: 'Supercondensador',bArch: 'Estrutural 800V',   eArch: 'Axial Flux',    inv: 'GaN Alta Freq.',cool: 'Imersão Dielétrica' }
+        };
+
+        if (selectHybridType) {
+            selectHybridType.addEventListener('change', () => {
+                const pre = HYBRID_PRESETS[selectHybridType.value];
+                if (pre) {
+                    if (inputEmotorKw) inputEmotorKw.value = String(pre.kw);
+                    if (selectEmotorArch) selectEmotorArch.value = pre.eArch;
+                    if (selectBatteryArch) selectBatteryArch.value = pre.bArch;
+                    if (selectBatteryChem) selectBatteryChem.value = pre.chem;
+                    if (inputBatteryKwh) inputBatteryKwh.value = String(pre.kwh);
+                    if (selectHvVoltage) selectHvVoltage.value = pre.v;
+                    if (selectInverterType) selectInverterType.value = pre.inv;
+                    if (selectEmotorCooling) selectEmotorCooling.value = pre.cool;
+                }
+                syncSubsystemUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+        }
 
         if (rangeExhaustDiameter && inputExhaustDiameter) {
             rangeExhaustDiameter.addEventListener('input', () => {
@@ -7841,8 +9126,22 @@
             });
         }
 
-        [selectGearboxType, selectGearboxSpeeds, selectClutchType, selectFinalDrive, selectExhaustType, selectExhaustTips, selectExhaustJunction].forEach(el => {
+        [selectGearboxType, selectGearboxSpeeds, selectClutchType, selectFinalDrive, selectExhaustType, selectExhaustTips, selectExhaustJunction, selectEmotorArch, selectEmotorWinding, selectEmotorCooling, selectInverterType, selectHvVoltage, selectHybridMode, selectBatteryArch, selectBatteryChem, selectCellFormat].forEach(el => {
             if (!el) return;
+            el.addEventListener('change', () => {
+                syncSubsystemUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+        });
+
+        [inputEmotorKw, inputBatteryKwh].forEach(el => {
+            if (!el) return;
+            el.addEventListener('input', () => {
+                syncSubsystemUI();
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
             el.addEventListener('change', () => {
                 syncSubsystemUI();
                 atualizarMotor3D();
