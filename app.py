@@ -4633,6 +4633,7 @@ def gerar_dashboard_html(
 
                 const ringR = (0.28 + fdNorm * 0.11) * s;
                 const pinR = (0.145 - fdNorm * 0.025) * s;
+                const caseR = Math.max(ringR * 1.24, 0.39 * s);
                 const isCoaxial = gb === 'Coaxial Direto';
                 const isEcvt = gb === 'E-CVT Planetária';
                 const isTwoSpd = gb === 'Caixa EV 2V';
@@ -4642,12 +4643,17 @@ def gerar_dashboard_html(
                 const xMid = xOrigin + d * 0.04 * s;
                 const xDiff = isCoaxial ? xOrigin + d * 0.12 * s : xOrigin + d * 0.24 * s;
 
+                const crownGearR = ringR * 0.88;
+                const boxW = Math.max(0.46 * s, crownGearR * 2.28);
+                const boxH = Math.max(ringR * 2.10, crownGearR * 2.28);
+                const boxD = Math.max(ringR * 2.14, crownGearR * 2.32);
+
                 // Carcaça redutora EV em corte translúcido + parafusos de união
-                this.addPart(this.staticTrans, 'cyl', this.matTRS(xOrigin, 0, zCenter, 0, 0, Math.PI * 0.5, ringR * 1.18, 0.58 * s, ringR * 1.18), C_CASE, [0.48, 36]);
-                this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xDiff, -0.02 * s, zCenter, 0, 0, 0, 0.42 * s, ringR * 1.95, ringR * 2.05), C_CASE, [0.46, 34]);
+                this.addPart(this.staticTrans, 'cyl', this.matTRS(xOrigin, 0, zCenter, 0, 0, Math.PI * 0.5, caseR, 0.58 * s, caseR), C_CASE, [0.48, 36]);
+                this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xDiff, 0, zCenter, 0, 0, 0, boxW, boxH, boxD), C_CASE, [0.46, 34]);
                 for (let b = 0; b < 8; b++) {{
                     const ba = (b * Math.PI * 2) / 8;
-                    const br = ringR * 1.18;
+                    const br = caseR * 0.96;
                     this.addPart(this.staticOpaque, 'hex', this.matTRS(xOrigin - d * 0.26 * s, Math.cos(ba) * br, zCenter + Math.sin(ba) * br, 0, 0, Math.PI * 0.5, 0.020 * s, 0.04 * s, 0.020 * s), C_GEAR, [0.82, 66]);
                 }}
 
@@ -4658,7 +4664,7 @@ def gerar_dashboard_html(
                     cx: xPin,
                     cy: 0,
                     cz: zCenter,
-                    r: pinR,
+                    r: pinR * 0.94,
                     thick: 0.095 * s,
                     speedMult: d * 1.0,
                     symmetry: 14,
@@ -4666,9 +4672,9 @@ def gerar_dashboard_html(
                 }});
 
                 if (isEcvt || isCoaxial) {{
-                    // Engrenagem planetária epicicloidal: Sol central + 3 satélites + Coroa exterior
-                    const sunR = pinR * 1.08;
-                    const planetR = pinR * 0.72;
+                    // Engrenagem planetária epicicloidal contida na carcaça (Sol central + 3 satélites, sem anéis/toros exteriores)
+                    const sunR = Math.min(pinR * 0.90, caseR * 0.32);
+                    const planetR = Math.min(pinR * 0.56, caseR * 0.20);
                     const orbR = sunR + planetR;
                     this.dynamicRotors.push({{
                         type: 'evGear',
@@ -4682,7 +4688,6 @@ def gerar_dashboard_html(
                         colorRim: C_GEAR
                     }});
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS((xMid + xDiff) * 0.5, 0, zCenter, 0, 0, Math.PI * 0.5, 0.040 * s, Math.max(0.14 * s, Math.abs(xDiff - xMid)), 0.040 * s), C_GEAR, [0.76, 60]);
-                    this.addPart(this.staticOpaque, 'torus', this.matTRS(xMid, 0, zCenter, 0, Math.PI * 0.5, 0, orbR + planetR * 1.12, orbR + planetR * 1.12, 0.055 * s), isEcvt ? C_ELSD : C_BRONZE, [0.74, 58]);
                     for (let p = 0; p < 3; p++) {{
                         const pa = (p * Math.PI * 2) / 3;
                         this.dynamicRotors.push({{
@@ -4698,20 +4703,25 @@ def gerar_dashboard_html(
                         }});
                     }}
                     if (isEcvt) {{
-                        // Servo-atuador da planetária E-CVT no topo da carcaça
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMid, orbR + planetR * 1.38, zCenter, 0, 0, Math.PI * 0.5, 0.075 * s, 0.16 * s, 0.075 * s), C_ELSD, [0.72, 56]);
+                        // Atuador interno da planetária E-CVT alojado no topo interior da carcaça
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMid, caseR * 0.78, zCenter, 0, 0, Math.PI * 0.5, 0.048 * s, 0.14 * s, 0.048 * s), C_ELSD, [0.72, 56]);
                     }}
                 }} else {{
-                    // Contra-eixo paralelo (layshaft) + segundo estágio para Caixa EV 2V
-                    const yLay = -ringR * 0.52;
-                    const zLay = zCenter + ringR * 0.32;
+                    // Contra-eixo paralelo (layshaft) + segundo estágio para Caixa EV 2V dentro da carcaça
+                    const yLay = -caseR * 0.42;
+                    const zLay = zCenter + caseR * 0.26;
+                    const distLay = Math.hypot(yLay, zLay - zCenter);
+                    const layGear1R = Math.min(pinR * 1.38, (caseR * 0.90 - distLay) / 1.04);
+                    const layGear2R = isTwoSpd
+                        ? Math.min(pinR * 1.10, (caseR * 0.88 - distLay) / 1.04)
+                        : Math.min(pinR * 0.86, (caseR * 0.86 - distLay) / 1.04);
                     this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMid, yLay, zLay, 0, 0, Math.PI * 0.5, 0.036 * s, 0.42 * s, 0.036 * s), C_GEAR, [0.76, 60]);
                     this.dynamicRotors.push({{
                         type: 'evGear',
                         cx: xPin,
                         cy: yLay,
                         cz: zLay,
-                        r: pinR * 1.45,
+                        r: layGear1R,
                         thick: 0.088 * s,
                         speedMult: -d * 0.68,
                         symmetry: 18,
@@ -4722,36 +4732,36 @@ def gerar_dashboard_html(
                         cx: xMid + d * 0.08 * s,
                         cy: yLay,
                         cz: zLay,
-                        r: pinR * (isTwoSpd ? 1.15 : 0.88),
+                        r: layGear2R,
                         thick: 0.078 * s,
                         speedMult: -d * 0.68,
                         symmetry: 14,
                         colorRim: isTwoSpd ? C_BRONZE : C_GEAR
                     }});
                     if (isTwoSpd) {{
-                        // Tambor de embraiagem multidisco e atuador de troca da 2ª velocidade (tipo Taycan)
+                        // Tambor de embraiagem multidisco e atuador de troca da 2ª velocidade alojados na carcaça
                         this.dynamicRotors.push({{
                             type: 'evGear',
                             cx: xMid - d * 0.04 * s,
                             cy: 0,
                             cz: zCenter,
-                            r: pinR * 1.36,
+                            r: Math.min(pinR * 1.24, caseR * 0.44),
                             thick: 0.070 * s,
                             speedMult: d * 0.82,
                             symmetry: 16,
                             colorRim: C_BRONZE
                         }});
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xMid, ringR * 0.98, zCenter, 0, 0, 0, 0.18 * s, 0.09 * s, 0.14 * s), [0.84, 0.30, 0.20, 1.0], [0.68, 52]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xMid, caseR * 0.78, zCenter, 0, 0, 0, 0.16 * s, 0.07 * s, 0.12 * s), [0.84, 0.30, 0.20, 1.0], [0.68, 52]);
                     }}
                 }}
 
-                // Coroa final do diferencial (montada no plano Z para rodar com os semi-eixos ou em X com cónico)
+                // Coroa final do diferencial (montada no plano Z para rodar com os semi-eixos)
                 this.dynamicRotors.push({{
                     type: 'zAxle',
                     cx: xDiff,
                     cy: 0,
                     cz: zCenter,
-                    ringR: ringR * 0.88,
+                    ringR: crownGearR,
                     shaftR: 0.042 * s,
                     spanZ: showHalfShafts ? 0.78 * s : 0.28 * s,
                     speedMult: 1.0 / (fd / 9.73),
@@ -4765,7 +4775,7 @@ def gerar_dashboard_html(
                 }});
 
                 if (diffType === 'e-LSD Vetorizado') {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xDiff + 0.22 * s, 0.08 * s, zCenter + 0.22 * s, Math.PI * 0.5, 0, 0, 0.085 * s, 0.18 * s, 0.085 * s), C_ELSD, [0.76, 62]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xDiff + boxW * 0.26, 0.06 * s, zCenter + boxD * 0.26, Math.PI * 0.5, 0, 0, 0.068 * s, 0.14 * s, 0.068 * s), C_ELSD, [0.76, 62]);
                 }}
             }}
 
@@ -5528,7 +5538,8 @@ def gerar_dashboard_html(
                         const crownM = this.matTRS(r.cx, r.cy, r.cz, Math.PI * 0.5, 0, ang, r.ringR, 0.085, r.ringR);
                         this.drawItem(this.meshes.gear, crownM, r.C_GEAR, [0.78, 62], viewProj);
                         const carrierCol = r.diffType === 'LSD Mecânico' ? r.C_BRONZE : (r.diffType === 'e-LSD Vetorizado' ? r.C_ELSD : (r.diffType === 'Spool Direto' ? [0.84, 0.26, 0.22, 1.0] : r.C_GEAR));
-                        const carrierM = this.matTRS(r.cx, r.cy, r.cz, Math.PI * 0.5, 0, ang, r.ringR * 0.54, 0.22, r.ringR * 0.54);
+                        const carrierLen = Math.min(0.22, r.ringR * 0.64);
+                        const carrierM = this.matTRS(r.cx, r.cy, r.cz, Math.PI * 0.5, 0, ang, r.ringR * 0.54, carrierLen, r.ringR * 0.54);
                         this.drawItem(this.meshes.cyl, carrierM, carrierCol, [0.74, 58], viewProj);
                         if (r.showHalfShafts) {{
                             for (const side of [-1, 1]) {{
