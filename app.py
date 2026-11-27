@@ -495,6 +495,10 @@ def widget_motor_inline(
                         <button type="button" class="btn-engine-ctrl" id="btn-slow-mo" aria-pressed="false" title="Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado">
                             <span id="btn-slow-mo-label">Slow Mo</span>
                         </button>
+                        <button type="button" class="btn-engine-ctrl sound-ativo" id="btn-sound-toggle" aria-pressed="true" title="Ativar ou silenciar o som do motor">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                            <span id="btn-sound-label">Som On</span>
+                        </button>
                     </div>
                     <div class="engine-dock-telemetry">
                         <div class="telemetry-pill" id="telemetry-rpm-pill">
@@ -731,7 +735,7 @@ def calcular_peso_ideal_damper(
         boost_total = 0.0
     boost_mult = 1.0 + min(0.45, boost_total * 0.08)
 
-    rpm_mult = max(0.75, min(1.16, 1.06 - (max(1500, int(max_rpm)) - 6500) * 0.000022))
+    rpm_mult = max(0.75, min(1.16, 1.06 - (max(1500, min(100000, int(max_rpm))) - 6500) * 0.000022))
     pis_ideal_map = {"Alumínio": 1.00, "Forged": 1.06, "Forged Heavy": 1.15, "Titânio": 0.88}
     pis_mult = 0.92 if is_wankel else pis_ideal_map.get(piston_material, 1.00)
     raw = base_mass * fmt_mult * fuel_mult * cycle_mult * boost_mult * rpm_mult * pis_mult
@@ -790,7 +794,7 @@ def processar_combustao(
     bore = max(10.0, min(1000.0, float(bore)))
     stroke = max(10.0, min(1000.0, float(stroke)))
     cr = max(2.0, min(200.0, float(compression_ratio)))
-    max_rpm = max(500, int(max_rpm))
+    max_rpm = max(1000, min(100000, int(max_rpm)))
     formato_valido = str(formato).upper() if str(formato).upper() in FORMATOS_MOTOR else "I"
     ciclo = "4T" if formato_valido == "WANKEL" else ("2T" if str(ciclo).upper() == "2T" else "4T")
     num_cilindros = clamp_cilindros_formato(formato_valido, num_cilindros)
@@ -816,29 +820,36 @@ def processar_combustao(
         else {"tq": 1.000, "hp": 1.000, "cr_tol": 0.0}
     )
 
+    def _boost_density(b_val: float) -> float:
+        return b_val / (1.0 + 0.042 * b_val)
+
     if admissao_valida == "Atmosférico":
         adm_mb, adm_mp = 1.00, 1.00
         pressao_str = "0.0 bar (Atmosférico)"
     elif admissao_valida == "Turbo":
-        adm_mb = 1.0 + turbo_b * 0.40
-        adm_mp = 1.0 + turbo_b * 0.367
+        bd = _boost_density(turbo_b)
+        adm_mb = 1.0 + bd * 0.415
+        adm_mp = 1.0 + bd * 0.390
         pressao_str = f"+{turbo_b:.1f} bar"
     elif admissao_valida == "Supercompressor":
-        adm_mb = 1.0 + sc_b * 0.5625
-        adm_mp = 1.0 + sc_b * 0.4375
+        bd = _boost_density(sc_b)
+        adm_mb = 1.0 + bd * 0.560
+        adm_mp = 1.0 + bd * 0.450
         pressao_str = f"+{sc_b:.1f} bar"
     elif admissao_valida == "Biturbo":
-        adm_mb = 1.0 + turbo_b * 0.425
-        adm_mp = 1.0 + turbo_b * 0.40
+        bd = _boost_density(turbo_b)
+        adm_mb = 1.0 + bd * 0.435
+        adm_mp = 1.0 + bd * 0.420
         pressao_str = f"+{turbo_b:.1f} bar"
     elif admissao_valida == "Quad Turbo":
-        adm_mb = 1.0 + turbo_b * 0.44
-        adm_mp = 1.0 + turbo_b * 0.43
+        bd = _boost_density(turbo_b)
+        adm_mb = 1.0 + bd * 0.450
+        adm_mp = 1.0 + bd * 0.445
         pressao_str = f"+{turbo_b:.1f} bar"
     else:  # Twincharge
-        eff_b = turbo_b + sc_b * 0.70
-        adm_mb = 1.0 + eff_b * 0.46
-        adm_mp = 1.0 + eff_b * 0.435
+        eff_b = _boost_density(turbo_b) + 0.70 * _boost_density(sc_b)
+        adm_mb = 1.0 + eff_b * 0.470
+        adm_mp = 1.0 + eff_b * 0.455
         pressao_str = f"+{turbo_b:.1f} / +{sc_b:.1f} bar"
 
     fatores_combustivel = {
@@ -1061,9 +1072,13 @@ def processar_combustao(
         else 1.00
     )
 
-    fator_cr = 1.0 + max(-0.25, min(0.35, (cr - 10.0) * 0.025))
+    limite_vm = min(30.0, 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"] + p_fw["tol"] + p_dmp["tol"] + w_tol)
+
+    eta_cr = 1.0 - math.pow(cr, -0.28)
+    eta_ref = 1.0 - math.pow(10.5, -0.28)
+    fator_cr = math.pow(max(0.25, eta_cr / eta_ref), 0.88)
     fator_ciclo_tq = 1.42 if is_wankel else (1.25 if ciclo == "2T" else 1.00)
-    ice_peak_tq_nm = round(
+    ice_base_tq_nm = (
         cilindrada_litros
         * 105.0
         * fator_cr
@@ -1089,10 +1104,8 @@ def processar_combustao(
         * mgu_h_boost
     )
 
-    fator_rpm_potencia = 0.93 if is_wankel else (0.88 if ciclo == "4T" else 0.94)
-    ice_peak_cv = (
-        ((ice_peak_tq_nm * max_rpm * fator_rpm_potencia) / 7121.0)
-        * (adm_mp / adm_mb)
+    hi_flow_ratio = (
+        (adm_mp / adm_mb)
         * (tcfg_hp / tcfg_tq)
         * (perfil_comb["power"] / perfil_comb["torque"])
         * (p_cam["hp"] / p_cam["tq"])
@@ -1112,12 +1125,9 @@ def processar_combustao(
         * (p_junc["hp"] / p_junc["tq"])
         * (p_ediam["hp"] / p_ediam["tq"])
         * (p_rad["hp"] / p_rad["tq"])
-        * mgu_h_boost
-        * 1.01387
     )
-    ice_peak_kw = round(ice_peak_cv * 0.73549875)
 
-    # Cálculo da contribuição elétrica e curva combinada em 49 pontos (paridade Python == JS)
+    # Cálculo da contribuição elétrica e curva combinada em 49 pontos (paridade Python == JS, P = T * RPM / 9549.2966)
     em_kw_clamped = max(5.0, min(600.0, float(emotor_kw)))
     bat_kwh_clamped = max(0.5, min(60.0, float(battery_kwh)))
     if hybrid_enabled:
@@ -1143,6 +1153,27 @@ def processar_combustao(
         + p_int["low_end"]
     )
     top_fall_scale = max(0.60, 1.0 - p_int["top_end"] * 2.5)
+    if is_wankel:
+        rpm_choke = 14500.0
+    elif is_2t:
+        rpm_choke = 15500.0
+    elif is_diesel:
+        rpm_choke = 5600.0
+    elif is_freevalve:
+        rpm_choke = 26000.0
+    elif eff_valve_type == "Pneumático":
+        rpm_choke = 23000.0
+    elif eff_valve_type == "Desmodrómico":
+        rpm_choke = 16500.0
+    elif camshaft == "OHV":
+        rpm_choke = 7400.0
+    elif camshaft == "SOHC":
+        rpm_choke = 9200.0
+    elif eff_valve_type == "VVT":
+        rpm_choke = 12500.0
+    else:
+        rpm_choke = 12000.0
+    vp_choke = limite_vm * 1.15
 
     def _smooth(e0: float, e1: float, x: float) -> float:
         t_val = max(0.0, min(1.0, (x - e0) / max(1e-6, e1 - e0)))
@@ -1188,24 +1219,33 @@ def processar_combustao(
         t_shape = max(0.25, t_shape)
         if t_shape > max_raw_t:
             max_raw_t = t_shape
-        raw_pts.append((rpm_i, t_shape))
+        raw_pts.append((rpm_i, u_i, t_shape))
 
     pts_ice = []
-    max_raw_p = 1e-6
-    for rpm_i, ts in raw_pts:
-        tq_i = (ts / max_raw_t) * ice_peak_tq_nm
-        p_raw = tq_i * rpm_i
-        if p_raw > max_raw_p:
-            max_raw_p = p_raw
-        pts_ice.append((rpm_i, tq_i, p_raw))
+    best_ice_tq = 0.0
+    best_ice_kw = 0.0
+    for rpm_i, u_i, ts in raw_pts:
+        vp_i = (2.0 * (stroke / 1000.0) * (rpm_i / 3.0) * 1.55) / 60.0 if is_wankel else (2.0 * (stroke / 1000.0) * rpm_i) / 60.0
+        ex_vp = max(0.0, (vp_i - vp_choke) / max(8.0, vp_choke))
+        ex_rpm = max(0.0, (rpm_i - rpm_choke) / max(2000.0, rpm_choke * 0.75))
+        mech_eff = 1.0 / (1.0 + 0.58 * (ex_vp ** 1.65) + 0.42 * (ex_rpm ** 1.70))
+        ve_mod = max(0.25, 1.0 + (hi_flow_ratio - 1.0) * _smooth(0.22, 0.90, u_i))
+        ice_tq_i = max(1.0, ice_base_tq_nm * (ts / max_raw_t) * ve_mod * mech_eff)
+        ice_kw_i = (ice_tq_i * rpm_i) / 9549.2966
+        if ice_tq_i > best_ice_tq:
+            best_ice_tq = ice_tq_i
+        if ice_kw_i > best_ice_kw:
+            best_ice_kw = ice_kw_i
+        pts_ice.append((rpm_i, ice_tq_i, ice_kw_i))
 
-    ev_base_rpm = max(1200.0, max_rpm_dyno * p_hyb["base_rpm_frac"])
+    ice_peak_tq_nm = round(best_ice_tq)
+    ice_peak_kw = round(best_ice_kw)
+    ev_base_rpm = max(650.0, min(5200.0, max_rpm_dyno * p_hyb["base_rpm_frac"]))
     ev_tq_base = ((eff_ev_kw * 9549.2966) / ev_base_rpm * p_em["tq"] * p_hyb["tq_mult"]) if hybrid_enabled else 0.0
     best_comb_kw = 0.0
     best_comb_tq = 0.0
     best_ev_tq = 0.0
-    for rpm_i, ice_tq_i, p_raw in pts_ice:
-        ice_kw_i = (p_raw / max_raw_p) * ice_peak_kw
+    for rpm_i, ice_tq_i, ice_kw_i in pts_ice:
         if not hybrid_enabled:
             ev_tq_i = 0.0
             ev_kw_i = 0.0
@@ -1217,7 +1257,7 @@ def processar_combustao(
                 ev_kw_i = (ev_tq_i * rpm_i) / 9549.2966
             else:
                 hi_frac = max(0.0, (rpm_i - ev_base_rpm) / max(1.0, max_rpm_dyno - ev_base_rpm))
-                ev_kw_i = eff_ev_kw * (1.0 - 0.08 * (hi_frac ** 1.5))
+                ev_kw_i = eff_ev_kw * (1.0 - 0.14 * (hi_frac ** 1.4))
                 ev_tq_i = (ev_kw_i * 9549.2966) / max(1.0, rpm_i)
             if p_hyb["gen_cap"]:
                 comb_kw_i = ev_kw_i + ice_kw_i * 0.35
@@ -1234,15 +1274,14 @@ def processar_combustao(
 
     torque_nm = int(round(best_comb_tq))
     potencia_kw = int(round(best_comb_kw))
-    ev_power_kw_val = int(round(eff_ev_kw))
-    ev_torque_nm_val = int(round(best_ev_tq))
+    ev_power_kw_val = int(round(eff_ev_kw)) if hybrid_enabled else 0
+    ev_torque_nm_val = int(round(best_ev_tq)) if hybrid_enabled else 0
 
     # 3. Validação da velocidade média do pistão / rotor e taxa de compressão (máximo 30.0 m/s)
     if is_wankel:
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * (max_rpm / 3.0) * 1.55) / 60.0
     else:
         velocidade_pistao_mps = (2.0 * (stroke / 1000.0) * max_rpm) / 60.0
-    limite_vm = min(30.0, 25.0 + p_mat["tol"] + p_val["tol"] + p_pis["tol"] + p_fw["tol"] + p_dmp["tol"] + w_tol)
     limite_cr = perfil_comb["cr_lim"] + p_pis["cr_tol"] + p_rad["cr_tol"]
     motivos_alerta = []
     if velocidade_pistao_mps > limite_vm:
@@ -1531,7 +1570,7 @@ def widget_3_modular(
                     </div>
                     <div class="campo-grupo">
                         <label for="input-rpm" id="lbl-rpm">ROTAÇÃO MÁX. (RPM)</label>
-                        <input type="number" id="input-rpm" class="{classe_rpm}" value="7500" step="100" min="1000" max="25000">
+                        <input type="number" id="input-rpm" class="{classe_rpm}" value="7500" step="100" min="1000" max="100000">
                     </div>
                 </div>
             </div>
@@ -2012,6 +2051,17 @@ def gerar_dashboard_html(
             border-color: rgba(110, 168, 166, 0.62);
             color: #d1fae5;
             box-shadow: 0 4px 14px -6px rgba(110, 168, 166, 0.45);
+        }}
+
+        .btn-engine-ctrl.sound-ativo {{
+            background: rgba(245, 158, 11, 0.14);
+            border-color: rgba(251, 191, 36, 0.48);
+            color: #fef3c7;
+        }}
+
+        .btn-engine-ctrl.sound-off {{
+            opacity: 0.72;
+            color: var(--text-muted);
         }}
 
         .btn-engine-ctrl:disabled {{
@@ -3079,21 +3129,63 @@ def gerar_dashboard_html(
         }}
 
         .settings-modal-body {{
-            min-height: 112px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px dashed var(--border-subtle);
+            flex-direction: column;
+            gap: 10px;
+            border: 1px solid var(--border-subtle);
             border-radius: 10px;
-            padding: 20px;
+            padding: 14px;
             background: rgba(0, 0, 0, 0.36);
         }}
 
-        .settings-empty-msg {{
+        .settings-row {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }}
+
+        .settings-row-info {{
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }}
+
+        .settings-row-label {{
+            font-size: 0.80rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 0.03em;
+        }}
+
+        .settings-row-desc {{
             font-family: var(--font-mono);
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             color: var(--text-muted);
-            text-align: center;
+        }}
+
+        .settings-sound-controls {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }}
+
+        #settings-sound-range {{
+            width: 88px;
+            accent-color: #f59e0b;
+            cursor: pointer;
+        }}
+
+        .settings-sound-val {{
+            font-family: var(--font-mono);
+            font-size: 0.70rem;
+            color: var(--text-secondary);
+            min-width: 34px;
+            text-align: right;
         }}
 
         .launcher-center {{
@@ -3737,7 +3829,6 @@ def gerar_dashboard_html(
         </div>
 
         <div class="launcher-corner-actions">
-            <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="launcher-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
             <button type="button" class="btn-3d-ctrl btn-settings-trigger" id="btn-launcher-settings" aria-haspopup="dialog" aria-expanded="false" title="Definições"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="launcher-settings-lbl">Definições</span></button>
         </div>
 
@@ -4225,7 +4316,6 @@ def gerar_dashboard_html(
                     <button type="button" class="btn-3d-ctrl ativo" id="btn-3d-cutaway" aria-pressed="true" title="Alternar vista de corte transparente">Vista Corte</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-autorotate" aria-pressed="false" title="Rodar o modelo automaticamente">Auto-Rodar</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-reset" title="Repor ângulo inicial da câmara">Repor Vista</button>
-                    <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="btn-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
                     <button type="button" class="btn-3d-ctrl btn-settings-trigger" id="btn-ice-settings" aria-haspopup="dialog" aria-expanded="false" title="Definições"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="ice-settings-lbl">Definições</span></button>
                 </div>
             </header>
@@ -4267,12 +4357,512 @@ def gerar_dashboard_html(
                 <button type="button" class="btn-popover-close" id="btn-settings-close" aria-label="Fechar" title="Fechar">×</button>
             </div>
             <div class="settings-modal-body" id="settings-modal-body">
-                <p class="settings-empty-msg" id="settings-empty-msg">Espaço reservado para definições futuras.</p>
+                <div class="settings-row" id="settings-lang-row">
+                    <div class="settings-row-info">
+                        <span class="settings-row-label" id="settings-lang-lbl">Idioma</span>
+                        <small class="settings-row-desc" id="settings-lang-desc">Alterar entre Português e Inglês</small>
+                    </div>
+                    <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="settings-btn-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
+                </div>
+                <div class="settings-row" id="settings-sound-row">
+                    <div class="settings-row-info">
+                        <span class="settings-row-label" id="settings-sound-lbl">Som do Motor</span>
+                        <small class="settings-row-desc" id="settings-sound-desc">Síntese áudio Web Audio por tipo de motor</small>
+                    </div>
+                    <div class="settings-sound-controls">
+                        <input type="range" id="settings-sound-range" min="0" max="100" step="5" value="60" aria-label="Volume do som do motor">
+                        <span class="settings-sound-val" id="settings-sound-val">60%</span>
+                        <button type="button" class="btn-3d-ctrl" id="settings-btn-sound-toggle" aria-pressed="true">Ativo</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        window.__engineAudio = (function() {{
+            let ctx = null;
+            let nodes = null;
+            let muted = false;
+            let volume = 0.60;
+            let prevThr = 0;
+            let prevSpool = 0;
+            let lastCrackleAt = 0;
+
+            function getAudioCtor() {{
+                return window.AudioContext || window.webkitAudioContext || null;
+            }}
+
+            function createNoiseBuffer(ac) {{
+                const len = Math.floor(ac.sampleRate * 1.5);
+                const buf = ac.createBuffer(1, len, ac.sampleRate);
+                const ch = buf.getChannelData(0);
+                for (let i = 0; i < len; i++) ch[i] = Math.random() * 2.0 - 1.0;
+                return buf;
+            }}
+
+            function ensureInit() {{
+                const AC = getAudioCtor();
+                if (!AC) return null;
+                if (!ctx) {{
+                    try {{ ctx = new AC(); }} catch (_) {{ return null; }}
+                }}
+                if (!nodes && ctx) {{
+                    try {{
+                        const comp = ctx.createDynamicsCompressor();
+                        comp.threshold.value = -14;
+                        comp.knee.value = 18;
+                        comp.ratio.value = 6;
+                        comp.attack.value = 0.004;
+                        comp.release.value = 0.14;
+                        comp.connect(ctx.destination);
+
+                        const masterGain = ctx.createGain();
+                        masterGain.gain.value = 0.0001;
+                        masterGain.connect(comp);
+
+                        const exhLow = ctx.createBiquadFilter();
+                        exhLow.type = 'lowpass';
+                        exhLow.frequency.value = 420;
+                        exhLow.Q.value = 1.4;
+
+                        const exhPeak = ctx.createBiquadFilter();
+                        exhPeak.type = 'peaking';
+                        exhPeak.frequency.value = 150;
+                        exhPeak.Q.value = 1.1;
+                        exhPeak.gain.value = 4.5;
+
+                        const iceBusGain = ctx.createGain();
+                        iceBusGain.gain.value = 0.0001;
+                        exhLow.connect(exhPeak);
+                        exhPeak.connect(iceBusGain);
+                        iceBusGain.connect(masterGain);
+
+                        const oscMain = ctx.createOscillator();
+                        oscMain.type = 'sawtooth';
+                        const oscMainG = ctx.createGain();
+                        oscMainG.gain.value = 0.42;
+                        oscMain.connect(oscMainG);
+                        oscMainG.connect(exhLow);
+
+                        const oscSub = ctx.createOscillator();
+                        oscSub.type = 'triangle';
+                        const oscSubG = ctx.createGain();
+                        oscSubG.gain.value = 0.36;
+                        oscSub.connect(oscSubG);
+                        oscSubG.connect(exhLow);
+
+                        const oscHarm = ctx.createOscillator();
+                        oscHarm.type = 'sawtooth';
+                        const oscHarmG = ctx.createGain();
+                        oscHarmG.gain.value = 0.18;
+                        oscHarm.connect(oscHarmG);
+                        oscHarmG.connect(exhLow);
+
+                        const lfoOsc = ctx.createOscillator();
+                        lfoOsc.type = 'sine';
+                        lfoOsc.frequency.value = 11.0;
+                        const lfoDepth = ctx.createGain();
+                        lfoDepth.gain.value = 0.0;
+                        lfoOsc.connect(lfoDepth);
+                        lfoDepth.connect(oscMainG.gain);
+
+                        const noiseBuf = createNoiseBuffer(ctx);
+                        const noiseSrc = ctx.createBufferSource();
+                        noiseSrc.buffer = noiseBuf;
+                        noiseSrc.loop = true;
+
+                        const knockFilter = ctx.createBiquadFilter();
+                        knockFilter.type = 'bandpass';
+                        knockFilter.frequency.value = 1150;
+                        knockFilter.Q.value = 2.8;
+                        const knockGain = ctx.createGain();
+                        knockGain.gain.value = 0.0001;
+                        noiseSrc.connect(knockFilter);
+                        knockFilter.connect(knockGain);
+                        knockGain.connect(iceBusGain);
+
+                        const bovFilter = ctx.createBiquadFilter();
+                        bovFilter.type = 'bandpass';
+                        bovFilter.frequency.value = 1900;
+                        bovFilter.Q.value = 3.2;
+                        const bovGain = ctx.createGain();
+                        bovGain.gain.value = 0.0001;
+                        noiseSrc.connect(bovFilter);
+                        bovFilter.connect(bovGain);
+                        bovGain.connect(masterGain);
+
+                        const turboOsc = ctx.createOscillator();
+                        turboOsc.type = 'sine';
+                        turboOsc.frequency.value = 1800;
+                        const turboGain = ctx.createGain();
+                        turboGain.gain.value = 0.0001;
+                        turboOsc.connect(turboGain);
+                        turboGain.connect(masterGain);
+
+                        const scOsc = ctx.createOscillator();
+                        scOsc.type = 'triangle';
+                        scOsc.frequency.value = 720;
+                        const scGain = ctx.createGain();
+                        scGain.gain.value = 0.0001;
+                        scOsc.connect(scGain);
+                        scGain.connect(masterGain);
+
+                        const evFilter = ctx.createBiquadFilter();
+                        evFilter.type = 'bandpass';
+                        evFilter.frequency.value = 950;
+                        evFilter.Q.value = 1.2;
+                        const evGain = ctx.createGain();
+                        evGain.gain.value = 0.0001;
+                        evFilter.connect(evGain);
+                        evGain.connect(masterGain);
+
+                        const evOsc1 = ctx.createOscillator();
+                        evOsc1.type = 'sine';
+                        const evOsc1G = ctx.createGain();
+                        evOsc1G.gain.value = 0.55;
+                        evOsc1.connect(evOsc1G);
+                        evOsc1G.connect(evFilter);
+
+                        const evOsc2 = ctx.createOscillator();
+                        evOsc2.type = 'triangle';
+                        const evOsc2G = ctx.createGain();
+                        evOsc2G.gain.value = 0.25;
+                        evOsc2.connect(evOsc2G);
+                        evOsc2G.connect(evFilter);
+
+                        const now = ctx.currentTime;
+                        oscMain.start(now);
+                        oscSub.start(now);
+                        oscHarm.start(now);
+                        lfoOsc.start(now);
+                        noiseSrc.start(now);
+                        turboOsc.start(now);
+                        scOsc.start(now);
+                        evOsc1.start(now);
+                        evOsc2.start(now);
+
+                        nodes = {{
+                            masterGain, exhLow, exhPeak, iceBusGain,
+                            oscMain, oscMainG, oscSub, oscSubG, oscHarm, oscHarmG,
+                            lfoOsc, lfoDepth, knockFilter, knockGain,
+                            bovFilter, bovGain, turboOsc, turboGain, scOsc, scGain,
+                            evFilter, evGain, evOsc1, evOsc1G, evOsc2, evOsc2G
+                        }};
+                    }} catch (_) {{
+                        nodes = null;
+                    }}
+                }}
+                return ctx && nodes ? nodes : null;
+            }}
+
+            function ramp(param, value, tau) {{
+                if (!ctx || !param) return;
+                try {{ param.setTargetAtTime(value, ctx.currentTime, tau || 0.025); }} catch (_) {{}}
+            }}
+
+            function syncUI() {{
+                const lang = window.__appLang === 'en' ? 'en' : 'pt';
+                const lblTxt = muted ? (lang === 'en' ? 'Muted' : 'Som Off') : (lang === 'en' ? 'Sound On' : 'Som On');
+                const setBtn = (idBtn, idLbl) => {{
+                    const b = document.getElementById(idBtn);
+                    if (b) {{
+                        b.classList.toggle('sound-ativo', !muted);
+                        b.classList.toggle('sound-off', muted);
+                        b.setAttribute('aria-pressed', muted ? 'false' : 'true');
+                        b.title = lang === 'en' ? 'Mute or unmute engine audio' : 'Ativar ou silenciar o som do motor';
+                    }}
+                    const s = document.getElementById(idLbl);
+                    if (s) s.textContent = lblTxt;
+                }};
+                setBtn('btn-sound-toggle', 'btn-sound-label');
+                setBtn('ev-btn-sound-toggle', 'ev-btn-sound-label');
+
+                const sBtn = document.getElementById('settings-btn-sound-toggle');
+                if (sBtn) {{
+                    sBtn.classList.toggle('ativo', !muted);
+                    sBtn.setAttribute('aria-pressed', muted ? 'false' : 'true');
+                    sBtn.textContent = muted ? (lang === 'en' ? 'Muted' : 'Silenciado') : (lang === 'en' ? 'Active' : 'Ativo');
+                }}
+                const sRange = document.getElementById('settings-sound-range');
+                if (sRange) sRange.value = String(Math.round(volume * 100));
+                const sVal = document.getElementById('settings-sound-val');
+                if (sVal) sVal.textContent = `${{Math.round(volume * 100)}}%`;
+            }}
+
+            function compressPitch(rawHz, kneeHz, maxHz) {{
+                if (rawHz <= kneeHz) return rawHz;
+                return Math.min(maxHz, kneeHz + Math.pow(rawHz - kneeHz, 0.72) * 3.1);
+            }}
+
+            return {{
+                unlock() {{
+                    const n = ensureInit();
+                    if (ctx && ctx.state === 'suspended') {{
+                        try {{ ctx.resume(); }} catch (_) {{}}
+                    }}
+                    return !!n;
+                }},
+                silence() {{
+                    if (!nodes || !ctx) return;
+                    ramp(nodes.masterGain.gain, 0.0001, 0.035);
+                    ramp(nodes.iceBusGain.gain, 0.0001, 0.035);
+                    ramp(nodes.turboGain.gain, 0.0001, 0.035);
+                    ramp(nodes.scGain.gain, 0.0001, 0.035);
+                    ramp(nodes.evGain.gain, 0.0001, 0.035);
+                    ramp(nodes.bovGain.gain, 0.0001, 0.03);
+                    ramp(nodes.knockGain.gain, 0.0001, 0.03);
+                }},
+                toggleMute() {{
+                    muted = !muted;
+                    if (!muted) this.unlock();
+                    if (muted) this.silence();
+                    syncUI();
+                    return !muted;
+                }},
+                setMuted(m) {{
+                    muted = !!m;
+                    if (!muted) this.unlock();
+                    if (muted) this.silence();
+                    syncUI();
+                }},
+                setVolume(pct) {{
+                    const v = Math.max(0, Math.min(100, Number(pct) || 0)) / 100.0;
+                    volume = v;
+                    if (v > 0 && muted) muted = false;
+                    if (v === 0) this.silence();
+                    syncUI();
+                }},
+                getState() {{
+                    return {{ muted, volume: Math.round(volume * 100), supported: !!getAudioCtor() }};
+                }},
+                syncUI,
+                updateIce(params, sim, isHybrid) {{
+                    if (!nodes || !ctx || muted || volume <= 0.005 || !sim || (!sim.on && sim.currentRpm < 25)) {{
+                        if (nodes) this.silence();
+                        prevThr = 0;
+                        prevSpool = 0;
+                        return;
+                    }}
+                    if (ctx.state === 'suspended') return;
+                    const p = params || {{}};
+                    const rpm = Math.max(0, Number(sim.currentRpm) || 0);
+                    const maxR = Math.max(1500, Number(sim.maxRpm) || 7500);
+                    const thr = Math.max(0, Math.min(1, (Number(sim.throttlePct) || 0) / 100.0));
+                    const fmt = String(p.formato || 'I').toUpperCase();
+                    const cyl = Math.max(1, Number(p.cilindros) || 4);
+                    const isWankel = fmt === 'WANKEL';
+                    const is2T = !isWankel && String(p.ciclo || '4T').toUpperCase() === '2T';
+                    const isDiesel = p.combustivel === 'Diesel' || p.combustivel === 'Biodiesel';
+                    const adm = String(p.admissao || 'Atmosférico');
+                    const turboB = Math.max(0, Number(p.turbo_bar) || 0);
+                    const scB = Math.max(0, Number(p.sc_bar) || 0);
+                    const exh = String(p.exhaust_type || 'OEM Catalisador');
+                    const exhD = Math.max(35, Number(p.exhaust_diameter) || 63);
+
+                    const mGain = Math.min(0.45, volume * (0.28 + 0.16 * thr));
+                    ramp(nodes.masterGain.gain, mGain, 0.03);
+
+                    const cycleMult = (isWankel || is2T) ? 1.0 : 0.5;
+                    const rawFireHz = Math.max(16, (rpm * cyl * cycleMult) / 60.0);
+                    const f0 = compressPitch(rawFireHz, 480, 2400);
+
+                    let subRatio = 0.5;
+                    let subAmt = 0.34;
+                    let harmRatio = 2.0;
+                    let harmAmt = 0.18;
+                    let lfoAmt = 0.0;
+                    let lfoHz = 10.0;
+                    nodes.oscMain.type = is2T ? 'sawtooth' : (isWankel ? 'sawtooth' : 'sawtooth');
+                    nodes.oscSub.type = isDiesel ? 'sawtooth' : 'triangle';
+
+                    if (isWankel) {{
+                        subRatio = 0.996;
+                        subAmt = 0.36;
+                        harmRatio = 2.004;
+                        harmAmt = 0.24;
+                        const brapFade = Math.max(0, 1.0 - Math.max(0, rpm - 1100) / 2400);
+                        lfoHz = 8.5 + (rpm / 1000) * 3.2;
+                        lfoAmt = 0.22 * brapFade;
+                    }} else if (fmt === 'V' && cyl === 8) {{
+                        subRatio = 0.25;
+                        subAmt = 0.48;
+                        harmRatio = 1.5;
+                        harmAmt = 0.20;
+                        lfoAmt = rpm < 1800 ? 0.08 : 0.0;
+                    }} else if (fmt === 'V' && cyl >= 10) {{
+                        subRatio = 0.5;
+                        subAmt = 0.25;
+                        harmRatio = 2.0;
+                        harmAmt = 0.34;
+                    }} else if (fmt === 'B') {{
+                        subRatio = 0.506;
+                        subAmt = 0.44;
+                        harmRatio = 1.992;
+                        harmAmt = 0.22;
+                    }} else if (fmt === 'I' && (cyl === 3 || cyl === 5)) {{
+                        subRatio = 0.504;
+                        subAmt = 0.45;
+                        harmRatio = 1.5;
+                        harmAmt = 0.24;
+                    }} else if (fmt === 'VR' || fmt === 'W') {{
+                        subRatio = 0.495;
+                        subAmt = 0.38;
+                        harmRatio = 2.012;
+                        harmAmt = 0.26;
+                    }}
+
+                    if (is2T) {{
+                        nodes.oscMainG.gain.value = 0.48;
+                        harmRatio = 2.5;
+                        harmAmt = 0.30;
+                    }}
+
+                    ramp(nodes.oscMain.frequency, f0, 0.018);
+                    ramp(nodes.oscSub.frequency, Math.max(12, f0 * subRatio), 0.018);
+                    ramp(nodes.oscHarm.frequency, Math.min(5200, f0 * harmRatio), 0.018);
+                    ramp(nodes.oscSubG.gain, subAmt, 0.03);
+                    ramp(nodes.oscHarmG.gain, harmAmt * (0.45 + 0.55 * thr), 0.03);
+                    ramp(nodes.lfoOsc.frequency, lfoHz, 0.03);
+                    ramp(nodes.lfoDepth.gain, lfoAmt, 0.04);
+
+                    const exhBright = {{
+                        'OEM Catalisador': 0.55,
+                        'Sport Cat-Back': 0.85,
+                        'Titânio Valvetronic': 1.15,
+                        'Inconel 4-1': 1.25,
+                        'Straight Pipe': 1.45
+                    }}[exh] || 0.85;
+                    const uNorm = Math.min(1.0, rpm / Math.min(18000, maxR));
+                    const lpHz = Math.min(5600, (360 + uNorm * 2400 + thr * 950) * exhBright);
+                    ramp(nodes.exhLow.frequency, lpHz, 0.03);
+                    ramp(nodes.exhLow.Q, exh === 'Inconel 4-1' ? 3.2 : (exh === 'Straight Pipe' ? 2.4 : 1.4), 0.04);
+                    ramp(nodes.exhPeak.frequency, Math.max(70, 175 - (exhD - 63) * 0.7), 0.04);
+                    ramp(nodes.iceBusGain.gain, sim.on ? (0.44 + 0.52 * thr) : 0.14, 0.03);
+
+                    const dieselKnock = isDiesel ? (0.14 + 0.16 * thr + (1.0 - Math.min(1, uNorm * 2.2)) * 0.10) : 0.0001;
+                    ramp(nodes.knockFilter.frequency, 950 + uNorm * 700, 0.03);
+                    ramp(nodes.knockGain.gain, dieselKnock, 0.03);
+
+                    const hasTurbo = ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(adm);
+                    const hasSc = adm === 'Supercompressor' || adm === 'Twincharge';
+                    const spool = hasTurbo ? Math.min(1.0, (rpm / Math.max(2200, Math.min(14000, maxR * 0.45))) * (0.35 + 0.65 * thr) * Math.min(2.2, 0.55 + turboB * 0.35)) : 0.0;
+                    if (hasTurbo) {{
+                        const tHz = 1250 + spool * 3600 + (adm === 'Quad Turbo' ? 420 : (adm === 'Biturbo' ? 220 : 0));
+                        ramp(nodes.turboOsc.frequency, Math.min(6200, tHz), 0.04);
+                        ramp(nodes.turboGain.gain, Math.min(0.22, spool * (0.08 + Math.min(1.5, turboB * 0.05))), 0.04);
+                    }} else {{
+                        ramp(nodes.turboGain.gain, 0.0001, 0.03);
+                    }}
+
+                    if (hasSc) {{
+                        const scHz = compressPitch(380 + (rpm / 7500) * 1450 * (1.0 + Math.min(2.5, scB * 0.14)), 2400, 4800);
+                        ramp(nodes.scOsc.frequency, scHz, 0.02);
+                        ramp(nodes.scGain.gain, Math.min(0.24, (0.045 + 0.075 * thr) * (0.65 + Math.min(2.0, scB * 0.2))), 0.03);
+                    }} else {{
+                        ramp(nodes.scGain.gain, 0.0001, 0.03);
+                    }}
+
+                    const nowMs = Date.now();
+                    if (hasTurbo && prevThr > 0.38 && thr < 0.08 && prevSpool > 0.22 && (nowMs - lastCrackleAt) > 260) {{
+                        lastCrackleAt = nowMs;
+                        try {{
+                            const t0 = ctx.currentTime;
+                            nodes.bovFilter.frequency.setValueAtTime(2400 + Math.min(1200, turboB * 200), t0);
+                            nodes.bovFilter.frequency.exponentialRampToValueAtTime(750, t0 + 0.24);
+                            nodes.bovGain.gain.cancelScheduledValues(t0);
+                            nodes.bovGain.gain.setValueAtTime(0.0001, t0);
+                            nodes.bovGain.gain.linearRampToValueAtTime(0.30, t0 + 0.02);
+                            nodes.bovGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.26);
+                        }} catch (_) {{}}
+                    }} else if (exh === 'Straight Pipe' && thr < 0.05 && rpm > maxR * 0.35 && prevThr > 0.45 && (nowMs - lastCrackleAt) > 190) {{
+                        lastCrackleAt = nowMs;
+                        try {{
+                            const t0 = ctx.currentTime;
+                            nodes.bovFilter.frequency.setValueAtTime(520, t0);
+                            nodes.bovGain.gain.cancelScheduledValues(t0);
+                            nodes.bovGain.gain.setValueAtTime(0.0001, t0);
+                            nodes.bovGain.gain.linearRampToValueAtTime(0.26, t0 + 0.01);
+                            nodes.bovGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
+                        }} catch (_) {{}}
+                    }}
+                    prevThr = thr;
+                    prevSpool = spool;
+
+                    if (isHybrid && sim.on) {{
+                        const hKw = Math.max(10, Number(p.emotor_kw) || 120);
+                        const evHz = compressPitch(320 + (rpm / Math.min(18000, maxR)) * 1650, 2200, 3800);
+                        const regenBoost = (thr <= 0.02 && rpm > 1400) ? 1.35 : 0.75;
+                        ramp(nodes.evOsc1.frequency, evHz, 0.025);
+                        ramp(nodes.evOsc2.frequency, evHz * 1.5, 0.025);
+                        ramp(nodes.evFilter.frequency, 1400, 0.04);
+                        ramp(nodes.evGain.gain, Math.min(0.16, (0.04 + 0.06 * thr) * Math.min(1.5, hKw / 160) * regenBoost), 0.04);
+                    }} else {{
+                        ramp(nodes.evGain.gain, 0.0001, 0.035);
+                    }}
+                }},
+                updateEv(params, sim) {{
+                    if (!nodes || !ctx || muted || volume <= 0.005 || !sim || (!sim.on && sim.currentRpm < 20)) {{
+                        if (nodes) this.silence();
+                        return;
+                    }}
+                    if (ctx.state === 'suspended') return;
+                    const p = params || {{}};
+                    const rpm = Math.max(0, Number(sim.currentRpm) || 0);
+                    const maxR = Math.max(3000, Number(sim.maxRpm) || 16000);
+                    const thr = Math.max(0, Math.min(1, (Number(sim.throttlePct) || 0) / 100.0));
+                    const mType = String(p.motor_type || 'PMSM');
+                    const poles = Math.max(4, Number(p.poles) || 8);
+                    const inv = String(p.inverter || 'SiC Dual');
+                    const gb = String(p.gearbox_type || 'Redutor 1V Direto');
+
+                    ramp(nodes.iceBusGain.gain, 0.0001, 0.025);
+                    ramp(nodes.turboGain.gain, 0.0001, 0.025);
+                    ramp(nodes.scGain.gain, 0.0001, 0.025);
+                    ramp(nodes.knockGain.gain, 0.0001, 0.025);
+
+                    const u = Math.min(1.0, rpm / maxR);
+                    const gearShiftDrop = (gb === 'Caixa EV 2V' && u > 0.48) ? 0.68 : 1.0;
+                    const fRaw = 95 + (rpm / 16000) * (1100 + poles * 42) * gearShiftDrop;
+                    const fEv = compressPitch(fRaw, 1800, 4400);
+
+                    let ratio2 = 2.0;
+                    let gain2 = 0.25;
+                    let filtHz = 1600 + u * 2400;
+                    nodes.evOsc1.type = 'sine';
+                    nodes.evOsc2.type = 'triangle';
+
+                    if (mType === 'Axial Flux') {{
+                        ratio2 = 1.498;
+                        gain2 = 0.34;
+                        filtHz = 2200 + u * 2800;
+                    }} else if (mType === 'Induction AC') {{
+                        nodes.evOsc1.type = 'triangle';
+                        ratio2 = 0.968;
+                        gain2 = 0.38;
+                        filtHz = 1100 + u * 1800;
+                    }} else if (mType === 'SynRM') {{
+                        nodes.evOsc2.type = 'sawtooth';
+                        ratio2 = 2.5;
+                        gain2 = 0.30;
+                        filtHz = 1400 + u * 2100;
+                    }}
+
+                    if (inv === 'IGBT Silício') gain2 += 0.08;
+                    const regGain = sim.isRegening ? 1.25 : (0.30 + 0.70 * thr);
+                    const mGain = Math.min(0.42, volume * 0.32);
+
+                    ramp(nodes.masterGain.gain, mGain, 0.03);
+                    ramp(nodes.evOsc1.frequency, sim.isRegening ? fEv * 1.12 : fEv, 0.02);
+                    ramp(nodes.evOsc2.frequency, Math.min(5800, fEv * ratio2), 0.02);
+                    ramp(nodes.evOsc2G.gain, gain2, 0.03);
+                    ramp(nodes.evFilter.frequency, Math.min(6000, filtHz), 0.03);
+                    ramp(nodes.evFilter.Q, mType === 'SynRM' ? 3.2 : 1.4, 0.03);
+                    ramp(nodes.evGain.gain, rpm < 25 ? 0.025 : Math.min(0.48, (0.08 + 0.34 * Math.min(1, u * 1.3)) * regGain), 0.03);
+                }}
+            }};
+        }})();
+
         const btnBackLauncher = document.getElementById('btn-back-launcher');
         let hybridEnabled = true;
         const selectFormato = document.getElementById('select-formato');
@@ -4363,7 +4953,7 @@ def gerar_dashboard_html(
         const throttlePctValue = document.getElementById('throttle-pct-value');
         const btnSlowMo = document.getElementById('btn-slow-mo');
         const btnSlowMoLabel = document.getElementById('btn-slow-mo-label');
-        const btnLangToggle = document.getElementById('btn-lang-toggle');
+        const btnSoundToggle = document.getElementById('btn-sound-toggle');
         const btnCutaway = document.getElementById('btn-3d-cutaway');
         const btnAutoRotate3D = document.getElementById('btn-3d-autorotate');
         const btnReset3D = document.getElementById('btn-3d-reset');
@@ -4417,6 +5007,9 @@ def gerar_dashboard_html(
                 throttleAria: 'Posição do acelerador em percentagem',
                 slowMo: 'Slow Mo',
                 slowMoTitle: 'Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado',
+                soundOn: 'Som On',
+                soundOff: 'Som Off',
+                soundTitle: 'Ativar ou silenciar o som do motor',
                 unitBtnTitle: 'Alternar unidades entre kW / Nm e hp / lb-ft',
                 telRpm: 'ROTAÇÃO ATUAL',
                 telCyl: 'CILINDROS',
@@ -4820,6 +5413,9 @@ def gerar_dashboard_html(
                 throttleAria: 'Throttle position percentage',
                 slowMo: 'Slow Mo',
                 slowMoTitle: 'Toggle slow motion: 1x -> 2x -> 5x -> 10x -> Off',
+                soundOn: 'Sound On',
+                soundOff: 'Muted',
+                soundTitle: 'Mute or unmute engine audio',
                 unitBtnTitle: 'Switch units between kW / Nm and hp / lb-ft',
                 telRpm: 'CURRENT RPM',
                 telCyl: 'CYLINDERS',
@@ -5575,12 +6171,6 @@ def gerar_dashboard_html(
             setTxt('lbl-battery-kwh', t.lblBatteryKwh);
             setTxt('dyno-legend-ice', t.dynoLegendIce);
 
-            if (btnLangToggle) {{
-                btnLangToggle.textContent = t.langBtn;
-                btnLangToggle.title = t.langBtnTitle;
-                btnLangToggle.classList.toggle('ativo', currentLang === 'en');
-                btnLangToggle.setAttribute('aria-pressed', currentLang === 'en' ? 'true' : 'false');
-            }}
             if (btnCutaway) {{
                 const isCut = motor3D ? motor3D.cutaway : true;
                 btnCutaway.textContent = isCut ? t.cutawayOn : t.cutawayOff;
@@ -5596,6 +6186,9 @@ def gerar_dashboard_html(
             }}
             if (btnSlowMoLabel) {{
                 btnSlowMoLabel.textContent = engineSim.slowMo > 1 ? `${{t.slowMo}} ${{engineSim.slowMo}}x` : t.slowMo;
+            }}
+            if (window.__engineAudio && typeof window.__engineAudio.syncUI === 'function') {{
+                window.__engineAudio.syncUI();
             }}
             const mapOpts = (sel, dict) => {{
                 if (!sel || !dict) return;
@@ -5677,15 +6270,9 @@ def gerar_dashboard_html(
             atualizarWidget3();
         }}
 
-        if (btnLangToggle) {{
-            btnLangToggle.addEventListener('click', () => {{
-                const nextLang = currentLang === 'pt' ? 'en' : 'pt';
-                if (typeof window.__setAppLang === 'function') {{
-                    window.__setAppLang(nextLang);
-                }} else {{
-                    currentLang = nextLang;
-                    applyLanguage();
-                }}
+        if (btnSoundToggle) {{
+            btnSoundToggle.addEventListener('click', () => {{
+                if (window.__engineAudio) window.__engineAudio.toggleMute();
             }});
         }}
 
@@ -5840,23 +6427,28 @@ def gerar_dashboard_html(
             const turboCfg = (hasMultiTurbo && params.turbo_config === 'Sequencial') ? 'Sequencial' : 'Paralelo';
             const tcfgTq = (hasMultiTurbo && turboCfg === 'Sequencial') ? 1.025 : 1.00;
             const tcfgHp = (hasMultiTurbo && turboCfg === 'Sequencial') ? 0.985 : 1.00;
+            const boostDensity = b => b / (1.0 + 0.042 * b);
             let admMb = 1.0, admMp = 1.0;
             if (admKey === 'Turbo') {{
-                admMb = 1.0 + turboBar * 0.40;
-                admMp = 1.0 + turboBar * 0.367;
+                const bd = boostDensity(turboBar);
+                admMb = 1.0 + bd * 0.415;
+                admMp = 1.0 + bd * 0.390;
             }} else if (admKey === 'Supercompressor') {{
-                admMb = 1.0 + scBar * 0.5625;
-                admMp = 1.0 + scBar * 0.4375;
+                const bd = boostDensity(scBar);
+                admMb = 1.0 + bd * 0.560;
+                admMp = 1.0 + bd * 0.450;
             }} else if (admKey === 'Biturbo') {{
-                admMb = 1.0 + turboBar * 0.425;
-                admMp = 1.0 + turboBar * 0.40;
+                const bd = boostDensity(turboBar);
+                admMb = 1.0 + bd * 0.435;
+                admMp = 1.0 + bd * 0.420;
             }} else if (admKey === 'Quad Turbo') {{
-                admMb = 1.0 + turboBar * 0.44;
-                admMp = 1.0 + turboBar * 0.43;
+                const bd = boostDensity(turboBar);
+                admMb = 1.0 + bd * 0.450;
+                admMp = 1.0 + bd * 0.445;
             }} else if (admKey === 'Twincharge') {{
-                const effB = turboBar + scBar * 0.70;
-                admMb = 1.0 + effB * 0.46;
-                admMp = 1.0 + effB * 0.435;
+                const effB = boostDensity(turboBar) + 0.70 * boostDensity(scBar);
+                admMb = 1.0 + effB * 0.470;
+                admMp = 1.0 + effB * 0.455;
             }}
 
             const perfilComb = fatoresComb[params.combustivel] || fatoresComb['Gasolina 95'];
@@ -6025,12 +6617,28 @@ def gerar_dashboard_html(
             const pHm   = hybModeMap[params.hybrid_mode] || 0.95;
             const mguHBoost = (useHybrid && pHyb.noLag && ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(admKey)) ? 1.03 : 1.00;
 
-            const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (effCr - 10.0) * 0.025));
+            const matTolDyno = {{
+                'Alumínio': 0.5, 'Ferro Fundido': -0.5, 'Alumínio Billet': 3.0,
+                'Forged': 2.5, 'Forged Heavy': 1.5, 'Billet': 3.8,
+                'Magnésio': 1.5, 'Titanium': 4.5, 'Titanium Billet': 6.0, 'Titanium Forged': 5.5
+            }};
+            const valTolDyno = {{ 'Molas': 0.0, 'VVT': 0.5, 'Desmodrómico': 2.0, 'Pneumático': 4.0, 'Freevalve': 4.5, 'Reed Valve': 3.5 }};
+            const pisTolDyno = {{ 'Alumínio': 0.0, 'Forged': 2.5, 'Forged Heavy': 1.5, 'Titânio': 5.0 }};
+            const fwTolDyno = {{ 'Monomassa Aço': 0.0, 'Dupla Massa': -0.8, 'Aligeirado Cromoly': 1.0, 'Alumínio Billet': 1.5, 'Carbono Multi-Disco': 2.5 }};
+            const dmpTolDyno = {{ 'Elastómero OEM': 0.0, 'Fluido Viscoso': 2.0, 'ATI Super Damper': 3.5, 'Polia Sólida': -2.5 }};
+            const mTolVal = matTolDyno[params.material] !== undefined ? matTolDyno[params.material] : 0.5;
+            const vTolVal = isWankel ? 6.0 : (isFreevalve ? 4.5 : (valTolDyno[effValveType] || 0.0));
+            const pTolVal = pisTolDyno[params.piston_material] || 0.0;
+            const fwTolVal = fwTolDyno[params.flywheel] !== undefined ? fwTolDyno[params.flywheel] : 0.0;
+            const dTolVal = dmpTolDyno[params.damper] !== undefined ? dmpTolDyno[params.damper] : 0.0;
+            const limiteVmDyno = Math.min(30.0, 25.0 + mTolVal + vTolVal + pTolVal + fwTolVal + dTolVal + dmpStats.wTol);
+
+            const etaCr = 1.0 - Math.pow(effCr, -0.28);
+            const etaRef = 1.0 - Math.pow(10.5, -0.28);
+            const fatorCr = Math.pow(Math.max(0.25, etaCr / etaRef), 0.88);
             const fatorCicloTq = isWankel ? 1.42 : (effCiclo === '2T' ? 1.25 : 1.00);
-            const icePeakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq * pRad.tq * mguHBoost);
-            const fatorRpmHp = isWankel ? 0.93 : (effCiclo === '4T' ? 0.88 : 0.94);
-            const icePeakPowerCv = ((icePeakTorqueNm * params.max_rpm * fatorRpmHp) / 7121.0) * (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * (pRad.hp / pRad.tq) * mguHBoost * 1.01387;
-            const icePeakPowerKw = Math.round(icePeakPowerCv * 0.73549875);
+            const iceBaseTorqueNm = litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq * pRad.tq * mguHBoost;
+            const hiFlowRatio = (admMp / admMb) * (tcfgHp / tcfgTq) * (perfilComb.hp / perfilComb.tq) * (pCam.hp / pCam.tq) * (pVal.hp / pVal.tq) * (valHp / valTq) * pMatHp * (pPis.hp / pPis.tq) * (pFw.hp / pFw.tq) * (pDmp.hp / pDmp.tq) * (dmpStats.wHp / dmpStats.wTq) * (pInt.hp / pInt.tq) * (pIMat.hp / pIMat.tq) * (pGb.hp / pGb.tq) * gbSpdHp * (pCl.hp / pCl.tq) * (pExh.hp / pExh.tq) * (pJunc.hp / pJunc.tq) * (pEDiam.hp / pEDiam.tq) * (pRad.hp / pRad.tq);
 
             const emKwClamped = Math.max(5.0, Math.min(600.0, Number(params.emotor_kw) || 165.0));
             const batKwhClamped = Math.max(0.5, Math.min(60.0, Number(params.battery_kwh) || 18.5));
@@ -6042,18 +6650,30 @@ def gerar_dashboard_html(
                 effEvKw = rawEvKw * batScale;
             }}
 
-            const maxRpm = Math.max(1500, params.max_rpm);
-            const startRpm = Math.min(1000, Math.round(maxRpm * 0.15));
+            const maxRpm = Math.max(1000, Math.min(100000, Math.round(Number(params.max_rpm) || 7500)));
+            const maxRpmDyno = Math.max(1500, maxRpm);
+            const startRpm = Math.min(1000, Math.round(maxRpmDyno * 0.15));
             const steps = 48;
             const strokeRatio = Math.max(0.75, Math.min(1.25, effStroke / Math.max(1, effBore)));
             const lowEndBias = (strokeRatio - 1.0) * 0.14 + (isDiesel ? 0.12 : 0.0) + (!isWankel && !is2T && params.camshaft === 'OHV' ? 0.04 : 0.0) + (!isWankel && !is2T && effValveType === 'VVT' ? 0.05 : 0.0) + (isFreevalve ? 0.06 : 0.0) + (!isWankel && !is2T && nVal === 2 ? 0.04 : 0.0) + pInt.lowEnd;
             const topFallScale = Math.max(0.60, 1.0 - pInt.topEnd * 2.5);
+            let rpmChoke = 12000.0;
+            if (isWankel) rpmChoke = 14500.0;
+            else if (is2T) rpmChoke = 15500.0;
+            else if (isDiesel) rpmChoke = 5600.0;
+            else if (isFreevalve) rpmChoke = 26000.0;
+            else if (effValveType === 'Pneumático') rpmChoke = 23000.0;
+            else if (effValveType === 'Desmodrómico') rpmChoke = 16500.0;
+            else if (params.camshaft === 'OHV') rpmChoke = 7400.0;
+            else if (params.camshaft === 'SOHC') rpmChoke = 9200.0;
+            else if (effValveType === 'VVT') rpmChoke = 12500.0;
+            const vpChoke = limiteVmDyno * 1.15;
 
             const raw = [];
             let maxRawT = 1e-6;
             for (let i = 0; i <= steps; i++) {{
-                const rpm = startRpm + (maxRpm - startRpm) * (i / steps);
-                const u = rpm / maxRpm;
+                const rpm = startRpm + (maxRpmDyno - startRpm) * (i / steps);
+                const u = rpm / maxRpmDyno;
                 let tShape = 1.0;
 
                 if (admKey === 'Atmosférico') {{
@@ -6061,11 +6681,11 @@ def gerar_dashboard_html(
                     const drop = Math.max(0, u - (isDiesel ? 0.58 : (isWankel ? 0.78 : 0.72))) * (isDiesel ? 0.76 : (isWankel ? 0.42 : 0.56)) * topFallScale;
                     tShape = (0.70 + lowEndBias) + 0.30 * rise - drop;
                 }} else if (admKey === 'Turbo') {{
-                    const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.34 : 0.44), (isDiesel ? 2000 : 2700) + turboBar * 240);
+                    const spoolRpm = Math.min(maxRpmDyno * (isDiesel ? 0.34 : 0.44), (isDiesel ? 2000 : 2700) + turboBar * 240);
                     const spool = pHyb.noLag ? 0.88 : smoothstep(spoolRpm * 0.42, spoolRpm * 1.05, rpm);
                     tShape = ((isDiesel ? 0.56 : 0.46) + (isDiesel ? 0.44 : 0.54) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.62 : 0.78)) * (isDiesel ? 0.78 : 0.54) * topFallScale);
                 }} else if (admKey === 'Biturbo') {{
-                    const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.30 : 0.40), (isDiesel ? 1850 : 2500) + turboBar * 180);
+                    const spoolRpm = Math.min(maxRpmDyno * (isDiesel ? 0.30 : 0.40), (isDiesel ? 1850 : 2500) + turboBar * 180);
                     if (turboCfg === 'Sequencial' || pHyb.noLag) {{
                         const s1 = pHyb.noLag ? 0.90 : smoothstep(spoolRpm * 0.18, spoolRpm * 0.62, rpm);
                         const s2 = smoothstep(spoolRpm * 0.68, spoolRpm * 1.00, rpm);
@@ -6075,7 +6695,7 @@ def gerar_dashboard_html(
                         tShape = ((isDiesel ? 0.60 : 0.50) + (isDiesel ? 0.40 : 0.50) * spool) * (1.0 - Math.max(0, u - (isDiesel ? 0.68 : 0.82)) * (isDiesel ? 0.62 : 0.42) * topFallScale);
                     }}
                 }} else if (admKey === 'Quad Turbo') {{
-                    const spoolRpm = Math.min(maxRpm * (isDiesel ? 0.28 : 0.38), (isDiesel ? 1750 : 2400) + turboBar * 160);
+                    const spoolRpm = Math.min(maxRpmDyno * (isDiesel ? 0.28 : 0.38), (isDiesel ? 1750 : 2400) + turboBar * 160);
                     if (turboCfg === 'Sequencial' || pHyb.noLag) {{
                         const s1 = pHyb.noLag ? 0.92 : smoothstep(spoolRpm * 0.16, spoolRpm * 0.56, rpm);
                         const s2 = smoothstep(spoolRpm * 0.64, spoolRpm * 0.96, rpm);
@@ -6094,32 +6714,43 @@ def gerar_dashboard_html(
 
                 tShape = Math.max(0.25, tShape);
                 if (tShape > maxRawT) maxRawT = tShape;
-                raw.push({{ rpm, tShape }});
+                raw.push({{ rpm, u, tShape }});
             }}
 
-            let maxRawP = 1e-6;
+            let bestIceTq = 0.0;
+            let bestIceKw = 0.0;
             const ptsIce = raw.map(item => {{
-                const torqueNm = (item.tShape / maxRawT) * icePeakTorqueNm;
-                const pRaw = torqueNm * item.rpm;
-                if (pRaw > maxRawP) maxRawP = pRaw;
-                return {{ rpm: item.rpm, torqueNm, pRaw }};
+                const vpI = isWankel
+                    ? (2.0 * (effStroke / 1000.0) * (item.rpm / 3.0) * 1.55) / 60.0
+                    : (2.0 * (effStroke / 1000.0) * item.rpm) / 60.0;
+                const exVp = Math.max(0.0, (vpI - vpChoke) / Math.max(8.0, vpChoke));
+                const exRpm = Math.max(0.0, (item.rpm - rpmChoke) / Math.max(2000.0, rpmChoke * 0.75));
+                const mechEff = 1.0 / (1.0 + 0.58 * Math.pow(exVp, 1.65) + 0.42 * Math.pow(exRpm, 1.70));
+                const veMod = Math.max(0.25, 1.0 + (hiFlowRatio - 1.0) * smoothstep(0.22, 0.90, item.u));
+                const iceTq = Math.max(1.0, iceBaseTorqueNm * (item.tShape / maxRawT) * veMod * mechEff);
+                const iceKw = (iceTq * item.rpm) / 9549.2966;
+                if (iceTq > bestIceTq) bestIceTq = iceTq;
+                if (iceKw > bestIceKw) bestIceKw = iceKw;
+                return {{ rpm: item.rpm, iceTq, iceKw }};
             }});
+            const icePeakTorqueNm = Math.round(bestIceTq);
+            const icePeakPowerKw = Math.round(bestIceKw);
 
-            const evBaseRpm = Math.max(1200.0, maxRpm * pHyb.baseRpmFrac);
+            const evBaseRpm = Math.max(650.0, Math.min(5200.0, maxRpmDyno * pHyb.baseRpmFrac));
             const evTqBase = useHybrid ? ((effEvKw * 9549.2966) / evBaseRpm * pEm.tq * pHyb.tqMult) : 0.0;
-            let bestP = {{ val: 0, rpm: maxRpm }};
+            let bestP = {{ val: 0, rpm: maxRpmDyno }};
             let bestT = {{ val: 0, rpm: startRpm }};
             const points = ptsIce.map(p => {{
-                const iceKw = (p.pRaw / maxRawP) * icePeakPowerKw;
-                const iceTq = p.torqueNm;
+                const iceKw = p.iceKw;
+                const iceTq = p.iceTq;
                 let evKw = 0.0, evTq = 0.0;
                 if (useHybrid) {{
                     if (p.rpm <= evBaseRpm) {{
                         evTq = evTqBase * (0.94 + 0.06 * smoothstep(0.0, evBaseRpm, p.rpm));
                         evKw = (evTq * p.rpm) / 9549.2966;
                     }} else {{
-                        const hiFrac = Math.max(0.0, (p.rpm - evBaseRpm) / Math.max(1.0, maxRpm - evBaseRpm));
-                        evKw = effEvKw * (1.0 - 0.08 * Math.pow(hiFrac, 1.5));
+                        const hiFrac = Math.max(0.0, (p.rpm - evBaseRpm) / Math.max(1.0, maxRpmDyno - evBaseRpm));
+                        evKw = effEvKw * (1.0 - 0.14 * Math.pow(hiFrac, 1.4));
                         evTq = (evKw * 9549.2966) / Math.max(1.0, p.rpm);
                     }}
                 }}
@@ -6266,9 +6897,9 @@ def gerar_dashboard_html(
             }}
 
             // Eixo X simplificado (×1000 RPM: 1K -> 1, 2K -> 2...)
-            let stepRpm = maxRpm > 16000 ? 4000 : (maxRpm > 9000 ? 2000 : 1000);
-            if (compact && pw < 215) {{
-                stepRpm = maxRpm > 14000 ? 4000 : (maxRpm > 6500 ? 2000 : 1000);
+            let stepRpm = maxRpm > 60000 ? 20000 : (maxRpm > 32000 ? 10000 : (maxRpm > 16000 ? 4000 : (maxRpm > 9000 ? 2000 : 1000)));
+            if (compact && pw < 215 && stepRpm < 20000) {{
+                stepRpm = stepRpm * 2;
             }}
             const firstTick = Math.max(stepRpm, Math.ceil(minRpm / stepRpm) * stepRpm);
             ctx.fillStyle = '#9ca3af';
@@ -10179,7 +10810,7 @@ def gerar_dashboard_html(
                             const rotJ = Math.max(0.055, engineSim.rotInertia || (0.15 * inertiaMult));
                             const rawDrive = (inst.torqueNm * 2.15 + inst.powerKw * 3.35) / rotJ;
                             const thrGain = 0.18 + 0.82 * thr;
-                            const climbRate = Math.max(65, Math.min(22000, rawDrive)) * thrGain;
+                            const climbRate = Math.max(65, Math.min(Math.max(22000, maxR * 0.65), rawDrive)) * thrGain;
                             const gap = targetRpm - engineSim.currentRpm;
                             const rawStep = Math.min(gap, climbRate * dt);
                             const step = thr >= 0.98 ? rawStep : Math.min(rawStep, gap * Math.min(1, dt * 11.0));
@@ -10261,6 +10892,9 @@ def gerar_dashboard_html(
                 }}
                 if (engineSim.currentRpm > 5 || engineSim.on) {{
                     drawDynoChart();
+                }}
+                if (window.__engineAudio && typeof window.__engineAudio.updateIce === 'function') {{
+                    window.__engineAudio.updateIce(engineSim.lastParams || readEnginePayload(), engineSim, hybridEnabled);
                 }}
 
                 if (this.autoRotate && this.pointers.size === 0) {{
@@ -10989,6 +11623,8 @@ def gerar_dashboard_html(
 
         btnEnginePower.addEventListener('click', () => {{
             engineSim.on = !engineSim.on;
+            if (engineSim.on && window.__engineAudio) window.__engineAudio.unlock();
+            if (!engineSim.on && window.__engineAudio) window.__engineAudio.silence();
             if (engineSim.on && engineSim.currentRpm < engineSim.idleRpm) {{
                 engineSim.currentRpm = Math.max(engineSim.currentRpm, engineSim.idleRpm * 0.7);
             }}
@@ -11007,6 +11643,7 @@ def gerar_dashboard_html(
                     setThrottlePercent(0);
                     return;
                 }}
+                if (window.__engineAudio) window.__engineAudio.unlock();
                 engineSim.spaceHeld = false;
                 setThrottlePercent(rangeThrottle.value);
             }};
@@ -11026,6 +11663,7 @@ def gerar_dashboard_html(
             const active = document.activeElement;
             if (active && active !== document.body && active !== rangeThrottle && active !== motorCanvas && active.id !== 'motor-bg-stage') return;
             if (e.cancelable) e.preventDefault();
+            if (window.__engineAudio) window.__engineAudio.unlock();
             if (!engineSim.spaceHeld) {{
                 engineSim.preSpaceThrottlePct = engineSim.throttlePct || 0;
                 engineSim.spaceHeld = true;
@@ -11055,7 +11693,7 @@ def gerar_dashboard_html(
                 bore: Number.isFinite(rawBore) && rawBore > 0 ? Math.max(10.0, Math.min(1000.0, rawBore)) : 86.0,
                 stroke: Number.isFinite(rawStroke) && rawStroke > 0 ? Math.max(10.0, Math.min(1000.0, rawStroke)) : 86.0,
                 compression_ratio: Number.isFinite(rawCr) && rawCr > 0 ? Math.max(2.0, Math.min(200.0, rawCr)) : 10.5,
-                max_rpm: Number.isFinite(rawRpm) && rawRpm > 0 ? Math.max(500, rawRpm) : 7500,
+                max_rpm: Number.isFinite(rawRpm) && rawRpm > 0 ? Math.max(1000, Math.min(100000, rawRpm)) : 7500,
                 combustivel: selectCombustivel.value || 'Gasolina 95',
                 ciclo: cicloVal,
                 cilindros: parseInt(selectCilindros.value, 10) || 4,
@@ -11102,6 +11740,7 @@ def gerar_dashboard_html(
 
         function atualizarMotor3D() {{
             const p = readEnginePayload();
+            engineSim.lastParams = p;
             const t = I18N[currentLang];
             const admLabel = (t.admOpts && t.admOpts[p.admissao]) ? t.admOpts[p.admissao] : p.admissao;
             const hasMultiTurbo = p.admissao === 'Biturbo' || p.admissao === 'Quad Turbo';
@@ -11676,8 +12315,9 @@ def gerar_dashboard_html(
         bindNumericBounds(inputCr, 4.0, 200.0, 10.5, 1, false);
         bindNumericBounds(inputTurboBoost, 0.1, 100.0, 1.5, 1, true);
         bindNumericBounds(inputScBoost, 0.1, 100.0, 0.8, 1, true);
+        bindNumericBounds(inputRpm, 1000, 100000, 7500, 0, false);
 
-        [inputRpm, selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial, selectRadiatorType].forEach(el => {{
+        [selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial, selectRadiatorType].forEach(el => {{
             if (!el) return;
             el.addEventListener('input', () => {{
                 atualizarMotor3D();
@@ -11728,6 +12368,7 @@ def gerar_dashboard_html(
                 drawDynoChart();
             }},
             deactivate() {{
+                if (window.__engineAudio) window.__engineAudio.silence();
                 if (engineSim.on) {{
                     engineSim.on = false;
                     syncEnginePowerUI();
@@ -11798,7 +12439,10 @@ def gerar_dashboard_html(
                 settingsTitle: 'Abrir definições',
                 settingsHeading: 'DEFINIÇÕES',
                 settingsClose: 'Fechar',
-                settingsEmpty: 'Espaço reservado para definições futuras.'
+                settingsLangLbl: 'Idioma',
+                settingsLangDesc: 'Alterar entre Português e Inglês',
+                settingsSoundLbl: 'Som do Motor',
+                settingsSoundDesc: 'Síntese áudio Web Audio por tipo de motor'
             }},
             en: {{
                 langBtn: 'EN → PT',
@@ -11839,7 +12483,10 @@ def gerar_dashboard_html(
                 settingsTitle: 'Open settings',
                 settingsHeading: 'SETTINGS',
                 settingsClose: 'Close',
-                settingsEmpty: 'Reserved space for upcoming settings.'
+                settingsLangLbl: 'Language',
+                settingsLangDesc: 'Switch between Portuguese and English',
+                settingsSoundLbl: 'Engine Sound',
+                settingsSoundDesc: 'Web Audio synthesis tailored per powertrain'
             }}
         }};
 
@@ -11852,12 +12499,14 @@ def gerar_dashboard_html(
         const btnIce = document.getElementById('btn-launch-ice');
         const btnHybrid = document.getElementById('btn-launch-hybrid');
         const btnElectric = document.getElementById('btn-launch-electric');
-        const btnLauncherLang = document.getElementById('launcher-lang-toggle');
         const settingsBackdrop = document.getElementById('settings-backdrop');
         const btnLauncherSettings = document.getElementById('btn-launcher-settings');
         const btnIceSettings = document.getElementById('btn-ice-settings');
         const btnEvSettings = document.getElementById('ev-btn-settings');
         const btnSettingsClose = document.getElementById('btn-settings-close');
+        const btnSettingsLang = document.getElementById('settings-btn-lang-toggle');
+        const btnSettingsSound = document.getElementById('settings-btn-sound-toggle');
+        const rangeSettingsSound = document.getElementById('settings-sound-range');
         const settingsTriggers = [btnLauncherSettings, btnIceSettings, btnEvSettings];
 
         function setSettingsOpen(isOpen) {{
@@ -11908,7 +12557,10 @@ def gerar_dashboard_html(
             setTxt('ice-settings-lbl', t.settingsLbl);
             setTxt('ev-settings-lbl', t.settingsLbl);
             setTxt('settings-modal-title', t.settingsHeading);
-            setTxt('settings-empty-msg', t.settingsEmpty);
+            setTxt('settings-lang-lbl', t.settingsLangLbl);
+            setTxt('settings-lang-desc', t.settingsLangDesc);
+            setTxt('settings-sound-lbl', t.settingsSoundLbl);
+            setTxt('settings-sound-desc', t.settingsSoundDesc);
             settingsTriggers.forEach(btn => {{
                 if (btn) btn.title = t.settingsTitle;
             }});
@@ -11916,11 +12568,14 @@ def gerar_dashboard_html(
                 btnSettingsClose.title = t.settingsClose;
                 btnSettingsClose.setAttribute('aria-label', t.settingsClose);
             }}
-            if (btnLauncherLang) {{
-                btnLauncherLang.textContent = t.langBtn;
-                btnLauncherLang.title = t.langTitle;
-                btnLauncherLang.classList.toggle('ativo', lang === 'en');
-                btnLauncherLang.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+            if (btnSettingsLang) {{
+                btnSettingsLang.textContent = t.langBtn;
+                btnSettingsLang.title = t.langTitle;
+                btnSettingsLang.classList.toggle('ativo', lang === 'en');
+                btnSettingsLang.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+            }}
+            if (window.__engineAudio && typeof window.__engineAudio.syncUI === 'function') {{
+                window.__engineAudio.syncUI();
             }}
         }}
 
@@ -11931,10 +12586,12 @@ def gerar_dashboard_html(
             applyLauncherLang(next);
             if (window.__iceModule && typeof window.__iceModule.setLang === 'function') window.__iceModule.setLang(next);
             if (window.__evModule && typeof window.__evModule.setLang === 'function') window.__evModule.setLang(next);
+            if (window.__engineAudio && typeof window.__engineAudio.syncUI === 'function') window.__engineAudio.syncUI();
         }};
 
         window.__showLauncher = function() {{
             setSettingsOpen(false);
+            if (window.__engineAudio) window.__engineAudio.silence();
             if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
             if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
             window.__activePowertrainMode = 'launcher';
@@ -11946,6 +12603,7 @@ def gerar_dashboard_html(
         window.__enterPowertrainMode = function(mode) {{
             if (!['ice', 'hybrid', 'electric'].includes(mode)) return;
             setSettingsOpen(false);
+            if (window.__engineAudio) window.__engineAudio.silence();
             if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
             if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
             window.__activePowertrainMode = mode;
@@ -11964,10 +12622,22 @@ def gerar_dashboard_html(
         if (btnIce) btnIce.addEventListener('click', () => window.__enterPowertrainMode('ice'));
         if (btnHybrid) btnHybrid.addEventListener('click', () => window.__enterPowertrainMode('hybrid'));
         if (btnElectric) btnElectric.addEventListener('click', () => window.__enterPowertrainMode('electric'));
-        if (btnLauncherLang) {{
-            btnLauncherLang.addEventListener('click', () => {{
+        if (btnSettingsLang) {{
+            btnSettingsLang.addEventListener('click', () => {{
                 window.__setAppLang(window.__appLang === 'pt' ? 'en' : 'pt');
             }});
+        }}
+        if (btnSettingsSound) {{
+            btnSettingsSound.addEventListener('click', () => {{
+                if (window.__engineAudio) window.__engineAudio.toggleMute();
+            }});
+        }}
+        if (rangeSettingsSound) {{
+            const onVol = () => {{
+                if (window.__engineAudio) window.__engineAudio.setVolume(rangeSettingsSound.value);
+            }};
+            rangeSettingsSound.addEventListener('input', onVol);
+            rangeSettingsSound.addEventListener('change', onVol);
         }}
         settingsTriggers.forEach(btn => {{
             if (btn) btn.addEventListener('click', () => setSettingsOpen(settingsBackdrop ? settingsBackdrop.hidden : true));
