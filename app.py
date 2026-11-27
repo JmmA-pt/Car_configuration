@@ -2972,6 +2972,8 @@ def gerar_dashboard_html(
         .launcher-card {{
             --card-accent: #f97316;
             --card-glow: rgba(249, 115, 22, 0.22);
+            position: relative;
+            overflow: hidden;
             text-align: left;
             background: linear-gradient(180deg, rgba(19, 23, 33, 0.92) 0%, rgba(10, 12, 18, 0.96) 100%);
             border: 1px solid var(--border-strong);
@@ -2986,6 +2988,66 @@ def gerar_dashboard_html(
             color: var(--text-primary);
             box-shadow: var(--shadow-card);
             transition: transform 0.20s ease, border-color 0.20s ease, box-shadow 0.22s ease, background 0.20s ease;
+        }}
+
+        .launcher-card > *:not(.launcher-hover-watermark) {{
+            position: relative;
+            z-index: 2;
+        }}
+
+        .launcher-hover-watermark {{
+            position: absolute;
+            right: 12px;
+            bottom: 42px;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px) scale(0.86);
+            transition: opacity 0.28s ease, transform 0.30s cubic-bezier(0.22, 1, 0.36, 1);
+            filter: drop-shadow(0 0 12px var(--card-glow));
+        }}
+
+        .launcher-card:hover .launcher-hover-watermark,
+        .launcher-card:focus-visible .launcher-hover-watermark {{
+            opacity: 0.28;
+            transform: translateY(0) scale(1);
+        }}
+
+        .launcher-cta-symbols {{
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            opacity: 0;
+            transform: translateX(8px) scale(0.84);
+            transition: opacity 0.24s ease, transform 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+            pointer-events: none;
+        }}
+
+        .launcher-card:hover .launcher-cta-symbols,
+        .launcher-card:focus-visible .launcher-cta-symbols {{
+            opacity: 1;
+            transform: translateX(0) scale(1);
+        }}
+
+        @keyframes symFloat {{
+            0%, 100% {{ transform: translateY(0px); }}
+            50% {{ transform: translateY(-3px); }}
+        }}
+
+        @keyframes symPulse {{
+            0%, 100% {{ transform: scale(1); opacity: 0.92; }}
+            50% {{ transform: scale(1.08); opacity: 1; }}
+        }}
+
+        .launcher-card:hover .sym-float {{
+            animation: symFloat 1.9s ease-in-out infinite;
+        }}
+
+        .launcher-card:hover .sym-pulse {{
+            animation: symPulse 1.5s ease-in-out infinite;
         }}
 
         .launcher-card.launcher-card-hybrid {{
@@ -3070,13 +3132,6 @@ def gerar_dashboard_html(
             text-transform: uppercase;
         }}
 
-        .launcher-footer-hint {{
-            text-align: center;
-            font-family: var(--font-mono);
-            font-size: 0.70rem;
-            color: var(--text-muted);
-        }}
-
         @media (max-width: 900px) {{
             .launcher-cards-grid {{
                 grid-template-columns: 1fr;
@@ -3102,6 +3157,10 @@ def gerar_dashboard_html(
 
             <div class="launcher-cards-grid">
                 <button type="button" class="launcher-card launcher-card-ice" id="btn-launch-ice">
+                    <div class="launcher-hover-watermark" aria-hidden="true">
+                        <svg class="sym-pulse" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="rgba(249,115,22,0.25)"/><path d="M12 12.5c.9 1.3 1.8 2.2 1.8 3.6a1.8 1.8 0 1 1-3.6 0c0-.9.4-1.7.9-2.2" stroke="#fca5a5"/></svg>
+                        <svg class="sym-float" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5" fill="rgba(251,146,60,0.2)"/><path d="M7.5 6.5h9M7.5 8.8h9"/><circle cx="12" cy="11" r="1.4"/><path d="M12 12.4V18"/><circle cx="12" cy="19.5" r="2.2"/></svg>
+                    </div>
                     <div>
                         <div class="launcher-card-head">
                             <span class="launcher-card-badge" id="launcher-ice-badge">COMBUSTÃO INTERNA</span>
@@ -3112,10 +3171,21 @@ def gerar_dashboard_html(
                         <h2 class="launcher-card-title" id="launcher-ice-title">ICE</h2>
                         <p class="launcher-card-desc" id="launcher-ice-desc">Mais do que mecânica, é puro instinto: o calor da combustão desperta a fera no interior dos cilindros, entregando potência com alma e personalidade.</p>
                     </div>
-                    <span class="launcher-card-cta" id="launcher-ice-cta">Abrir ICE →</span>
+                    <span class="launcher-card-cta">
+                        <span id="launcher-ice-cta">Abrir ICE →</span>
+                        <span class="launcher-cta-symbols" aria-hidden="true">
+                            <svg class="sym-pulse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="rgba(249,115,22,0.28)"/></svg>
+                            <svg class="sym-float" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/></svg>
+                        </span>
+                    </span>
                 </button>
 
                 <button type="button" class="launcher-card launcher-card-hybrid" id="btn-launch-hybrid">
+                    <div class="launcher-hover-watermark" aria-hidden="true">
+                        <svg class="sym-float" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5" fill="rgba(249,115,22,0.18)"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/><path d="M4 13c-.8-1.5-.3-3 .9-4 .1 1 .7 1.5 1.3 1.5"/></svg>
+                        <svg class="sym-pulse" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(45,212,191,0.22)"/></svg>
+                        <svg class="sym-float" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z" fill="rgba(56,189,248,0.16)"/><path d="M6 8h3M15 8h3"/></svg>
+                    </div>
                     <div>
                         <div class="launcher-card-head">
                             <span class="launcher-card-badge" id="launcher-hyb-badge">COMBUSTÃO + ELÉTRICO</span>
@@ -3126,10 +3196,22 @@ def gerar_dashboard_html(
                         <h2 class="launcher-card-title" id="launcher-hyb-title">Híbrido</h2>
                         <p class="launcher-card-desc" id="launcher-hyb-desc">A harmonia definitiva: onde a paixão clássica do combustível ganha o reforço silencioso e imediato da energia elétrica, adaptando-se a cada momento da condução.</p>
                     </div>
-                    <span class="launcher-card-cta" id="launcher-hyb-cta">Abrir Híbrido →</span>
+                    <span class="launcher-card-cta">
+                        <span id="launcher-hyb-cta">Abrir Híbrido →</span>
+                        <span class="launcher-cta-symbols" aria-hidden="true">
+                            <svg class="sym-pulse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="rgba(249,115,22,0.28)"/></svg>
+                            <svg class="sym-float" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/></svg>
+                            <svg class="sym-pulse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(45,212,191,0.32)"/></svg>
+                            <svg class="sym-float" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z"/></svg>
+                        </span>
+                    </span>
                 </button>
 
                 <button type="button" class="launcher-card launcher-card-ev" id="btn-launch-electric">
+                    <div class="launcher-hover-watermark" aria-hidden="true">
+                        <svg class="sym-float" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v8a6 6 0 0 0 12 0V4h-3v8a3 3 0 0 1-6 0V4H6z" fill="rgba(56,189,248,0.22)"/><path d="M6 7.5h3M15 7.5h3" stroke="#bae6fd"/><path d="M3 10c-.6 2.5.4 5 2 6.5M21 10c.6 2.5-.4 5-2 6.5" stroke="#818cf8"/></svg>
+                        <svg class="sym-pulse" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(56,189,248,0.26)" stroke="#38bdf8"/></svg>
+                    </div>
                     <div>
                         <div class="launcher-card-head">
                             <span class="launcher-card-badge" id="launcher-ev-badge">ELÉTRICO PURO</span>
@@ -3140,12 +3222,16 @@ def gerar_dashboard_html(
                         <h2 class="launcher-card-title" id="launcher-ev-title">100% Elétrico</h2>
                         <p class="launcher-card-desc" id="launcher-ev-desc">Força invisível: no silêncio mais absoluto, desperta uma energia incrível que te empurra para a frente sem deixar rasto.</p>
                     </div>
-                    <span class="launcher-card-cta" id="launcher-ev-cta">Abrir 100% Elétrico →</span>
+                    <span class="launcher-card-cta">
+                        <span id="launcher-ev-cta">Abrir 100% Elétrico →</span>
+                        <span class="launcher-cta-symbols" aria-hidden="true">
+                            <svg class="sym-float" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z" fill="rgba(56,189,248,0.25)"/><path d="M6 8h3M15 8h3"/></svg>
+                            <svg class="sym-pulse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(56,189,248,0.32)"/></svg>
+                        </span>
+                    </span>
                 </button>
             </div>
         </div>
-
-        <p class="launcher-footer-hint" id="launcher-footer-hint">Podes regressar a este menu a qualquer momento através do botão "← Início".</p>
     </section>
 
     <div id="app-ice" class="app-mode-shell" hidden>
@@ -10895,8 +10981,7 @@ def gerar_dashboard_html(
                 evBadge: 'ELÉTRICO PURO',
                 evTitle: '100% Elétrico',
                 evDesc: 'Força invisível: no silêncio mais absoluto, desperta uma energia incrível que te empurra para a frente sem deixar rasto.',
-                evCta: 'Abrir 100% Elétrico →',
-                footerHint: 'Podes regressar a este menu a qualquer momento através do botão "← Início".'
+                evCta: 'Abrir 100% Elétrico →'
             }},
             en: {{
                 brandBadge: 'Dynamic Kinematrix',
@@ -10915,8 +11000,7 @@ def gerar_dashboard_html(
                 evBadge: 'ALL-ELECTRIC',
                 evTitle: '100% Electric',
                 evDesc: 'Invisible force: in absolute silence, incredible energy awakens to push you forward without leaving a trace.',
-                evCta: 'Open 100% Electric →',
-                footerHint: 'You can return to this menu anytime using the "← Home" button.'
+                evCta: 'Open 100% Electric →'
             }}
         }};
 
@@ -10949,7 +11033,6 @@ def gerar_dashboard_html(
             setTxt('launcher-ev-title', t.evTitle);
             setTxt('launcher-ev-desc', t.evDesc);
             setTxt('launcher-ev-cta', t.evCta);
-            setTxt('launcher-footer-hint', t.footerHint);
             if (btnLauncherLang) {{
                 btnLauncherLang.textContent = t.langBtn;
                 btnLauncherLang.title = t.langTitle;
