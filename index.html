@@ -1394,13 +1394,6 @@
             dominant-baseline: central;
         }
 
-        .bp-stamp-text {
-            fill: rgba(148, 163, 184, 0.72);
-            font-family: var(--font-mono);
-            font-size: 10px;
-            letter-spacing: 0.08em;
-        }
-
         @keyframes bpSparkPulse {
             0%, 100% { opacity: 0.35; transform: scale(0.96); }
             50% { opacity: 0.75; transform: scale(1.04); }
@@ -2289,14 +2282,6 @@
                     <polyline class="bp-leader" points="1245,792 1245,720 1134,672"/>
                     <circle cx="1134" cy="672" r="3.4" fill="#94a3b8"/><circle cx="1134" cy="672" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
                     <rect class="bp-pill" x="1138" y="792" width="214" height="26"/><text class="bp-label" id="bp-lbl-12" x="1245" y="805" text-anchor="middle">12 · VOLANTE DO MOTOR</text>
-                </g>
-
-                <!-- Carimbo Técnico CAD no canto inferior direito -->
-                <g>
-                    <rect x="1364" y="836" width="202" height="50" rx="3" fill="rgba(4, 5, 8, 0.94)" stroke="#ffffff" stroke-opacity="0.22" stroke-width="1"/>
-                    <line x1="1364" y1="854" x2="1566" y2="854" stroke="#ffffff" stroke-opacity="0.14" stroke-width="0.9"/>
-                    <text class="bp-stamp-text" id="bp-stamp-title" x="1374" y="848">DWG: DK-I4T-DOHC-01</text>
-                    <text class="bp-stamp-text" id="bp-stamp-sub" x="1374" y="874">MOTOR 2D DISSECADO · 1:2</text>
                 </g>
             </svg>
         </div>
@@ -8833,6 +8818,21 @@
                     }
 
                     // Admissão, rampa de injeção, injetores e coletores de escape com flanges
+                    const intZ = blockZ * 0.5 + 0.48;
+                    const exhZ = -(blockZ * 0.5 + 0.46);
+                    const portY = deckDist + 0.15;
+
+                    for (let i = 0; i < n; i++) {
+                        const cx = cylSpecs[i].x;
+                        if (is2Stroke) {
+                            this.addReedValveCage(cx, portY + 0.02, blockZ * 0.50, 'z+', boreScale, 0);
+                        }
+                        this.addPipe(this.staticOpaque, [
+                            [cx, portY, blockZ * 0.45],
+                            [cx, portY + 0.11, intZ * 0.84],
+                            [cx, portY + 0.02, intZ]
+                        ], 0.072 * boreScale, C_RUNNER, intApp.rSpec);
+                        // Injetor de combustível
                     const intZ = blockZ * 0.5 + 0.48;
                     const exhZ = -(blockZ * 0.5 + 0.46);
                     const portY = deckDist + 0.15;
@@ -15808,7 +15808,6 @@ const selectTopology = document.getElementById('ev-select-topology');
                 bp15: '15 · BIELAS FORJADAS',
                 bp16: '16 · CAMBOTA & CONTRAPESOS',
                 bp17: '17 · CÁRTER & ÓLEO',
-                bpSub: 'MOTOR 2D DISSECADO · 1:2',
                 settingsLbl: 'Definições',
                 settingsTitle: 'Abrir definições',
                 settingsHeading: 'DEFINIÇÕES',
@@ -15852,7 +15851,6 @@ const selectTopology = document.getElementById('ev-select-topology');
                 bp15: '15 · FORGED CONRODS',
                 bp16: '16 · CRANKSHAFT',
                 bp17: '17 · OIL SUMP & PUMP',
-                bpSub: '2D DISSECTED ENGINE · 1:2',
                 settingsLbl: 'Settings',
                 settingsTitle: 'Open settings',
                 settingsHeading: 'SETTINGS',
@@ -15926,7 +15924,6 @@ const selectTopology = document.getElementById('ev-select-topology');
             setTxt('bp-lbl-15', t.bp15);
             setTxt('bp-lbl-16', t.bp16);
             setTxt('bp-lbl-17', t.bp17);
-            setTxt('bp-stamp-sub', t.bpSub);
             setTxt('launcher-settings-lbl', t.settingsLbl);
             setTxt('ice-settings-lbl', t.settingsLbl);
             setTxt('ev-settings-lbl', t.settingsLbl);
