@@ -1,6 +1,5 @@
 # Dynamic Kinematrix
 
-> *Driven by passion. Guided by creativity.*
 
 An interactive **3D powertrain & engine simulator** where engineering curiosity meets pure automotive soul — right in your browser.
 
