@@ -411,17 +411,6 @@
             box-shadow: 0 4px 14px -6px rgba(110, 168, 166, 0.45);
         }
 
-        .btn-engine-ctrl.sound-ativo {
-            background: rgba(245, 158, 11, 0.14);
-            border-color: rgba(251, 191, 36, 0.48);
-            color: #fef3c7;
-        }
-
-        .btn-engine-ctrl.sound-off {
-            opacity: 0.72;
-            color: var(--text-muted);
-        }
-
         .btn-engine-ctrl:disabled {
             opacity: 0.45;
             cursor: not-allowed;
@@ -2796,7 +2785,6 @@
 
             <header class="dashboard-topbar">
                 <div class="topbar-right">
-                    <span class="widget-badge badge-live" id="motor-3d-badge">I4 · ATMOSFÉRICO</span>
                     <button type="button" class="btn-3d-ctrl ativo" id="btn-3d-cutaway" aria-pressed="true" title="Alternar vista de corte transparente">Vista Corte</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-autorotate" aria-pressed="false" title="Rodar o modelo automaticamente">Auto-Rodar</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-reset" title="Repor ângulo inicial da câmara">Repor Vista</button>
@@ -2831,10 +2819,6 @@
                         </div>
                         <button type="button" class="btn-engine-ctrl" id="btn-slow-mo" aria-pressed="false" title="Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado">
                             <span id="btn-slow-mo-label">Slow Mo</span>
-                        </button>
-                        <button type="button" class="btn-engine-ctrl sound-ativo" id="btn-sound-toggle" aria-pressed="true" title="Ativar ou silenciar o som do motor">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                            <span id="btn-sound-label">Som On</span>
                         </button>
                     </div>
                     <div class="engine-dock-telemetry">
@@ -3280,7 +3264,6 @@
 
             <header class="dashboard-topbar">
                 <div class="topbar-right">
-                    <span class="widget-badge badge-live" id="ev-motor-3d-badge">SINGLE · PMSM · 800V</span>
                     <button type="button" class="btn-3d-ctrl ativo" id="ev-btn-3d-cutaway" aria-pressed="true" title="Alternar vista de corte transparente">Vista Corte</button>
                     <button type="button" class="btn-3d-ctrl" id="ev-btn-3d-autorotate" aria-pressed="false" title="Rodar o modelo automaticamente">Auto-Rodar</button>
                     <button type="button" class="btn-3d-ctrl" id="ev-btn-3d-reset" title="Repor ângulo inicial da câmara">Repor Vista</button>
@@ -3311,10 +3294,6 @@
                         </div>
                         <button type="button" class="btn-engine-ctrl" id="ev-btn-slow-mo" aria-pressed="false" title="Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado">
                             <span id="ev-btn-slow-mo-label">Slow Mo</span>
-                        </button>
-                        <button type="button" class="btn-engine-ctrl sound-ativo" id="ev-btn-sound-toggle" aria-pressed="true" title="Ativar ou silenciar o som do motor">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                            <span id="ev-btn-sound-label">Som On</span>
                         </button>
                     </div>
                     <div class="engine-dock-telemetry">
@@ -3791,21 +3770,6 @@
 
             function syncUI() {
                 const lang = window.__appLang === 'en' ? 'en' : 'pt';
-                const lblTxt = muted ? (lang === 'en' ? 'Muted' : 'Som Off') : (lang === 'en' ? 'Sound On' : 'Som On');
-                const setBtn = (idBtn, idLbl) => {
-                    const b = document.getElementById(idBtn);
-                    if (b) {
-                        b.classList.toggle('sound-ativo', !muted);
-                        b.classList.toggle('sound-off', muted);
-                        b.setAttribute('aria-pressed', muted ? 'false' : 'true');
-                        b.title = lang === 'en' ? 'Mute or unmute engine audio' : 'Ativar ou silenciar o som do motor';
-                    }
-                    const s = document.getElementById(idLbl);
-                    if (s) s.textContent = lblTxt;
-                };
-                setBtn('btn-sound-toggle', 'btn-sound-label');
-                setBtn('ev-btn-sound-toggle', 'ev-btn-sound-label');
-
                 const sBtn = document.getElementById('settings-btn-sound-toggle');
                 if (sBtn) {
                     sBtn.classList.toggle('ativo', !muted);
@@ -4097,7 +4061,6 @@
         const selectCilindros = document.getElementById('select-cilindros');
         const selectAdmissao = document.getElementById('select-admissao');
         const motorNumCilindros = document.getElementById('motor-num-cilindros');
-        const motor3dBadge = document.getElementById('motor-3d-badge');
         const motor3dSpec = document.getElementById('motor-3d-spec');
 
         const inputBore = document.getElementById('input-bore');
@@ -4181,7 +4144,6 @@
         const throttlePctValue = document.getElementById('throttle-pct-value');
         const btnSlowMo = document.getElementById('btn-slow-mo');
         const btnSlowMoLabel = document.getElementById('btn-slow-mo-label');
-        const btnSoundToggle = document.getElementById('btn-sound-toggle');
         const btnCutaway = document.getElementById('btn-3d-cutaway');
         const btnAutoRotate3D = document.getElementById('btn-3d-autorotate');
         const btnReset3D = document.getElementById('btn-3d-reset');
@@ -5496,12 +5458,6 @@
             syncEnginePowerUI();
             atualizarMotor3D();
             atualizarWidget3();
-        }
-
-        if (btnSoundToggle) {
-            btnSoundToggle.addEventListener('click', () => {
-                if (window.__engineAudio) window.__engineAudio.toggleMute();
-            });
         }
 
         if (btnUnitToggle) {
@@ -10986,11 +10942,6 @@
             const batArchShort = (t.batteryArchShort && t.batteryArchShort[p.battery_arch]) ? t.batteryArchShort[p.battery_arch] : p.battery_arch;
 
             motorNumCilindros.textContent = p.cilindros;
-            if (motor3dBadge) {
-                motor3dBadge.textContent = hybridEnabled
-                    ? `${fmtDisplay} · ${hybShort.toUpperCase()}`
-                    : `${fmtDisplay} · ${admLabel.toUpperCase()}`;
-            }
             if (motor3dSpec) {
                 if (hybridEnabled) {
                     motor3dSpec.textContent = isWankel
@@ -11650,7 +11601,6 @@ const selectTopology = document.getElementById('ev-select-topology');
         const inputRpm = document.getElementById('ev-input-rpm');
 
         const motorNumUnits = document.getElementById('ev-motor-num-units');
-        const motor3dBadge = document.getElementById('ev-motor-3d-badge');
         const motor3dSpec = document.getElementById('ev-motor-3d-spec');
 
         const btnBackLauncher = document.getElementById('ev-btn-back-launcher');
@@ -11686,7 +11636,6 @@ const selectTopology = document.getElementById('ev-select-topology');
         const throttlePctValue = document.getElementById('ev-throttle-pct-value');
         const btnSlowMo = document.getElementById('ev-btn-slow-mo');
         const btnSlowMoLabel = document.getElementById('ev-btn-slow-mo-label');
-        const btnSoundToggle = document.getElementById('ev-btn-sound-toggle');
         const btnCutaway = document.getElementById('ev-btn-3d-cutaway');
         const btnAutoRotate3D = document.getElementById('ev-btn-3d-autorotate');
         const btnReset3D = document.getElementById('ev-btn-3d-reset');
@@ -12558,12 +12507,6 @@ const selectTopology = document.getElementById('ev-select-topology');
             syncEnginePowerUI();
             atualizarMotor3D();
             atualizarWidget3();
-        }
-
-        if (btnSoundToggle) {
-            btnSoundToggle.addEventListener('click', () => {
-                if (window.__engineAudio) window.__engineAudio.toggleMute();
-            });
         }
 
         if (btnUnitToggle) {
@@ -15401,9 +15344,6 @@ const selectTopology = document.getElementById('ev-select-topology');
             computeDynoData(p);
 
             if (motorNumUnits) motorNumUnits.textContent = String(units);
-            if (motor3dBadge) {
-                motor3dBadge.textContent = `${p.topology.toUpperCase()} · ${p.motor_type.toUpperCase()} · ${p.voltage}V ${invShort.toUpperCase()}`;
-            }
             if (motor3dSpec) {
                 motor3dSpec.textContent = `${p.poles}P · Ø${Math.round(p.stator_diam)}×${Math.round(p.stack_len)} mm · ${Math.round(engineSim.peakPowerKw)} kW`;
             }

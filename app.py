@@ -495,10 +495,6 @@ def widget_motor_inline(
                         <button type="button" class="btn-engine-ctrl" id="btn-slow-mo" aria-pressed="false" title="Alternar câmara lenta: 1x → 2x → 5x → 10x → Desligado">
                             <span id="btn-slow-mo-label">Slow Mo</span>
                         </button>
-                        <button type="button" class="btn-engine-ctrl sound-ativo" id="btn-sound-toggle" aria-pressed="true" title="Ativar ou silenciar o som do motor">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                            <span id="btn-sound-label">Som On</span>
-                        </button>
                     </div>
                     <div class="engine-dock-telemetry">
                         <div class="telemetry-pill" id="telemetry-rpm-pill">
@@ -2051,17 +2047,6 @@ def gerar_dashboard_html(
             border-color: rgba(110, 168, 166, 0.62);
             color: #d1fae5;
             box-shadow: 0 4px 14px -6px rgba(110, 168, 166, 0.45);
-        }}
-
-        .btn-engine-ctrl.sound-ativo {{
-            background: rgba(245, 158, 11, 0.14);
-            border-color: rgba(251, 191, 36, 0.48);
-            color: #fef3c7;
-        }}
-
-        .btn-engine-ctrl.sound-off {{
-            opacity: 0.72;
-            color: var(--text-muted);
         }}
 
         .btn-engine-ctrl:disabled {{
@@ -4312,7 +4297,6 @@ def gerar_dashboard_html(
 
             <header class="dashboard-topbar">
                 <div class="topbar-right">
-                    <span class="widget-badge badge-live" id="motor-3d-badge">{formato_clean}{num_cilindros} · {adm_clean.upper()}</span>
                     <button type="button" class="btn-3d-ctrl ativo" id="btn-3d-cutaway" aria-pressed="true" title="Alternar vista de corte transparente">Vista Corte</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-autorotate" aria-pressed="false" title="Rodar o modelo automaticamente">Auto-Rodar</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-reset" title="Repor ângulo inicial da câmara">Repor Vista</button>
@@ -4563,21 +4547,6 @@ def gerar_dashboard_html(
 
             function syncUI() {{
                 const lang = window.__appLang === 'en' ? 'en' : 'pt';
-                const lblTxt = muted ? (lang === 'en' ? 'Muted' : 'Som Off') : (lang === 'en' ? 'Sound On' : 'Som On');
-                const setBtn = (idBtn, idLbl) => {{
-                    const b = document.getElementById(idBtn);
-                    if (b) {{
-                        b.classList.toggle('sound-ativo', !muted);
-                        b.classList.toggle('sound-off', muted);
-                        b.setAttribute('aria-pressed', muted ? 'false' : 'true');
-                        b.title = lang === 'en' ? 'Mute or unmute engine audio' : 'Ativar ou silenciar o som do motor';
-                    }}
-                    const s = document.getElementById(idLbl);
-                    if (s) s.textContent = lblTxt;
-                }};
-                setBtn('btn-sound-toggle', 'btn-sound-label');
-                setBtn('ev-btn-sound-toggle', 'ev-btn-sound-label');
-
                 const sBtn = document.getElementById('settings-btn-sound-toggle');
                 if (sBtn) {{
                     sBtn.classList.toggle('ativo', !muted);
@@ -4869,7 +4838,6 @@ def gerar_dashboard_html(
         const selectCilindros = document.getElementById('select-cilindros');
         const selectAdmissao = document.getElementById('select-admissao');
         const motorNumCilindros = document.getElementById('motor-num-cilindros');
-        const motor3dBadge = document.getElementById('motor-3d-badge');
         const motor3dSpec = document.getElementById('motor-3d-spec');
 
         const inputBore = document.getElementById('input-bore');
@@ -4953,7 +4921,6 @@ def gerar_dashboard_html(
         const throttlePctValue = document.getElementById('throttle-pct-value');
         const btnSlowMo = document.getElementById('btn-slow-mo');
         const btnSlowMoLabel = document.getElementById('btn-slow-mo-label');
-        const btnSoundToggle = document.getElementById('btn-sound-toggle');
         const btnCutaway = document.getElementById('btn-3d-cutaway');
         const btnAutoRotate3D = document.getElementById('btn-3d-autorotate');
         const btnReset3D = document.getElementById('btn-3d-reset');
@@ -6268,12 +6235,6 @@ def gerar_dashboard_html(
             syncEnginePowerUI();
             atualizarMotor3D();
             atualizarWidget3();
-        }}
-
-        if (btnSoundToggle) {{
-            btnSoundToggle.addEventListener('click', () => {{
-                if (window.__engineAudio) window.__engineAudio.toggleMute();
-            }});
         }}
 
         if (btnUnitToggle) {{
@@ -9209,6 +9170,416 @@ def gerar_dashboard_html(
                              : (isRace ? [0.80, 0.84, 0.90, 1.0] : [0.74, 0.78, 0.84, 1.0]));
                 const C_TANK = isCopper ? [0.78, 0.58, 0.24, 1.0]
                              : (isWater ? [0.24, 0.28, 0.35, 1.0]
+                             : (isRace ? [0.68, 0.73, 0.80, 1.0] : [0.42, 0.47, 0.54, 1.0]));
+                const C_FIN  = isCopper ? [0.46, 0.26, 0.14, 1.0]
+                             : (isWater ? [0.28, 0.34, 0.42, 1.0] : [0.48, 0.52, 0.58, 1.0]);
+                const coreSpec = isCopper ? [0.78, 60] : (isRace ? [0.82, 66] : [0.65, 50]);
+                const tankSpec = isCopper ? [0.80, 62] : (isRace ? [0.84, 68] : [0.54, 44]);
+
+                // Núcleo e depósitos laterais adaptados ao tipo de radiador
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz, 0, 0, 0, coreW, coreH, coreD * 0.76), C_CORE, coreSpec);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz - coreD * 0.48, 0, 0, 0, coreW * 1.08, coreH * 1.04, coreD * 0.20), C_TANK, tankSpec);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz + coreD * 0.48, 0, 0, 0, coreW * 1.08, coreH * 1.04, coreD * 0.20), C_TANK, tankSpec);
+
+                const finSpan = (isDual || isRace) ? 5 : 3;
+                const finStep = 1.0 / (finSpan * 2.15);
+                for (let k = -finSpan; k <= finSpan; k++) {{
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + k * (coreH * finStep), cz, 0, 0, 0, coreW * 1.05, isDual || isRace ? 0.015 : 0.020, coreD * 0.73), C_FIN, [0.4, 24]);
+                }}
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + coreH * 0.54, cz - coreD * 0.3, 0, 0, 0, coreW * 0.62, 0.06, 0.08), C_TANK, [0.5, 36]);
+                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy + coreH * 0.54, cz + coreD * 0.3, 0, 0, 0, coreW * 0.62, 0.06, 0.08), C_TANK, [0.5, 36]);
+
+                if (isDual) {{
+                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + coreH * 0.51, cz, 0, 0, 0, coreW * 0.28, 0.028, coreD * 0.92), [0.76, 0.80, 0.86, 1.0], [0.78, 62]);
+                }} else if (isRace) {{
+                    // Triple-Pass Racing: deflectores nos tanques, tampões AN e ventoinhas duplas traseiras
+                    for (const zS of [-1, 1]) {{
+                        const fz = cz + zS * (coreD * 0.22);
+                        const fx = cx + coreW * 0.54;
+                        const fR = Math.min(coreH * 0.42, coreD * 0.19);
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + (zS * coreH * 0.16), cz + zS * coreD * 0.56, 0, 0, 0, coreW * 1.12, 0.025, 0.06), [0.86, 0.26, 0.20, 1.0], [0.76, 60]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.57, cz + zS * coreD * 0.44, 0, 0, 0, 0.045, 0.055, 0.045), zS < 0 ? [0.84, 0.24, 0.22, 1.0] : [0.22, 0.52, 0.88, 1.0], [0.80, 62]);
+                        this.addPart(this.staticOpaque, 'torus', this.matTRS(fx, cy, fz, 0, Math.PI * 0.5, 0, fR, fR, 0.036), [0.16, 0.19, 0.24, 1.0], [0.42, 28]);
+                        this.dynamicRotors.push({{
+                            type: 'impeller',
+                            cx: fx + 0.01,
+                            cy: cy,
+                            cz: fz,
+                            r: fR * 0.92,
+                            speedMult: zS * 1.35,
+                            symmetry: 7,
+                            colorHub: [0.82, 0.26, 0.22, 1.0],
+                            colorBlade: [0.24, 0.28, 0.34, 1.0]
+                        }});
+                    }}
+                }} else if (isCopper) {{
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy - coreH * 0.48, cz + coreD * 0.46, 0, 0, 0, 0.028, 0.08, 0.028), [0.86, 0.68, 0.26, 1.0], [0.82, 64]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.57, cz, 0, 0, 0, 0.055, 0.045, 0.055), [0.84, 0.64, 0.24, 1.0], [0.82, 66]);
+                }} else if (isWater) {{
+                    // Água-Ar: bomba de água elétrica + vaso expansor + conexões AN azuis
+                    const C_AN = [0.20, 0.52, 0.88, 1.0];
+                    const C_FIT = [0.84, 0.64, 0.24, 1.0];
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.62, cz - coreD * 0.16, 0, 0, Math.PI * 0.5, 0.068, 0.18, 0.068), [0.22, 0.26, 0.32, 1.0], [0.64, 48]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, cy + coreH * 0.60, cz + coreD * 0.22, 0, 0, 0, 0.065, 0.12, 0.065), C_AN, [0.76, 60]);
+                    this.addPipe(this.staticOpaque, [
+                        [cx, cy + coreH * 0.60, cz - coreD * 0.16],
+                        [cx + 0.12, cy + coreH * 0.60, cz + coreD * 0.04],
+                        [cx, cy + coreH * 0.60, cz + coreD * 0.22]
+                    ], 0.024, C_AN, [0.72, 56], [], true);
+                    for (const zS of [-1, 1]) {{
+                        this.addPart(this.staticOpaque, 'hex', this.matTRS(cx + coreW * 0.42, cy - coreH * 0.22, cz + zS * coreD * 0.44, 0, 0, Math.PI * 0.5, 0.035, 0.06, 0.035), C_FIT, [0.82, 64]);
+                    }}
+                }}
+            }}
+
+            addFreevalveBank(cylSpecs, xValOffs, deckDist, cylR, halfLenX) {{
+                const C_ACT  = [0.18, 0.48, 0.78, 1.0];
+                const C_SOL  = [0.15, 0.18, 0.24, 1.0];
+                const C_FIT  = [0.84, 0.65, 0.25, 1.0];
+                const C_RAIL = [0.68, 0.75, 0.84, 1.0];
+                const banks = new Map();
+                for (const c of cylSpecs) {{
+                    const cosA = Math.cos(c.angle), sinA = Math.sin(c.angle);
+                    const latY = -sinA, latZ = cosA;
+                    if (!banks.has(c.bank)) banks.set(c.bank, c.angle);
+                    for (const xOff of xValOffs) {{
+                        for (const sideSign of [-1, 1]) {{
+                            const latOff = sideSign * (cylR * 0.34);
+                            const tilt = c.angle + sideSign * 0.08;
+                            const dBody = deckDist + 0.34;
+                            const dCap  = deckDist + 0.45;
+                            const dFit  = deckDist + 0.49;
+                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(c.x + xOff, dBody * cosA + latOff * latY, c.zOff + dBody * sinA + latOff * latZ, tilt, 0, 0, 0.044, 0.20, 0.044), C_ACT, [0.72, 58]);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(c.x + xOff, dCap * cosA + latOff * latY, c.zOff + dCap * sinA + latOff * latZ, tilt, 0, 0, 0.088, 0.048, 0.088), C_SOL, [0.35, 22]);
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(c.x + xOff, dFit * cosA + latOff * latY, c.zOff + dFit * sinA + latOff * latZ, tilt, 0, 0, 0.022, 0.028, 0.022), C_FIT, [0.78, 60]);
+                        }}
+                    }}
+                }}
+                for (const [, bAng] of banks.entries()) {{
+                    const bCos = Math.cos(bAng), bSin = Math.sin(bAng);
+                    const latY = -bSin, latZ = bCos;
+                    const rDist = deckDist + 0.49;
+                    for (const sideSign of [-1, 1]) {{
+                        const lOff = sideSign * (cylR * 0.40);
+                        this.addPart(
+                            this.staticOpaque,
+                            'cyl',
+                            this.matTRS(0, rDist * bCos + lOff * latY, rDist * bSin + lOff * latZ, 0, 0, Math.PI * 0.5, 0.024, halfLenX * 1.92, 0.024),
+                            C_RAIL,
+                            [0.78, 62]
+                        );
+                    }}
+                }}
+            }}
+
+            rebuildScene() {{
+                this.staticOpaque = [];
+                this.staticTrans = [];
+                this.dynamicCyls = [];
+                this.dynamicWankel = [];
+                this.dynamicRotors = [];
+                this.dynamicEvRotors = [];
+                this.dynamicCams = [];
+                this.dynamicValves = [];
+                this.exhaustTips = [];
+                this.exhaustGasPaths = [];
+                this.hvPaths = [];
+                this.sceneCenterX = 0;
+                const viewMode = this.config.viewMode || 'engine';
+                if (viewMode === 'gearbox') {{
+                    this.buildStandaloneGearboxScene();
+                    return;
+                }}
+                if (viewMode === 'exhaust') {{
+                    this.buildStandaloneExhaustScene();
+                    return;
+                }}
+                if (viewMode === 'electric') {{
+                    this.buildStandaloneElectricScene();
+                    return;
+                }}
+                if (viewMode === 'emotor') {{
+                    this.buildStandaloneEmotorScene();
+                    return;
+                }}
+                if (viewMode === 'battery') {{
+                    this.buildStandaloneBatteryScene();
+                    return;
+                }}
+
+                const n = Math.max(1, Math.min(16, parseInt(this.config.cilindros, 10) || 4));
+                const fmt = ['I', 'V', 'VR', 'W', 'B', 'WANKEL'].includes(this.config.formato) ? this.config.formato : 'I';
+                const adm = this.config.admissao || 'Atmosférico';
+                const intType = this.config.intakeType || 'Plenum OEM';
+                const intMat = this.config.intakeMaterial || 'Alumínio Fundido';
+                const intApp = this.getIntakeAppearance(intMat);
+                const isDiesel = this.config.combustivel === 'Diesel' || this.config.combustivel === 'Biodiesel';
+                const vAngOpt = this.config.vAngle === '90' ? '90' : '60';
+                const matOpt = this.config.material || 'Alumínio';
+                const pMatOpt = this.config.pistonMaterial || 'Alumínio';
+                const camMode = ['DOHC', 'SOHC', 'OHV', 'Freevalve'].includes(this.config.camshaft) ? this.config.camshaft : 'DOHC';
+                const vType = this.config.valveType || 'Molas';
+                const is2Stroke = fmt !== 'WANKEL' && this.config.ciclo === '2T';
+                const isFreevalve = fmt !== 'WANKEL' && !is2Stroke && (camMode === 'Freevalve' || vType === 'Freevalve');
+                const valvesCount = parseInt(this.config.numValvulas, 10) === 2 ? 2 : 4;
+                const hasMultiTurbo = adm === 'Biturbo' || adm === 'Quad Turbo';
+                const turboCfg = (hasMultiTurbo && this.config.turboConfig === 'Sequencial') ? 'Sequencial' : 'Paralelo';
+                const fwType = this.config.flywheel || 'Monomassa Aço';
+                const dmpType = this.config.damper || 'Elastómero OEM';
+                const turboBar = Math.max(0, Number(this.config.turboBar) || 0);
+                const turboImpMult = 1.0 + Math.min(2.0, turboBar * 0.25);
+
+                const boreScale = Math.max(0.72, Math.min(1.32, (this.config.bore || 86) / 86.0));
+                const strokeScale = Math.max(0.72, Math.min(1.32, (this.config.stroke || 86) / 86.0));
+
+                const cylR = 0.30 * boreScale;
+                const crankR = 0.20 * strokeScale;
+                const rodLen = 0.66 * strokeScale;
+                const pistonH = 0.32 * boreScale;
+                const cylLen = crankR * 2.0 + pistonH + 0.18;
+                const deckDist = rodLen + crankR + pistonH * 0.55 + 0.05;
+
+                const matPalettes = {{
+                    'Alumínio':        {{ blk: [0.60, 0.65, 0.72, 1.0], hd: [0.40, 0.45, 0.52, 1.0], sp: [0.48, 36] }},
+                    'Ferro Fundido':   {{ blk: [0.28, 0.30, 0.35, 1.0], hd: [0.24, 0.26, 0.31, 1.0], sp: [0.24, 18] }},
+                    'Alumínio Billet': {{ blk: [0.74, 0.79, 0.86, 1.0], hd: [0.56, 0.62, 0.70, 1.0], sp: [0.78, 64] }},
+                    'Forged':          {{ blk: [0.46, 0.50, 0.57, 1.0], hd: [0.35, 0.39, 0.46, 1.0], sp: [0.58, 44] }},
+                    'Forged Heavy':    {{ blk: [0.34, 0.36, 0.40, 1.0], hd: [0.27, 0.29, 0.33, 1.0], sp: [0.46, 32] }},
+                    'Billet':          {{ blk: [0.80, 0.84, 0.90, 1.0], hd: [0.62, 0.67, 0.74, 1.0], sp: [0.86, 76] }},
+                    'Magnésio':        {{ blk: [0.50, 0.45, 0.39, 1.0], hd: [0.38, 0.35, 0.31, 1.0], sp: [0.42, 30] }},
+                    'Titanium':        {{ blk: [0.62, 0.60, 0.58, 1.0], hd: [0.48, 0.47, 0.46, 1.0], sp: [0.70, 56] }},
+                    'Titanium Billet': {{ blk: [0.70, 0.68, 0.65, 1.0], hd: [0.56, 0.55, 0.53, 1.0], sp: [0.88, 78] }},
+                    'Titanium Forged': {{ blk: [0.54, 0.51, 0.52, 1.0], hd: [0.42, 0.40, 0.42, 1.0], sp: [0.66, 50] }}
+                }};
+                const matP = matPalettes[matOpt] || matPalettes['Alumínio'];
+                const C_BLOCK   = matP.blk;
+                const C_HEAD    = matP.hd;
+                const BLK_SPEC  = matP.sp;
+                const pistonPalettes = {{
+                    'Alumínio':     {{ pis: [0.84, 0.87, 0.91, 1.0], rod: [0.46, 0.50, 0.56, 1.0] }},
+                    'Forged':       {{ pis: [0.76, 0.80, 0.86, 1.0], rod: [0.52, 0.56, 0.62, 1.0] }},
+                    'Forged Heavy': {{ pis: [0.48, 0.51, 0.56, 1.0], rod: [0.34, 0.37, 0.42, 1.0] }},
+                    'Titânio':      {{ pis: [0.72, 0.67, 0.60, 1.0], rod: [0.64, 0.59, 0.52, 1.0] }}
+                }};
+                const pisP = pistonPalettes[pMatOpt] || pistonPalettes['Alumínio'];
+                const C_HOSE    = [0.09, 0.11, 0.15, 1.0];
+                const C_BRASS   = [0.82, 0.63, 0.24, 1.0];
+                const C_DIP     = [0.92, 0.72, 0.10, 1.0];
+                const C_VALVE   = [0.24, 0.30, 0.38, 1.0];
+                const C_SUMP    = [0.22, 0.24, 0.29, 1.0];
+                const C_LINER   = [0.50, 0.54, 0.60, 1.0];
+                const C_PISTON  = pisP.pis;
+                const C_RING    = [0.20, 0.23, 0.28, 1.0];
+                const C_ROD     = pisP.rod;
+                const C_CRANK   = [0.34, 0.37, 0.42, 1.0];
+                const C_INTAKE  = intApp.col;
+                const C_RUNNER  = intApp.runner;
+                const C_EXHAUST = [0.58, 0.43, 0.32, 1.0];
+                const C_PIPE    = [0.70, 0.74, 0.80, 1.0];
+                const C_BELT    = [0.16, 0.18, 0.21, 1.0];
+                const C_RAIL    = isDiesel ? [0.78, 0.65, 0.30, 1.0] : [0.68, 0.24, 0.24, 1.0];
+                const C_ALT     = [0.52, 0.56, 0.62, 1.0];
+                const C_FILTER  = [0.22, 0.35, 0.52, 1.0];
+                const C_BOLT    = [0.76, 0.80, 0.85, 1.0];
+
+                const firingPhases4 = [0, Math.PI, Math.PI, 0];
+                const firingPhases6 = [0, (4 * Math.PI) / 3, (2 * Math.PI) / 3, (2 * Math.PI) / 3, (4 * Math.PI) / 3, 0];
+                const getPhase = (idx, count) => {{
+                    if (count === 4) return firingPhases4[idx];
+                    if (count === 6) return firingPhases6[idx];
+                    if (count === 3) return (idx * 2 * Math.PI) / 3;
+                    if (count === 5) return ((idx * 2) % 5) * (2 * Math.PI / 5);
+                    return ((idx * 3) % Math.max(1, count)) * ((2 * Math.PI) / Math.max(1, count));
+                }};
+
+                const cylSpecs = [];
+                let halfLenX = 1.2;
+                let maxSpanZ = 1.0;
+                let exhaustAnchors = [];
+
+                if (fmt === 'I' || fmt === 'VR') {{
+                    const isVR = fmt === 'VR';
+                    const stepX = isVR ? cylR * 1.65 : cylR * 2.38;
+                    const startX = -((n - 1) * stepX) / 2;
+                    halfLenX = Math.max(0.85, (n * stepX) * 0.5 + cylR * 0.45);
+                    maxSpanZ = isVR ? cylR * 2.1 : cylR * 1.5;
+
+                    for (let i = 0; i < n; i++) {{
+                        const x = startX + i * stepX;
+                        const sign = (i % 2 === 0) ? -1 : 1;
+                        const angle = isVR ? sign * 0.19 : 0;
+                        cylSpecs.push({{ x, zOff: 0, angle, phase: getPhase(i, n), bank: 0 }});
+                    }}
+
+                    const blockW = halfLenX * 2.04;
+                    const blockZ = isVR ? cylR * 3.8 : cylR * 2.5;
+                    // Cárter detalhado chanfrado + aletas de arrefecimento + parafusos do cárter + bujão em latão
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.14, 0, 0, 0, 0, blockW * 1.04, 0.10, blockZ * 1.04), C_SUMP, [0.44, 28]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.30, 0, 0, 0, 0, blockW * 0.96, 0.28, blockZ * 0.90), C_SUMP, [0.38, 22]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(halfLenX * 0.60, -crankR - 0.43, 0, 0, 0, 0, 0.052, 0.05, 0.052), [0.80, 0.64, 0.28, 1.0], [0.74, 56]);
+                    for (let f = -2; f <= 2; f++) {{
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, -crankR - 0.45, f * (blockZ * 0.16), 0, 0, 0, blockW * 0.88, 0.03, 0.03), C_BLOCK, [0.5, 32]);
+                    }}
+
+                    // Bloco esculpido chanfrado, saia do cárter, bosses dos cilindros e capas de mancal
+                    const blockY = deckDist * 0.46;
+                    const blockH = deckDist * 0.92;
+                    const skirtBot = -crankR - 0.10;
+                    const skirtH = 0.04 - skirtBot;
+                    const skirtZ = Math.max(blockZ * 1.02, crankR * 2.55);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, blockY, 0, 0, 0, 0, blockW, blockH, blockZ * 0.94), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, skirtBot + skirtH * 0.5, 0, 0, 0, 0, blockW * 1.01, skirtH, skirtZ), C_BLOCK, BLK_SPEC);
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(halfLenX + 0.03, skirtBot + skirtH * 0.5, 0, 0, 0, 0, 0.06, skirtH, skirtZ * 0.98), C_BLOCK, BLK_SPEC);
+                    // Nervuras laterais + relas de latão + bosses dos cilindros
+                    for (const ribSide of [-1, 1]) {{
+                        for (let rIdx = 0; rIdx < n; rIdx++) {{
+                            const rx = cylSpecs[rIdx].x;
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(rx, blockY, ribSide * (blockZ * 0.49), 0, 0, 0, 0.044, blockH * 0.80, 0.040), C_BLOCK, BLK_SPEC);
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(rx, deckDist + 0.415, ribSide * (blockZ * 0.34), 0, 0, 0, 0.032, 0.024, 0.032), C_BOLT, [0.78, 60]);
+                            this.addPart(this.staticOpaque, 'hex', this.matTRS(rx, -crankR - 0.105, ribSide * (blockZ * 0.50), 0, 0, 0, 0.022, 0.036, 0.022), C_BOLT, [0.80, 62]);
+                        }}
+                    }}
+                    // Termóstato frontal + mangueiras do radiador com abraçadeiras em inox
+                    const thermX = -halfLenX - 0.18;
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(thermX, deckDist + 0.08, blockZ * 0.32, 0, 0, Math.PI * 0.5, 0.085, 0.15, 0.085), C_HEAD, [0.55, 38]);
+                    this.addPart(this.staticOpaque, 'hex', this.matTRS(thermX - 0.06, deckDist + 0.14, blockZ * 0.32, 0, 0, 0, 0.028, 0.03, 0.028), C_BOLT, [0.8, 60]);
+                    this.addPipe(this.staticOpaque, [[thermX - 0.06, deckDist + 0.08, blockZ * 0.32], [thermX - 0.24, deckDist + 0.06, blockZ * 0.48], [thermX - 0.34, deckDist - 0.10, blockZ * 0.56]], 0.048, C_HOSE, [0.16, 12]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(thermX - 0.11, deckDist + 0.07, blockZ * 0.37, 0, -0.68, Math.PI * 0.5, 0.056, 0.030, 0.056), C_PIPE, [0.82, 64]);
+                    // Vareta de nível de óleo com pega amarela
+                    this.addPipe(this.staticOpaque, [[halfLenX * 0.28, -0.22, blockZ * 0.54], [halfLenX * 0.34, deckDist * 0.48, blockZ * 0.62], [halfLenX * 0.36, deckDist + 0.16, blockZ * 0.58]], 0.015, C_PIPE, [0.75, 58]);
+                    this.addPart(this.staticOpaque, 'torus', this.matTRS(halfLenX * 0.36, deckDist + 0.23, blockZ * 0.58, 0, 0, 0, 0.058, 0.058, 0.058), C_DIP, [0.42, 32]);
+                    if (adm !== 'Atmosférico' && adm !== 'Supercompressor') {{
+                        this.addPipe(this.staticOpaque, [[halfLenX * 0.12, 0.06, -blockZ * 0.54], [halfLenX * 0.04, deckDist * 0.52, -blockZ * 0.72], [-halfLenX * 0.18, deckDist * 0.54, -blockZ * 0.78]], 0.012, C_PIPE, [0.84, 66]);
+                    }}
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, blockY - 0.10, blockZ * 0.48, 0, 0, 0, blockW * 0.96, 0.048, 0.050), C_BLOCK, [0.5, 32]);
+                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, blockY - 0.10, -blockZ * 0.48, 0, 0, 0, blockW * 0.96, 0.048, 0.050), C_BLOCK, [0.5, 32]);
+                    for (let i = 0; i < n; i++) {{
+                        const cx = cylSpecs[i].x;
+                        const angC = cylSpecs[i].angle;
+                        this.addPart(this.staticTrans, 'cyl', this.matTRS(cx, blockY, 0, angC, 0, 0, cylR * 1.15, blockH * 0.92, cylR * 1.15), C_BLOCK, BLK_SPEC);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, blockY, blockZ * 0.48, Math.PI * 0.5, 0, 0, 0.075, 0.032, 0.075), C_BRASS, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx, blockY, -blockZ * 0.48, Math.PI * 0.5, 0, 0, 0.075, 0.032, 0.075), C_BRASS, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, -0.05, 0, 0, 0, 0, 0.12, 0.24, 0.28), C_CRANK, [0.48, 34]);
+                    }}
+                    // Filtro de óleo + sensor de pressão + motor de arranque traseiro
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.32, -0.06, blockZ * 0.64, 0.65, 0, 0, 0.12, 0.28, 0.12), C_FILTER, [0.55, 44]);
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.05, 0.08, blockZ * 0.55, Math.PI * 0.5, 0, 0, 0.032, 0.08, 0.032), C_BRASS, [0.74, 58]);
+                    this.addStarterMotor(halfLenX * 0.62, -0.06, blockZ * 0.56 + 0.16);
+
+                    // Cabeça + tampa de válvulas esculpida em dois túneis (DOHC) / torre central + respiro PCV (ou cabeça 2T sem válvulas)
+                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, deckDist + 0.16, 0, 0, 0, 0, blockW * 1.01, 0.28, blockZ * 1.04), C_HEAD, [0.46, 36]);
+                    if (is2Stroke) {{
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.30, 0, 0, 0, 0, blockW * 1.00, 0.06, blockZ * 0.96), C_HEAD, [0.56, 44]);
+                        for (let i = 0; i < n; i++) {{
+                            const cx = cylSpecs[i].x;
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, deckDist + 0.34, 0, 0, 0, 0, 0.04, 0.045, blockZ * 0.90), C_BOLT, [0.70, 52]);
+                            this.addCoilPackAndDetails(cx, deckDist + 0.36, 0, 0, isDiesel);
+                        }}
+                    }} else {{
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.36, 0, 0, 0, 0, blockW * 1.02, 0.11, blockZ * 1.02), C_VALVE, [0.58, 50]);
+                        if (!isFreevalve && camMode === 'DOHC') {{
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, -blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43,  blockZ * 0.26, 0, 0, 0, blockW * 0.99, 0.08, blockZ * 0.34), C_VALVE, [0.62, 54]);
+                        }} else if (!isFreevalve) {{
+                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.43, 0, 0, 0, 0, blockW * 0.98, 0.075, blockZ * 0.62), C_VALVE, [0.60, 52]);
+                        }}
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47, -blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, deckDist + 0.47,  blockZ * 0.26, 0, 0, 0, blockW * 0.90, 0.025, 0.055), C_BOLT, [0.74, 58]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.70, deckDist + 0.48, 0.12, 0, 0, 0, 0.092, 0.055, 0.092), C_BOLT, [0.78, 62]);
+                    }}
+
+                    // Distribuição DOHC / SOHC / OHV / Freevalve (ou 2T Reed Valve sem árvore de cames)
+                    const camZIn = blockZ * 0.22;
+                    const camZEx = -blockZ * 0.22;
+                    const tx = -halfLenX - 0.24;
+                    if (!is2Stroke) {{
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(0, deckDist + 0.46, 0.14, 0, 0, 0, blockW * 0.88, 0.04, 0.045), C_BELT, [0.25, 16]);
+                    }}
+                    if (is2Stroke) {{
+                        // Motor 2T utiliza Reed Valve na admissão — sem árvores de cames nem polias de distribuição
+                    }} else if (isFreevalve) {{
+                        for (let i = 0; i < n; i++) {{
+                            const c = cylSpecs[i];
+                            this.addCoilPackAndDetails(c.x, deckDist + 0.45, 0, 0, isDiesel);
+                        }}
+                    }} else if (camMode === 'DOHC') {{
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, deckDist + 0.22, camZIn, 0, 0, Math.PI * 0.5, 0.046, blockW * 1.03, 0.046), C_CRANK, [0.65, 52]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, deckDist + 0.22, camZEx, 0, 0, Math.PI * 0.5, 0.046, blockW * 1.03, 0.046), C_CRANK, [0.65, 52]);
+                        for (let i = 0; i < n; i++) {{
+                            const c = cylSpecs[i];
+                            this.dynamicCams.push({{ x: c.x, y: deckDist + 0.22, z: camZIn, phase: c.phase * 0.5 }});
+                            this.dynamicCams.push({{ x: c.x, y: deckDist + 0.22, z: camZEx, phase: c.phase * 0.5 + 2.1 }});
+                            this.addCoilPackAndDetails(c.x, deckDist + 0.45, 0, 0, isDiesel);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(c.x + stepX * 0.45, deckDist + 0.23, 0, 0, 0, 0, 0.07, 0.08, blockZ * 0.62), C_HEAD, [0.5, 36]);
+                        }}
+                        const vvtColor = vType === 'VVT' ? [0.76, 0.60, 0.24, 1.0] : [0.26, 0.44, 0.64, 1.0];
+                        this.dynamicRotors.push({{ type: 'pulley', cx: tx, cy: deckDist + 0.22, cz: camZEx, r: 0.21, thick: 0.075, speedMult: this.config.ciclo === '2T' ? 1.0 : 0.5, colorRim: [0.36, 0.41, 0.48, 1.0], colorHub: vvtColor }});
+                        this.dynamicRotors.push({{ type: 'pulley', cx: tx, cy: deckDist + 0.22, cz: camZIn, r: 0.21, thick: 0.075, speedMult: this.config.ciclo === '2T' ? 1.0 : 0.5, colorRim: [0.36, 0.41, 0.48, 1.0], colorHub: vvtColor }});
+                    }} else if (camMode === 'SOHC') {{
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, deckDist + 0.23, 0, 0, 0, Math.PI * 0.5, 0.055, blockW * 1.03, 0.055), C_CRANK, [0.65, 52]);
+                        for (let i = 0; i < n; i++) {{
+                            const c = cylSpecs[i];
+                            this.dynamicCams.push({{ x: c.x, y: deckDist + 0.23, z: 0, phase: c.phase * 0.5 }});
+                            this.addCoilPackAndDetails(c.x, deckDist + 0.45, 0, 0, isDiesel);
+                            this.addPart(this.staticOpaque, 'box', this.matTRS(c.x + stepX * 0.45, deckDist + 0.23, 0, 0, 0, 0, 0.07, 0.08, blockZ * 0.46), C_HEAD, [0.5, 36]);
+                        }}
+                        const vvtColor = vType === 'VVT' ? [0.76, 0.60, 0.24, 1.0] : [0.26, 0.44, 0.64, 1.0];
+                        this.dynamicRotors.push({{ type: 'pulley', cx: tx, cy: deckDist + 0.23, cz: 0, r: 0.25, thick: 0.08, speedMult: this.config.ciclo === '2T' ? 1.0 : 0.5, colorRim: [0.36, 0.41, 0.48, 1.0], colorHub: vvtColor }});
+                    }} else {{
+                        // OHV (Cam-in-block + Pushrod tubes + Rocker shaft)
+                        const ohvY = deckDist * 0.36;
+                        const ohvZ = blockZ * 0.28;
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, ohvY, ohvZ, 0, 0, Math.PI * 0.5, 0.052, blockW * 1.02, 0.052), C_CRANK, [0.65, 52]);
+                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, deckDist + 0.24, 0, 0, 0, Math.PI * 0.5, 0.036, blockW * 0.94, 0.036), C_BOLT, [0.7, 56]);
+                        for (let i = 0; i < n; i++) {{
+                            const c = cylSpecs[i];
+                            this.dynamicCams.push({{ x: c.x, y: ohvY, z: ohvZ, phase: c.phase * 0.5 }});
+                            this.addPipe(this.staticOpaque, [[c.x - 0.05, ohvY, ohvZ], [c.x - 0.05, deckDist + 0.23, ohvZ * 0.5]], 0.022, C_PIPE, [0.75, 58]);
+                            this.addPipe(this.staticOpaque, [[c.x + 0.05, ohvY, ohvZ], [c.x + 0.05, deckDist + 0.23, -ohvZ * 0.3]], 0.022, C_PIPE, [0.75, 58]);
+                            this.addCoilPackAndDetails(c.x, deckDist + 0.45, 0, 0, isDiesel);
+                        }}
+                        this.dynamicRotors.push({{ type: 'pulley', cx: tx, cy: ohvY, cz: ohvZ, r: 0.20, thick: 0.075, speedMult: this.config.ciclo === '2T' ? 1.0 : 0.5, colorRim: [0.36, 0.41, 0.48, 1.0], colorHub: [0.72, 0.48, 0.26, 1.0] }});
+                    }}
+                    // Bomba de água / polia tensora + bomba alta pressão (Diesel)
+                    const wpY = deckDist * 0.52;
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.85, wpY, -blockZ * 0.22, 0, 0, Math.PI * 0.5, 0.15, 0.22, 0.15), C_HEAD, [0.55, 44]);
+                    this.dynamicRotors.push({{
+                        type: 'pulley', cx: tx, cy: wpY, cz: -blockZ * 0.22,
+                        r: 0.13, thick: 0.07, speedMult: 1.35,
+                        colorRim: [0.46, 0.50, 0.56, 1.0], colorHub: [0.68, 0.72, 0.78, 1.0]
+                    }});
+                    if (isDiesel) {{
+                        this.addPart(this.staticOpaque, 'box', this.matTRS(-halfLenX * 0.66, deckDist * 0.74, blockZ * 0.55, 0, 0, 0, 0.24, 0.22, 0.20), [0.54, 0.58, 0.64, 1.0], [0.6, 46]);
+                    }}
+                    // Alternador lateral + polia do alternador
+                    const altZ = blockZ * 0.56 + 0.16;
+                    const altY = 0.26;
+                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-halfLenX * 0.62, altY, altZ, 0, 0, Math.PI * 0.5, 0.18, 0.34, 0.18), C_ALT, [0.6, 48]);
+                    this.dynamicRotors.push({{
+                        type: 'pulley', cx: tx, cy: altY, cz: altZ,
+                        r: 0.12, thick: 0.07, speedMult: 1.8,
+                        colorRim: [0.46, 0.50, 0.56, 1.0], colorHub: [0.76, 0.80, 0.86, 1.0]
+                    }});
+                    if (is2Stroke || isFreevalve) {{
+                        this.addPipe(this.staticOpaque, [
+                            [tx, 0, -0.25],
+                            [tx, wpY, -blockZ * 0.22 - 0.12],
+                            [tx, wpY + 0.10, -blockZ * 0.22],
+                            [tx, altY + 0.08, altZ],
+                            [tx, altY - 0.08, altZ],
+                            [tx, -0.25, 0],
+                            [tx, 0, -0.25]
+                        ], 0.026, C_BELT, [0.15, 10]);
+                    }} else if (camMode === 'DOHC') {{
+                        this.addPipe(this.staticOpaque, [
+                            [tx, 0, -0.25],
+                            [tx, wpY, -blockZ * 0.22 - 0.12],
+                            [tx, deckDist + 0.22, camZEx - 0.18],
+                            [tx, deckDist + 0.42, camZEx],
+                            [tx, deckDist + 0.42, camZIn],
+                            [tx, deckDist + 0.22, camZIn + 0.18],
+                            [tx, altY + 0.06, altZ + 0.08],
+                            [tx, altY - 0.08, altZ],
                             [tx, -0.25, 0],
                             [tx, 0, -0.25]
                         ], 0.028, C_BELT, [0.15, 10]);
@@ -11348,11 +11719,6 @@ def gerar_dashboard_html(
             const batArchShort = (t.batteryArchShort && t.batteryArchShort[p.battery_arch]) ? t.batteryArchShort[p.battery_arch] : p.battery_arch;
 
             motorNumCilindros.textContent = p.cilindros;
-            if (motor3dBadge) {{
-                motor3dBadge.textContent = hybridEnabled
-                    ? `${{fmtDisplay}} · ${{hybShort.toUpperCase()}}`
-                    : `${{fmtDisplay}} · ${{admLabel.toUpperCase()}}`;
-            }}
             if (motor3dSpec) {{
                 if (hybridEnabled) {{
                     motor3dSpec.textContent = isWankel
