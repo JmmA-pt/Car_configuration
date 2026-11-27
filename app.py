@@ -9170,6 +9170,50 @@ def gerar_dashboard_html(
                              : (isRace ? [0.80, 0.84, 0.90, 1.0] : [0.74, 0.78, 0.84, 1.0]));
                 const C_TANK = isCopper ? [0.78, 0.58, 0.24, 1.0]
                              : (isWater ? [0.24, 0.28, 0.35, 1.0]
+                            [tx, -0.25, 0],
+                            [tx, 0, -0.25]
+                        ], 0.028, C_BELT, [0.15, 10]);
+                    }} else if (camMode === 'SOHC') {{
+                        this.addPipe(this.staticOpaque, [
+                            [tx, 0, -0.25],
+                            [tx, wpY, -blockZ * 0.22 - 0.12],
+                            [tx, deckDist + 0.23, -0.23],
+                            [tx, deckDist + 0.47, 0],
+                            [tx, deckDist + 0.23, 0.23],
+                            [tx, altY + 0.06, altZ + 0.08],
+                            [tx, altY - 0.08, altZ],
+                            [tx, -0.25, 0],
+                            [tx, 0, -0.25]
+                        ], 0.028, C_BELT, [0.15, 10]);
+                    }} else {{
+                        const ohvY = deckDist * 0.36;
+                        const ohvZ = blockZ * 0.28;
+                        this.addPipe(this.staticOpaque, [
+                            [tx, 0, -0.25],
+                            [tx, wpY, -blockZ * 0.22 - 0.12],
+                            [tx, ohvY + 0.18, ohvZ],
+                            [tx, altY + 0.06, altZ + 0.08],
+                            [tx, altY - 0.08, altZ],
+                            [tx, -0.25, 0],
+                            [tx, 0, -0.25]
+                        ], 0.028, C_BELT, [0.15, 10]);
+                    }}
+
+                    // Admissão, rampa de injeção, injetores e coletores de escape com flanges
+                    const intZ = blockZ * 0.5 + 0.48;
+                    const exhZ = -(blockZ * 0.5 + 0.46);
+                    const portY = deckDist + 0.15;
+
+                    for (let i = 0; i < n; i++) {{
+                        const cx = cylSpecs[i].x;
+                        if (is2Stroke) {{
+                            this.addReedValveCage(cx, portY + 0.02, blockZ * 0.50, 'z+', boreScale, 0);
+                        }}
+                        this.addPipe(this.staticOpaque, [
+                            [cx, portY, blockZ * 0.45],
+                            [cx, portY + 0.11, intZ * 0.84],
+                            [cx, portY + 0.02, intZ]
+                        ], 0.072 * boreScale, C_RUNNER, intApp.rSpec);
                              : (isRace ? [0.68, 0.73, 0.80, 1.0] : [0.42, 0.47, 0.54, 1.0]));
                 const C_FIN  = isCopper ? [0.46, 0.26, 0.14, 1.0]
                              : (isWater ? [0.28, 0.34, 0.42, 1.0] : [0.48, 0.52, 0.58, 1.0]);
