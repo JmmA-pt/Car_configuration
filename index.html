@@ -1306,28 +1306,191 @@
             position: relative;
             z-index: 4;
             width: 100%;
-            max-width: 1160px;
+            max-width: 1080px;
             margin: 0 auto;
             flex: 1;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            padding: 10px 8px 24px;
-            gap: 24px;
+            justify-content: flex-start;
+            padding: 14px 8px 20px;
+            gap: 10px;
         }
 
-        .launcher-topbar {
+        /* Fundo Preto com Grelha a ocupar toda a página e Motor 2D Dissecado em Preto/Grafite com Legendas */
+        .launcher-blueprint-bg {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+            background-color: #000000;
+            background-image:
+                radial-gradient(circle at 50% 48%, rgba(255, 255, 255, 0.03) 0%, #000000 76%),
+                linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(rgba(255, 255, 255, 0.085) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.085) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+        }
+
+        .launcher-blueprint-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            user-select: none;
+        }
+
+        .launcher-hero,
+        .launcher-center {
+            position: relative;
+            z-index: 2;
+        }
+
+        .bp-line {
+            fill: none;
+            stroke: #64748b;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .bp-dim {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.20);
+            stroke-width: 1;
+            stroke-dasharray: 9 4 2 4;
+        }
+
+        .bp-hot {
+            fill: none;
+            stroke: #94a3b8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .bp-leader {
+            fill: none;
+            stroke: rgba(203, 213, 225, 0.42);
+            stroke-width: 1.25;
+            stroke-linejoin: round;
+        }
+
+        .bp-pill {
+            fill: rgba(4, 5, 8, 0.94);
+            stroke: rgba(255, 255, 255, 0.22);
+            stroke-width: 1.1;
+            rx: 4px;
+        }
+
+        .bp-label {
+            fill: #cbd5e1;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            dominant-baseline: central;
+        }
+
+        .bp-stamp-text {
+            fill: rgba(148, 163, 184, 0.72);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 0.08em;
+        }
+
+        @keyframes bpSparkPulse {
+            0%, 100% { opacity: 0.35; transform: scale(0.96); }
+            50% { opacity: 0.75; transform: scale(1.04); }
+        }
+
+        .bp-ignition-pulse {
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: bpSparkPulse 2.4s ease-in-out infinite;
+        }
+
+        .launcher-corner-actions {
+            position: fixed;
+            top: 14px;
+            right: 16px;
+            z-index: 30;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .topbar-actions-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-settings-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 6px 10px;
+        }
+
+        .settings-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            background: rgba(0, 0, 0, 0.74);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .settings-backdrop[hidden] {
+            display: none !important;
+        }
+
+        .settings-modal {
+            width: min(440px, 100%);
+            background: linear-gradient(180deg, rgba(16, 19, 27, 0.96) 0%, rgba(8, 10, 15, 0.98) 100%);
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.92), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+        }
+
+        .settings-modal-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding: 9px 14px;
-            background: var(--bg-elevated);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-card);
+        }
+
+        .settings-modal-body {
+            min-height: 112px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed var(--border-subtle);
+            border-radius: 10px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.36);
+        }
+
+        .settings-empty-msg {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
         }
 
         .launcher-center {
@@ -1336,27 +1499,37 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 28px;
+            gap: 18px;
+            padding: 16px 0 34px;
         }
 
         .launcher-hero {
+            align-self: center;
             text-align: center;
-            max-width: 740px;
+            max-width: 600px;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 5px;
+            padding: 2px 14px 4px;
+            background: transparent;
+        }
+
+        @media (max-width: 720px) {
+            .launcher-hero {
+                padding-top: 42px;
+            }
         }
 
         .launcher-hero h1 {
-            font-size: clamp(1.65rem, 3.2vw, 2.55rem);
+            font-size: clamp(1.55rem, 2.9vw, 2.35rem);
             font-weight: 700;
             letter-spacing: -0.02em;
             color: #f8fafc;
         }
 
         .launcher-hero p {
-            font-size: 0.96rem;
-            line-height: 1.5;
+            font-size: 0.92rem;
+            line-height: 1.45;
             color: var(--text-secondary);
         }
 
@@ -1364,55 +1537,93 @@
             width: 100%;
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 18px;
+            gap: 22px;
             align-items: stretch;
         }
 
         .launcher-card {
             --card-accent: #f97316;
-            --card-glow: rgba(249, 115, 22, 0.22);
+            --card-glow: rgba(249, 115, 22, 0.34);
             position: relative;
-            overflow: hidden;
+            z-index: 2;
+            overflow: visible;
             text-align: left;
-            background: linear-gradient(180deg, rgba(19, 23, 33, 0.92) 0%, rgba(10, 12, 18, 0.96) 100%);
+            background: linear-gradient(180deg, rgba(6, 10, 18, 0.78) 0%, rgba(2, 5, 11, 0.86) 100%);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
             border: 1px solid var(--border-strong);
             border-top: 3px solid var(--card-accent);
             border-radius: 16px;
-            padding: 22px 20px 20px;
+            padding: 20px 18px 18px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            gap: 16px;
+            gap: 14px;
             cursor: pointer;
             color: var(--text-primary);
-            box-shadow: var(--shadow-card);
-            transition: transform 0.20s ease, border-color 0.20s ease, box-shadow 0.22s ease, background 0.20s ease;
+            box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.92);
+            transition: transform 0.22s ease, border-color 0.20s ease, box-shadow 0.24s ease, background 0.20s ease, z-index 0s;
         }
 
-        .launcher-card > *:not(.launcher-hover-watermark) {
+        .launcher-card > *:not(.launcher-popout-layer) {
             position: relative;
             z-index: 2;
         }
 
-        .launcher-hover-watermark {
+        /* Camada de símbolos esculpidos que saem para fora do widget ao passar o rato */
+        .launcher-popout-layer {
             position: absolute;
-            right: 12px;
-            bottom: 42px;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 6px;
+            inset: 0;
+            z-index: 12;
+            overflow: visible;
             pointer-events: none;
-            opacity: 0;
-            transform: translateY(10px) scale(0.86);
-            transition: opacity 0.28s ease, transform 0.30s cubic-bezier(0.22, 1, 0.36, 1);
-            filter: drop-shadow(0 0 12px var(--card-glow));
         }
 
-        .launcher-card:hover .launcher-hover-watermark,
-        .launcher-card:focus-visible .launcher-hover-watermark {
-            opacity: 0.28;
-            transform: translateY(0) scale(1);
+        .pop-sym {
+            position: absolute;
+            opacity: 0;
+            transform: translate(0px, 0px) scale(0.32) rotate(0deg);
+            transition:
+                opacity 0.22s ease,
+                transform 0.44s cubic-bezier(0.22, 1.38, 0.36, 1);
+            filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.85)) drop-shadow(0 0 18px var(--card-glow));
+            will-change: transform, opacity;
+        }
+
+        .pop-sym.pop-tr {
+            top: -10px;
+            right: -8px;
+            transition-delay: 0ms;
+        }
+
+        .pop-sym.pop-br {
+            bottom: -10px;
+            right: -6px;
+            transition-delay: 55ms;
+        }
+
+        .pop-sym.pop-tl {
+            top: -8px;
+            left: -8px;
+            transition-delay: 95ms;
+        }
+
+        .launcher-card:hover .pop-sym.pop-tr,
+        .launcher-card:focus-visible .pop-sym.pop-tr {
+            opacity: 1;
+            transform: translate(26px, -30px) scale(1.06) rotate(7deg);
+        }
+
+        .launcher-card:hover .pop-sym.pop-br,
+        .launcher-card:focus-visible .pop-sym.pop-br {
+            opacity: 1;
+            transform: translate(26px, 28px) scale(1.04) rotate(-6deg);
+        }
+
+        .launcher-card:hover .pop-sym.pop-tl,
+        .launcher-card:focus-visible .pop-sym.pop-tl {
+            opacity: 1;
+            transform: translate(-24px, -24px) scale(1.02) rotate(-10deg);
         }
 
         .launcher-cta-symbols {
@@ -1431,42 +1642,65 @@
             transform: translateX(0) scale(1);
         }
 
-        @keyframes symFloat {
+        @keyframes popFloat {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-3px); }
+            50% { transform: translateY(-6px); }
         }
 
-        @keyframes symPulse {
-            0%, 100% { transform: scale(1); opacity: 0.92; }
-            50% { transform: scale(1.08); opacity: 1; }
+        @keyframes popFlame {
+            0%, 100% { transform: scale(1) rotate(-2deg); }
+            50% { transform: scale(1.10) rotate(3deg); }
         }
 
-        .launcher-card:hover .sym-float {
-            animation: symFloat 1.9s ease-in-out infinite;
+        @keyframes popPiston {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-7px); }
         }
 
-        .launcher-card:hover .sym-pulse {
-            animation: symPulse 1.5s ease-in-out infinite;
+        @keyframes popBolt {
+            0%, 100% { transform: scale(1); filter: brightness(1); }
+            45% { transform: scale(1.11); filter: brightness(1.22); }
+            65% { transform: scale(0.98); filter: brightness(1.04); }
+        }
+
+        .launcher-card:hover .pop-anim-float {
+            animation: popFloat 2.1s ease-in-out infinite;
+        }
+
+        .launcher-card:hover .pop-anim-flame {
+            transform-origin: 50% 80%;
+            animation: popFlame 1.35s ease-in-out infinite;
+        }
+
+        .launcher-card:hover .pop-anim-piston {
+            animation: popPiston 1.15s ease-in-out infinite;
+        }
+
+        .launcher-card:hover .pop-anim-bolt {
+            transform-origin: center;
+            animation: popBolt 1.45s ease-in-out infinite;
         }
 
         .launcher-card.launcher-card-hybrid {
             --card-accent: #2dd4bf;
-            --card-glow: rgba(45, 212, 191, 0.22);
+            --card-glow: rgba(45, 212, 191, 0.34);
         }
 
         .launcher-card.launcher-card-ev {
             --card-accent: #38bdf8;
-            --card-glow: rgba(56, 189, 248, 0.24);
+            --card-glow: rgba(56, 189, 248, 0.38);
         }
 
         .launcher-card:hover {
-            transform: translateY(-4px);
+            z-index: 25;
+            transform: translateY(-5px);
             border-color: var(--card-accent);
-            box-shadow: 0 22px 44px -16px rgba(0, 0, 0, 0.92), 0 0 28px -8px var(--card-glow);
-            background: linear-gradient(180deg, rgba(25, 31, 44, 0.96) 0%, rgba(12, 15, 23, 0.98) 100%);
+            box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.95), 0 0 34px -6px var(--card-glow);
+            background: linear-gradient(180deg, rgba(12, 18, 32, 0.88) 0%, rgba(5, 9, 18, 0.94) 100%);
         }
 
         .launcher-card:focus-visible {
+            z-index: 25;
             outline: 2px solid var(--card-accent);
             outline-offset: 3px;
         }
@@ -1486,7 +1720,7 @@
             padding: 4px 9px;
             border-radius: 99px;
             color: var(--card-accent);
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255, 255, 255, 0.14);
         }
 
@@ -1494,7 +1728,7 @@
             width: 38px;
             height: 38px;
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border-subtle);
             display: inline-flex;
             align-items: center;
@@ -1511,8 +1745,8 @@
         }
 
         .launcher-card-desc {
-            font-size: 0.84rem;
-            line-height: 1.5;
+            font-size: 0.83rem;
+            line-height: 1.48;
             color: var(--text-secondary);
         }
 
@@ -1521,7 +1755,7 @@
             align-items: center;
             justify-content: space-between;
             width: 100%;
-            padding-top: 12px;
+            padding-top: 11px;
             border-top: 1px solid var(--border-subtle);
             font-family: var(--font-mono);
             font-size: 0.74rem;
@@ -1667,24 +1901,436 @@
     </style>
 </head>
 <body>
-    <!-- Ecrã Inicial com seleção: ICE · Híbrido · 100% Elétrico -->
+    <!-- Ecrã Inicial com Blueprint 2D Dissecado no Fundo + Seleção: ICE · Híbrido · 100% Elétrico -->
     <section id="launcher-screen" class="launcher-screen" aria-label="Seleção de Motorização">
-        <div class="launcher-topbar">
-            <span class="widget-badge badge-live" id="launcher-brand-badge">Dynamic Kinematrix</span>
+        <div class="launcher-blueprint-bg" aria-hidden="true">
+            <svg class="launcher-blueprint-svg" viewBox="0 0 1600 920" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="bp-grid-s" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#ffffff" stroke-opacity="0.045" stroke-width="0.7"/>
+                    </pattern>
+                    <pattern id="bp-grid-m" width="100" height="100" patternUnits="userSpaceOnUse">
+                        <rect width="100" height="100" fill="url(#bp-grid-s)"/>
+                        <path d="M 100 0 L 0 0 0 100" fill="none" stroke="#ffffff" stroke-opacity="0.095" stroke-width="1"/>
+                    </pattern>
+                    <pattern id="bp-hatch" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                        <rect width="8" height="8" fill="#050608"/>
+                        <line x1="0" y1="0" x2="0" y2="8" stroke="#64748b" stroke-opacity="0.22" stroke-width="1"/>
+                    </pattern>
+                    <pattern id="bp-hatch-cast" width="10" height="10" patternTransform="rotate(-45)" patternUnits="userSpaceOnUse">
+                        <rect width="10" height="10" fill="#06070a"/>
+                        <line x1="0" y1="0" x2="0" y2="10" stroke="#475569" stroke-opacity="0.20" stroke-width="0.9"/>
+                    </pattern>
+                    <radialGradient id="bp-burn-glow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#e2e8f0" stop-opacity="0.22"/>
+                        <stop offset="50%" stop-color="#94a3b8" stop-opacity="0.10"/>
+                        <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="bp-oil-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#0a0c10" stop-opacity="0.94"/>
+                        <stop offset="100%" stop-color="#030406" stop-opacity="0.96"/>
+                    </linearGradient>
+                </defs>
+
+                <!-- Eixos de Referência / Datum Lines em largura total -->
+                <line class="bp-dim" x1="0" y1="618" x2="1600" y2="618"/>
+                <line class="bp-dim" x1="600" y1="0" x2="600" y2="920"/>
+                <line class="bp-dim" x1="733" y1="0" x2="733" y2="920"/>
+                <line class="bp-dim" x1="867" y1="0" x2="867" y2="920"/>
+                <line class="bp-dim" x1="1000" y1="0" x2="1000" y2="920"/>
+
+                <!-- ================= MOTOR 2D DISSECADO PRETO (SECÇÃO LONGITUDINAL) ================= -->
+                <!-- 1. Bloco de Cilindros + Camisas + Canais de Água -->
+                <g opacity="0.96">
+                    <path d="M522 362 H1078 V572 H1092 V676 H508 V572 H522 Z" fill="#050608" stroke="#475569" stroke-width="1.8"/>
+                    <!-- Paredes exteriores em corte hachurado escuro -->
+                    <rect x="522" y="362" width="26" height="206" fill="url(#bp-hatch)" stroke="#475569" stroke-width="1.3"/>
+                    <rect x="1052" y="362" width="26" height="206" fill="url(#bp-hatch)" stroke="#475569" stroke-width="1.3"/>
+                    <!-- Septos entre cilindros com galerias de água -->
+                    <rect x="647" y="362" width="39" height="198" fill="url(#bp-hatch)" stroke="#475569" stroke-width="1.1"/>
+                    <rect x="780" y="362" width="40" height="198" fill="url(#bp-hatch)" stroke="#475569" stroke-width="1.1"/>
+                    <rect x="914" y="362" width="39" height="198" fill="url(#bp-hatch)" stroke="#475569" stroke-width="1.1"/>
+                    <rect x="658" y="378" width="17" height="106" rx="5" fill="#080a0e" stroke="#64748b" stroke-width="0.9" stroke-dasharray="3 2"/>
+                    <rect x="792" y="378" width="16" height="106" rx="5" fill="#080a0e" stroke="#64748b" stroke-width="0.9" stroke-dasharray="3 2"/>
+                    <rect x="925" y="378" width="17" height="106" rx="5" fill="#080a0e" stroke="#64748b" stroke-width="0.9" stroke-dasharray="3 2"/>
+                    <!-- 4 Camisas de Cilindro (x=553..647, 686..780, 820..914, 953..1047) -->
+                    <rect x="553" y="362" width="94" height="200" fill="#020304" stroke="#64748b" stroke-width="1.4"/>
+                    <rect x="686" y="362" width="94" height="200" fill="#020304" stroke="#64748b" stroke-width="1.4"/>
+                    <rect x="820" y="362" width="94" height="200" fill="#020304" stroke="#64748b" stroke-width="1.4"/>
+                    <rect x="953" y="362" width="94" height="200" fill="#020304" stroke="#64748b" stroke-width="1.4"/>
+                </g>
+
+                <!-- 2. Cabeça do Motor em Corte + Câmaras de Combustão + Válvulas + Velas + Injetores -->
+                <g opacity="0.96">
+                    <path d="M524 248 H1076 V362 H524 Z" fill="url(#bp-hatch-cast)" stroke="#475569" stroke-width="1.7"/>
+                    <!-- 4 Câmaras de Combustão Pent-Roof -->
+                    <path d="M556 362 L572 332 H628 L644 362 Z" fill="#030406" stroke="#64748b" stroke-width="1.3"/>
+                    <path d="M689 362 L705 332 H761 L777 362 Z" fill="#030406" stroke="#64748b" stroke-width="1.3"/>
+                    <path d="M823 362 L839 332 H895 L911 362 Z" fill="#080a0e" stroke="#94a3b8" stroke-width="1.4"/>
+                    <path d="M956 362 L972 332 H1028 L1044 362 Z" fill="#030406" stroke="#64748b" stroke-width="1.3"/>
+                    <!-- Pulso subtil no Cilindro #3 -->
+                    <ellipse class="bp-ignition-pulse" cx="867" cy="356" rx="38" ry="20" fill="url(#bp-burn-glow)"/>
+
+                    <!-- Válvulas e Molas (2 por cilindro: Admissão esquerda / Escape direita) -->
+                    <!-- Cil 1: Admissão aberta -->
+                    <line class="bp-line" stroke-width="2" x1="581" y1="254" x2="575" y2="352"/><path class="bp-line" stroke-width="1.7" d="M563 352 H587"/>
+                    <path class="bp-line" stroke-width="1.1" d="M573 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <line class="bp-line" stroke-width="2" x1="619" y1="254" x2="625" y2="334"/><path class="bp-line" stroke-width="1.7" d="M613 334 H637"/>
+                    <path class="bp-line" stroke-width="1.1" d="M614 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <!-- Cil 2: Ambas fechadas -->
+                    <line class="bp-line" stroke-width="2" x1="714" y1="254" x2="708" y2="334"/><path class="bp-line" stroke-width="1.7" d="M696 334 H720"/>
+                    <path class="bp-line" stroke-width="1.1" d="M706 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <line class="bp-line" stroke-width="2" x1="752" y1="254" x2="758" y2="334"/><path class="bp-line" stroke-width="1.7" d="M746 334 H770"/>
+                    <path class="bp-line" stroke-width="1.1" d="M747 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <!-- Cil 3: Ambas fechadas em combustão -->
+                    <line class="bp-line" stroke-width="2" x1="848" y1="254" x2="842" y2="334"/><path class="bp-line" stroke-width="1.7" d="M830 334 H854"/>
+                    <path class="bp-line" stroke-width="1.1" d="M840 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <line class="bp-line" stroke-width="2" x1="886" y1="254" x2="892" y2="334"/><path class="bp-line" stroke-width="1.7" d="M880 334 H904"/>
+                    <path class="bp-line" stroke-width="1.1" d="M881 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <!-- Cil 4: Escape aberto -->
+                    <line class="bp-line" stroke-width="2" x1="981" y1="254" x2="975" y2="334"/><path class="bp-line" stroke-width="1.7" d="M963 334 H987"/>
+                    <path class="bp-line" stroke-width="1.1" d="M973 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+                    <line class="bp-hot" stroke-width="2" x1="1019" y1="254" x2="1025" y2="352"/><path class="bp-hot" stroke-width="1.8" d="M1013 352 H1037"/>
+                    <path class="bp-hot" stroke-width="1.1" d="M1014 262 l12 5 -12 5 12 5 -12 5 12 5"/>
+
+                    <!-- Bobinas & Velas de Ignição (4 cilindros) -->
+                    <g stroke="#64748b" stroke-width="1.3" fill="#050608">
+                        <rect x="595" y="164" width="10" height="46" rx="2"/><rect x="596" y="210" width="8" height="92"/><line x1="600" y1="302" x2="600" y2="332"/>
+                        <rect x="728" y="164" width="10" height="46" rx="2"/><rect x="729" y="210" width="8" height="92"/><line x1="733" y1="302" x2="733" y2="332"/>
+                        <rect x="862" y="164" width="10" height="46" rx="2"/><rect x="863" y="210" width="8" height="92"/><line x1="867" y1="302" x2="867" y2="332" stroke="#cbd5e1"/>
+                        <rect x="995" y="164" width="10" height="46" rx="2"/><rect x="996" y="210" width="8" height="92"/><line x1="1000" y1="302" x2="1000" y2="332"/>
+                    </g>
+
+                    <!-- Galeria & Injetores Diretos de Combustível -->
+                    <rect x="518" y="286" width="564" height="10" rx="4" fill="#090b0f" stroke="#64748b" stroke-width="1.3"/>
+                    <path class="bp-line" stroke-width="1.4" d="M565 296 l14 34 M698 296 l14 34 M832 296 l14 34 M965 296 l14 34"/>
+                    <path class="bp-line" stroke-width="1.4" d="M1050 286 L1060 326"/>
+                    <path fill="none" stroke="#94a3b8" stroke-width="0.9" stroke-dasharray="2 2" d="M712 330 l-8 14 m8 -14 l8 14"/>
+                </g>
+
+                <!-- 3. Dupla Árvore de Cames DOHC + Tampa de Válvulas -->
+                <g opacity="0.96">
+                    <!-- Tampa de Válvulas em Preto Fosco -->
+                    <path d="M532 198 V162 Q532 146 550 146 H1050 Q1068 146 1068 162 V198" fill="#050609" stroke="#52525b" stroke-width="1.8"/>
+                    <rect x="554" y="135" width="38" height="11" rx="2" fill="url(#bp-hatch)" stroke="#64748b" stroke-width="1.2"/>
+                    <!-- Veio de Cames + Lóbulos excêntricos -->
+                    <rect x="528" y="213" width="540" height="11" rx="3" fill="#080a0e" stroke="#64748b" stroke-width="1.4"/>
+                    <ellipse cx="578" cy="222" rx="8" ry="15" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="622" cy="216" rx="14" ry="8" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="712" cy="216" rx="14" ry="8" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="755" cy="216" rx="14" ry="8" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="845" cy="216" rx="14" ry="8" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="888" cy="216" rx="14" ry="8" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="978" cy="216" rx="14" ry="8" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                    <ellipse cx="1022" cy="222" rx="8" ry="15" fill="#0a0d12" stroke="#94a3b8" stroke-width="1.3"/>
+                </g>
+
+                <!-- 4. Sistema de Distribuição (Polias Dentadas DOHC + Correia/Corrente + Tensor) -->
+                <g opacity="0.96">
+                    <circle cx="482" cy="218" r="24" fill="#050608" stroke="#64748b" stroke-width="1.6"/>
+                    <circle cx="482" cy="218" r="14" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="4 3"/>
+                    <circle cx="482" cy="218" r="5" fill="#020304" stroke="#94a3b8" stroke-width="1.4"/>
+                    <circle cx="516" cy="218" r="18" fill="#050608" stroke="#64748b" stroke-width="1.4"/>
+                    <circle cx="516" cy="218" r="5" fill="#020304" stroke="#94a3b8" stroke-width="1.2"/>
+                    <!-- Polia da Cambota & Polia Harmónica -->
+                    <circle cx="496" cy="618" r="22" fill="#050608" stroke="#64748b" stroke-width="1.6"/>
+                    <rect x="454" y="592" width="16" height="52" rx="3" fill="url(#bp-hatch)" stroke="#52525b" stroke-width="1.4"/>
+                    <!-- Corrente/Correia + Guias + Tensor -->
+                    <path d="M460 218 L474 618 M506 218 L518 618" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="5 3"/>
+                    <circle cx="458" cy="402" r="11" fill="#050608" stroke="#64748b" stroke-width="1.3"/>
+                </g>
+
+                <!-- 5. 4 Pistões Dissecados + Anéis + Pinos + Bielas Forjadas -->
+                <!-- Cil 1 (BDC) -->
+                <g opacity="0.98">
+                    <rect x="560" y="468" width="80" height="54" rx="5" fill="#0a0c10" stroke="#94a3b8" stroke-width="1.6"/>
+                    <line class="bp-line" stroke-width="1.3" x1="560" y1="476" x2="640" y2="476"/>
+                    <line class="bp-line" stroke-width="1.3" x1="560" y1="483" x2="640" y2="483"/>
+                    <line class="bp-line" stroke-width="1.1" x1="560" y1="490" x2="640" y2="490" stroke-dasharray="4 2"/>
+                    <circle cx="600" cy="503" r="9" fill="#030406" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M594 503 L592 630 L608 630 L606 503 Z" fill="#090b0f" stroke="#94a3b8" stroke-width="1.4"/>
+                    <line class="bp-line" stroke-width="1" x1="600" y1="516" x2="600" y2="622"/>
+                    <circle cx="600" cy="642" r="14" fill="#040507" stroke="#94a3b8" stroke-width="1.6"/>
+                </g>
+                <!-- Cil 2 (Mid-Up) -->
+                <g opacity="0.98">
+                    <rect x="693" y="412" width="80" height="54" rx="5" fill="#0a0c10" stroke="#94a3b8" stroke-width="1.6"/>
+                    <line class="bp-line" stroke-width="1.3" x1="693" y1="420" x2="773" y2="420"/>
+                    <line class="bp-line" stroke-width="1.3" x1="693" y1="427" x2="773" y2="427"/>
+                    <line class="bp-line" stroke-width="1.1" x1="693" y1="434" x2="773" y2="434" stroke-dasharray="4 2"/>
+                    <circle cx="733" cy="447" r="9" fill="#030406" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M727 447 L725 582 L741 582 L739 447 Z" fill="#090b0f" stroke="#94a3b8" stroke-width="1.4"/>
+                    <line class="bp-line" stroke-width="1" x1="733" y1="460" x2="733" y2="574"/>
+                    <circle cx="733" cy="594" r="14" fill="#040507" stroke="#94a3b8" stroke-width="1.6"/>
+                </g>
+                <!-- Cil 3 (TDC Ignition) -->
+                <g opacity="0.98">
+                    <rect x="827" y="370" width="80" height="54" rx="5" fill="#0c0e13" stroke="#cbd5e1" stroke-width="1.6"/>
+                    <line class="bp-hot" stroke-width="1.3" x1="827" y1="378" x2="907" y2="378"/>
+                    <line class="bp-hot" stroke-width="1.3" x1="827" y1="385" x2="907" y2="385"/>
+                    <line class="bp-line" stroke-width="1.1" x1="827" y1="392" x2="907" y2="392" stroke-dasharray="4 2"/>
+                    <circle cx="867" cy="405" r="9" fill="#030406" stroke="#cbd5e1" stroke-width="1.5"/>
+                    <path d="M861 405 L859 582 L875 582 L873 405 Z" fill="#090b0f" stroke="#94a3b8" stroke-width="1.4"/>
+                    <line class="bp-line" stroke-width="1" x1="867" y1="418" x2="867" y2="574"/>
+                    <circle cx="867" cy="594" r="14" fill="#040507" stroke="#94a3b8" stroke-width="1.6"/>
+                </g>
+                <!-- Cil 4 (Mid-Down) -->
+                <g opacity="0.98">
+                    <rect x="960" y="432" width="80" height="54" rx="5" fill="#0a0c10" stroke="#94a3b8" stroke-width="1.6"/>
+                    <line class="bp-line" stroke-width="1.3" x1="960" y1="440" x2="1040" y2="440"/>
+                    <line class="bp-line" stroke-width="1.3" x1="960" y1="447" x2="1040" y2="447"/>
+                    <line class="bp-line" stroke-width="1.1" x1="960" y1="454" x2="1040" y2="454" stroke-dasharray="4 2"/>
+                    <circle cx="1000" cy="467" r="9" fill="#030406" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M994 467 L992 630 L1008 630 L1006 467 Z" fill="#090b0f" stroke="#94a3b8" stroke-width="1.4"/>
+                    <line class="bp-line" stroke-width="1" x1="1000" y1="480" x2="1000" y2="622"/>
+                    <circle cx="1000" cy="642" r="14" fill="#040507" stroke="#94a3b8" stroke-width="1.6"/>
+                </g>
+
+                <!-- 6. Cambota, Apoios Principais e Contrapesos -->
+                <g opacity="0.96">
+                    <rect x="496" y="609" width="600" height="18" rx="4" fill="#080a0e" stroke="#64748b" stroke-width="1.5"/>
+                    <!-- Contrapesos da Cambota -->
+                    <path d="M566 604 Q600 564 634 604 L622 664 Q600 676 578 664 Z" fill="url(#bp-hatch)" stroke="#64748b" stroke-width="1.3"/>
+                    <path d="M699 632 Q733 672 767 632 L755 572 Q733 560 711 572 Z" fill="url(#bp-hatch)" stroke="#64748b" stroke-width="1.3"/>
+                    <path d="M833 632 Q867 672 901 632 L889 572 Q867 560 845 572 Z" fill="url(#bp-hatch)" stroke="#64748b" stroke-width="1.3"/>
+                    <path d="M966 604 Q1000 564 1034 604 L1022 664 Q1000 676 978 664 Z" fill="url(#bp-hatch)" stroke="#64748b" stroke-width="1.3"/>
+                    <!-- 5 Apoios Principais -->
+                    <rect x="530" y="598" width="18" height="40" rx="2" fill="#040507" stroke="#94a3b8" stroke-width="1.2"/>
+                    <rect x="658" y="598" width="18" height="40" rx="2" fill="#040507" stroke="#94a3b8" stroke-width="1.2"/>
+                    <rect x="791" y="598" width="18" height="40" rx="2" fill="#040507" stroke="#94a3b8" stroke-width="1.2"/>
+                    <rect x="924" y="598" width="18" height="40" rx="2" fill="#040507" stroke="#94a3b8" stroke-width="1.2"/>
+                    <rect x="1054" y="598" width="18" height="40" rx="2" fill="#040507" stroke="#94a3b8" stroke-width="1.2"/>
+                </g>
+
+                <!-- 7. Cárter de Óleo, Pescador & Bomba de Óleo (100% visível abaixo dos cartões) -->
+                <g opacity="0.96">
+                    <path d="M518 676 H1082 L1060 756 H540 Z" fill="url(#bp-oil-grad)" stroke="#475569" stroke-width="1.8"/>
+                    <path d="M548 756 v8 m18 -8 v8 m18 -8 v8 m18 -8 v8 m360 -8 v8 m18 -8 v8 m18 -8 v8" stroke="#52525b" stroke-width="1.3"/>
+                    <!-- Nível de Óleo -->
+                    <path d="M532 716 Q640 710 760 718 T980 714 T1068 718" fill="none" stroke="#64748b" stroke-opacity="0.55" stroke-width="1.2" stroke-dasharray="6 4"/>
+                    <!-- Pescador & Bomba de Óleo -->
+                    <path d="M928 634 V708 Q928 730 950 730 H990" fill="none" stroke="#94a3b8" stroke-width="3.2"/>
+                    <path d="M988 720 H1022 L1028 742 H982 Z" fill="#090b0f" stroke="#94a3b8" stroke-width="1.5"/>
+                    <circle cx="928" cy="642" r="14" fill="#040507" stroke="#94a3b8" stroke-width="1.4"/>
+                    <circle cx="928" cy="642" r="6" fill="none" stroke="#64748b" stroke-width="1.2" stroke-dasharray="3 2"/>
+                </g>
+
+                <!-- 8. Esquerda: Coletor de Admissão, Turbocompressor & Intercooler -->
+                <g opacity="0.96">
+                    <!-- Coletor Admissão -->
+                    <path d="M352 246 H452 Q472 246 472 268 V318 Q472 332 490 332 H524" fill="#050608" stroke="#64748b" stroke-width="1.7"/>
+                    <rect x="342" y="240" width="96" height="58" rx="12" fill="#06080b" stroke="#64748b" stroke-width="1.6"/>
+                    <path d="M438 258 H524 M438 274 H524 M438 290 H524" stroke="#64748b" stroke-width="1.3"/>
+                    <!-- Tubo Pressão Turbo -> Admissão -->
+                    <path d="M318 358 V324 Q318 298 342 298" fill="none" stroke="#64748b" stroke-width="2.4"/>
+                    <!-- Turbocompressor em Corte -->
+                    <circle cx="318" cy="406" r="46" fill="#040507" stroke="#64748b" stroke-width="1.8"/>
+                    <circle cx="318" cy="406" r="28" fill="#090b0f" stroke="#94a3b8" stroke-width="1.3"/>
+                    <path d="M318 380 L324 406 L344 400 M318 432 L312 406 L292 412 M296 388 L318 406 L338 424" fill="none" stroke="#cbd5e1" stroke-width="1.3"/>
+                    <circle cx="384" cy="406" r="34" fill="#06070a" stroke="#64748b" stroke-width="1.7"/>
+                    <line x1="346" y1="406" x2="384" y2="406" stroke="#94a3b8" stroke-width="3"/>
+                    <!-- Intercooler Frontal -->
+                    <rect x="258" y="488" width="124" height="84" rx="5" fill="#050608" stroke="#64748b" stroke-width="1.6"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.55" x1="266" y1="504" x2="374" y2="504"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.55" x1="266" y1="518" x2="374" y2="518"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.55" x1="266" y1="532" x2="374" y2="532"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.55" x1="266" y1="546" x2="374" y2="546"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.55" x1="266" y1="560" x2="374" y2="560"/>
+                    <path d="M318 452 V488" fill="none" stroke="#64748b" stroke-width="2" stroke-dasharray="4 2"/>
+                </g>
+
+                <!-- 9. Direita: Coletor de Escape, Volante do Motor & Radiador / Bomba Água -->
+                <g opacity="0.96">
+                    <!-- Coletor de Escape -->
+                    <path class="bp-hot" stroke-width="2.2" d="M1076 296 Q1165 292 1218 342 M1076 322 Q1152 320 1218 352 M1076 348 Q1145 352 1218 362"/>
+                    <rect x="1214" y="330" width="22" height="44" rx="3" fill="#050608" stroke="#94a3b8" stroke-width="1.6"/>
+                    <path class="bp-hot" stroke-width="1.8" d="M1236 352 H1278"/>
+                    <!-- Volante do Motor & Embraiagem -->
+                    <rect x="1096" y="528" width="28" height="180" rx="4" fill="url(#bp-hatch)" stroke="#64748b" stroke-width="1.8"/>
+                    <rect x="1124" y="538" width="18" height="160" rx="3" fill="#080a0e" stroke="#64748b" stroke-width="1.4"/>
+                    <path d="M1094 528 v-6 m0 186 v6 M1142 560 l18 14 v96 l-18 14" fill="none" stroke="#64748b" stroke-width="1.5"/>
+                    <!-- Radiador & Bomba de Água -->
+                    <circle cx="1174" cy="480" r="24" fill="#040507" stroke="#64748b" stroke-width="1.6"/>
+                    <path d="M1174 462 V498 M1156 480 H1192 M1161 467 L1187 493 M1161 493 L1187 467" stroke="#94a3b8" stroke-width="1.2"/>
+                    <path d="M1078 446 H1174 V456 M1198 480 H1228" fill="none" stroke="#64748b" stroke-width="2"/>
+                    <rect x="1228" y="458" width="104" height="176" rx="5" fill="#050608" stroke="#64748b" stroke-width="1.8"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="478" x2="1320" y2="478"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="498" x2="1320" y2="498"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="518" x2="1320" y2="518"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="538" x2="1320" y2="538"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="558" x2="1320" y2="558"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="578" x2="1320" y2="578"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="598" x2="1320" y2="598"/>
+                    <line class="bp-line" stroke-width="1" stroke-opacity="0.6" x1="1240" y1="616" x2="1320" y2="616"/>
+                </g>
+
+                <!-- ================= CHAMADAS TÉCNICAS & LEGENDAS VISÍVEIS (17 COMPONENTES) ================= -->
+                <!-- Banco Superior Esquerdo (fora do herói e acima dos cartões) -->
+                <g>
+                    <polyline class="bp-leader" points="262,105 500,105 555,148"/>
+                    <circle cx="555" cy="148" r="3.4" fill="#94a3b8"/><circle cx="555" cy="148" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="38" y="92" width="224" height="26"/><text class="bp-label" id="bp-lbl-01" x="48" y="105">01 · TAMPA DE VÁLVULAS</text>
+
+                    <polyline class="bp-leader" points="282,147 540,147 566,216"/>
+                    <circle cx="566" cy="216" r="3.4" fill="#94a3b8"/><circle cx="566" cy="216" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="38" y="134" width="244" height="26"/><text class="bp-label" id="bp-lbl-02" x="48" y="147">02 · ÁRVORES DE CAMES DOHC</text>
+
+                    <polyline class="bp-leader" points="244,189 458,189 476,204"/>
+                    <circle cx="476" cy="204" r="3.4" fill="#94a3b8"/><circle cx="476" cy="204" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="38" y="176" width="206" height="26"/><text class="bp-label" id="bp-lbl-03" x="48" y="189">03 · DISTRIBUIÇÃO</text>
+
+                    <polyline class="bp-leader" points="262,231 390,231 390,248"/>
+                    <circle cx="390" cy="248" r="3.4" fill="#94a3b8"/><circle cx="390" cy="248" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="38" y="218" width="224" height="26"/><text class="bp-label" id="bp-lbl-07" x="48" y="231">07 · COLETOR ADMISSÃO</text>
+
+                    <polyline class="bp-leader" points="262,273 294,273 294,370"/>
+                    <circle cx="294" cy="370" r="3.4" fill="#94a3b8"/><circle cx="294" cy="370" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="38" y="260" width="224" height="26"/><text class="bp-label" id="bp-lbl-08" x="48" y="273">08 · TURBOCOMPRESSOR</text>
+                </g>
+
+                <!-- Banco Superior Direito (fora do herói, abaixo dos botões e acima dos cartões) -->
+                <g>
+                    <polyline class="bp-leader" points="1340,105 1105,105 1000,164"/>
+                    <circle cx="1000" cy="164" r="3.4" fill="#94a3b8"/><circle cx="1000" cy="164" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="1340" y="92" width="222" height="26"/><text class="bp-label" id="bp-lbl-04" x="1552" y="105" text-anchor="end">04 · BOBINA &amp; VELA</text>
+
+                    <polyline class="bp-leader" points="1332,147 1068,147 1026,274"/>
+                    <circle cx="1026" cy="274" r="3.4" fill="#cbd5e1"/><circle cx="1026" cy="274" r="7" fill="none" stroke="#cbd5e1" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="1332" y="134" width="230" height="26"/><text class="bp-label" id="bp-lbl-05" x="1552" y="147" text-anchor="end">05 · VÁLVULAS &amp; MOLAS</text>
+
+                    <polyline class="bp-leader" points="1318,189 1096,189 1054,288"/>
+                    <circle cx="1054" cy="288" r="3.4" fill="#94a3b8"/><circle cx="1054" cy="288" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="1318" y="176" width="244" height="26"/><text class="bp-label" id="bp-lbl-06" x="1552" y="189" text-anchor="end">06 · INJETOR DE COMBUSTÍVEL</text>
+
+                    <polyline class="bp-leader" points="1340,231 1212,231 1212,330"/>
+                    <circle cx="1212" cy="330" r="3.4" fill="#cbd5e1"/><circle cx="1212" cy="330" r="7" fill="none" stroke="#cbd5e1" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="1340" y="218" width="222" height="26"/><text class="bp-label" id="bp-lbl-10" x="1552" y="231" text-anchor="end">10 · COLETOR ESCAPE</text>
+
+                    <polyline class="bp-leader" points="1322,273 1280,273 1280,458"/>
+                    <circle cx="1280" cy="458" r="3.4" fill="#94a3b8"/><circle cx="1280" cy="458" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="1322" y="260" width="240" height="26"/><text class="bp-label" id="bp-lbl-11" x="1552" y="273" text-anchor="end">11 · RADIADOR &amp; BOMBA ÁGUA</text>
+                </g>
+
+                <!-- Faixa Inferior Livre (100% visível abaixo dos cartões) -->
+                <g>
+                    <!-- 09 Intercooler -->
+                    <polyline class="bp-leader" points="260,792 260,645 318,572"/>
+                    <circle cx="318" cy="572" r="3.4" fill="#94a3b8"/><circle cx="318" cy="572" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="156" y="792" width="208" height="26"/><text class="bp-label" id="bp-lbl-09" x="260" y="805" text-anchor="middle">09 · INTERCOOLER</text>
+
+                    <!-- 13 Bloco & Camisas -->
+                    <polyline class="bp-leader" points="490,844 490,625 535,515"/>
+                    <circle cx="535" cy="515" r="3.4" fill="#94a3b8"/><circle cx="535" cy="515" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="384" y="844" width="212" height="26"/><text class="bp-label" id="bp-lbl-13" x="490" y="857" text-anchor="middle">13 · BLOCO &amp; CAMISAS</text>
+
+                    <!-- 14 Pistões & Anéis -->
+                    <polyline class="bp-leader" points="635,792 635,665 600,518"/>
+                    <circle cx="600" cy="518" r="3.4" fill="#94a3b8"/><circle cx="600" cy="518" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="528" y="792" width="214" height="26"/><text class="bp-label" id="bp-lbl-14" x="635" y="805" text-anchor="middle">14 · PISTÕES &amp; ANÉIS</text>
+
+                    <!-- 15 Bielas Forjadas -->
+                    <polyline class="bp-leader" points="760,844 760,665 733,558"/>
+                    <circle cx="733" cy="558" r="3.4" fill="#94a3b8"/><circle cx="733" cy="558" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="654" y="844" width="212" height="26"/><text class="bp-label" id="bp-lbl-15" x="760" y="857" text-anchor="middle">15 · BIELAS FORJADAS</text>
+
+                    <!-- 16 Cambota & Contrapesos -->
+                    <polyline class="bp-leader" points="905,792 905,695 867,642"/>
+                    <circle cx="867" cy="642" r="3.4" fill="#94a3b8"/><circle cx="867" cy="642" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="788" y="792" width="234" height="26"/><text class="bp-label" id="bp-lbl-16" x="905" y="805" text-anchor="middle">16 · CAMBOTA &amp; CONTRAPESOS</text>
+
+                    <!-- 17 Cárter & Bomba de Óleo -->
+                    <polyline class="bp-leader" points="1075,844 1075,770 1012,734"/>
+                    <circle cx="1012" cy="734" r="3.4" fill="#94a3b8"/><circle cx="1012" cy="734" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="960" y="844" width="230" height="26"/><text class="bp-label" id="bp-lbl-17" x="1075" y="857" text-anchor="middle">17 · CÁRTER &amp; ÓLEO</text>
+
+                    <!-- 12 Volante do Motor -->
+                    <polyline class="bp-leader" points="1245,792 1245,720 1134,672"/>
+                    <circle cx="1134" cy="672" r="3.4" fill="#94a3b8"/><circle cx="1134" cy="672" r="7" fill="none" stroke="#94a3b8" stroke-opacity="0.40"/>
+                    <rect class="bp-pill" x="1138" y="792" width="214" height="26"/><text class="bp-label" id="bp-lbl-12" x="1245" y="805" text-anchor="middle">12 · VOLANTE DO MOTOR</text>
+                </g>
+
+                <!-- Carimbo Técnico CAD no canto inferior direito -->
+                <g>
+                    <rect x="1364" y="836" width="202" height="50" rx="3" fill="rgba(4, 5, 8, 0.94)" stroke="#ffffff" stroke-opacity="0.22" stroke-width="1"/>
+                    <line x1="1364" y1="854" x2="1566" y2="854" stroke="#ffffff" stroke-opacity="0.14" stroke-width="0.9"/>
+                    <text class="bp-stamp-text" id="bp-stamp-title" x="1374" y="848">DWG: DK-I4T-DOHC-01</text>
+                    <text class="bp-stamp-text" id="bp-stamp-sub" x="1374" y="874">MOTOR 2D DISSECADO · 1:2</text>
+                </g>
+            </svg>
+        </div>
+
+        <div class="launcher-corner-actions">
             <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="launcher-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
+            <button type="button" class="btn-3d-ctrl btn-settings-trigger" id="btn-launcher-settings" aria-haspopup="dialog" aria-expanded="false" title="Definições"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="launcher-settings-lbl">Definições</span></button>
+        </div>
+
+        <div class="launcher-hero">
+            <h1 id="launcher-title">Dynamic Kinematrix</h1>
+            <p id="launcher-subtitle">Movidos pela paixão. Guiados pela criatividade.</p>
         </div>
 
         <div class="launcher-center">
-            <div class="launcher-hero">
-                <h1 id="launcher-title">Dynamic Kinematrix</h1>
-                <p id="launcher-subtitle">Movidos pela paixão. Guiados pela criatividade.</p>
-            </div>
-
             <div class="launcher-cards-grid">
                 <button type="button" class="launcher-card launcher-card-ice" id="btn-launch-ice">
-                    <div class="launcher-hover-watermark" aria-hidden="true">
-                        <svg class="sym-pulse" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="rgba(249,115,22,0.25)"/><path d="M12 12.5c.9 1.3 1.8 2.2 1.8 3.6a1.8 1.8 0 1 1-3.6 0c0-.9.4-1.7.9-2.2" stroke="#fca5a5"/></svg>
-                        <svg class="sym-float" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5" fill="rgba(251,146,60,0.2)"/><path d="M7.5 6.5h9M7.5 8.8h9"/><circle cx="12" cy="11" r="1.4"/><path d="M12 12.4V18"/><circle cx="12" cy="19.5" r="2.2"/></svg>
+                    <div class="launcher-popout-layer" aria-hidden="true">
+                        <!-- Chama multi-camada a sair pelo canto superior direito -->
+                        <span class="pop-sym pop-tr">
+                            <svg class="pop-svg pop-anim-flame" width="68" height="68" viewBox="0 0 64 64" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-ice-f1" x1="32" y1="6" x2="32" y2="58" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#fde047"/>
+                                        <stop offset="45%" stop-color="#f97316"/>
+                                        <stop offset="100%" stop-color="#dc2626"/>
+                                    </linearGradient>
+                                    <linearGradient id="sym-ice-f2" x1="32" y1="22" x2="32" y2="56" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#fef9c3"/>
+                                        <stop offset="100%" stop-color="#fb923c"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M33 6c3.2 9.4 13.8 14.2 13.8 26.8 0 9.8-6.6 18.2-15.4 18.2-8.8 0-15-7.4-15-16.8 0-5.4 2.4-10.6 6.2-14-.2 4.4 2.2 6.8 4.8 6.8 3.2 0 4.2-5.6 5.6-21z" fill="url(#sym-ice-f1)" stroke="#fed7aa" stroke-width="1.6" stroke-linejoin="round"/>
+                                <path d="M32 25c2.2 4.6 6.8 7.8 6.8 14.2 0 4.8-3 8.4-6.8 8.4s-6.8-3.6-6.8-8.4c0-3.2 1.6-6 3.4-8.2.4 2.4 1.8 3.6 3.4 3.6" fill="url(#sym-ice-f2)"/>
+                                <circle cx="18" cy="14" r="2.2" fill="#fde047"/>
+                                <circle cx="48" cy="18" r="1.8" fill="#fb923c"/>
+                                <circle cx="44" cy="9" r="1.4" fill="#fef08a"/>
+                            </svg>
+                        </span>
+                        <!-- Pistão Forjado & Biela a sair pelo canto inferior direito -->
+                        <span class="pop-sym pop-br">
+                            <svg class="pop-svg pop-anim-piston" width="66" height="66" viewBox="0 0 64 64" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-ice-pis" x1="16" y1="8" x2="48" y2="30" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#f1f5f9"/>
+                                        <stop offset="45%" stop-color="#cbd5e1"/>
+                                        <stop offset="100%" stop-color="#64748b"/>
+                                    </linearGradient>
+                                    <linearGradient id="sym-ice-rod" x1="26" y1="30" x2="38" y2="58" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#fb923c"/>
+                                        <stop offset="100%" stop-color="#9a3412"/>
+                                    </linearGradient>
+                                </defs>
+                                <rect x="16" y="7" width="32" height="21" rx="3.5" fill="url(#sym-ice-pis)" stroke="#fdba74" stroke-width="1.5"/>
+                                <line x1="16" y1="12.5" x2="48" y2="12.5" stroke="#475569" stroke-width="1.6"/>
+                                <line x1="16" y1="16.5" x2="48" y2="16.5" stroke="#475569" stroke-width="1.6"/>
+                                <rect x="20" y="20" width="24" height="5" rx="2.5" fill="#1e293b" stroke="#fb923c" stroke-width="1.1"/>
+                                <path d="M29 27l-2.5 22h11L35 27z" fill="url(#sym-ice-rod)" stroke="#fed7aa" stroke-width="1.3"/>
+                                <circle cx="32" cy="51.5" r="7.5" fill="#1e293b" stroke="#fb923c" stroke-width="2"/>
+                                <circle cx="32" cy="51.5" r="3" fill="#fde047"/>
+                            </svg>
+                        </span>
+                        <!-- Faísca de Ignição pelo canto superior esquerdo -->
+                        <span class="pop-sym pop-tl">
+                            <svg class="pop-svg pop-anim-float" width="50" height="50" viewBox="0 0 48 48" fill="none">
+                                <defs>
+                                    <radialGradient id="sym-ice-spk" cx="50%" cy="50%" r="50%">
+                                        <stop offset="0%" stop-color="#fef9c3"/>
+                                        <stop offset="55%" stop-color="#f97316"/>
+                                        <stop offset="100%" stop-color="#ef4444" stop-opacity="0"/>
+                                    </radialGradient>
+                                </defs>
+                                <circle cx="24" cy="24" r="18" fill="url(#sym-ice-spk)" opacity="0.45"/>
+                                <path d="M24 6l3.2 12.2L39 14l-7.8 9.8L42 29l-13.2 1.2L32 42l-8-10.2L15 41l2.8-12L6 24l11.8-3.8L14 9l10 9.2z" fill="#fde047" stroke="#f97316" stroke-width="1.4" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
                     </div>
                     <div>
                         <div class="launcher-card-head">
@@ -1699,17 +2345,66 @@
                     <span class="launcher-card-cta">
                         <span id="launcher-ice-cta">Abrir ICE →</span>
                         <span class="launcher-cta-symbols" aria-hidden="true">
-                            <svg class="sym-pulse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="rgba(249,115,22,0.28)"/></svg>
-                            <svg class="sym-float" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/></svg>
+                            <svg class="pop-anim-flame" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="#f97316" stroke="#fed7aa" stroke-width="1.4"/></svg>
+                            <svg class="pop-anim-piston" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5" fill="rgba(251,146,60,0.22)"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/></svg>
                         </span>
                     </span>
                 </button>
 
                 <button type="button" class="launcher-card launcher-card-hybrid" id="btn-launch-hybrid">
-                    <div class="launcher-hover-watermark" aria-hidden="true">
-                        <svg class="sym-float" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5" fill="rgba(249,115,22,0.18)"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/><path d="M4 13c-.8-1.5-.3-3 .9-4 .1 1 .7 1.5 1.3 1.5"/></svg>
-                        <svg class="sym-pulse" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(45,212,191,0.22)"/></svg>
-                        <svg class="sym-float" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z" fill="rgba(56,189,248,0.16)"/><path d="M6 8h3M15 8h3"/></svg>
+                    <div class="launcher-popout-layer" aria-hidden="true">
+                        <!-- Fusão Híbrida (Chama + Relâmpago) a sair pelo canto superior direito -->
+                        <span class="pop-sym pop-tr">
+                            <svg class="pop-svg pop-anim-float" width="72" height="72" viewBox="0 0 64 64" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-hyb-ice" x1="18" y1="10" x2="34" y2="54" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#fde047"/>
+                                        <stop offset="100%" stop-color="#ea580c"/>
+                                    </linearGradient>
+                                    <linearGradient id="sym-hyb-ev" x1="32" y1="8" x2="50" y2="56" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#5eead4"/>
+                                        <stop offset="100%" stop-color="#0284c7"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M25 10c2 6.8 9.2 10.6 9.2 19.6 0 7-4.8 12.6-11.2 12.6s-11-5.4-11-12.2c0-4 1.8-7.8 4.4-10.2.2 3.2 2 4.8 3.8 4.8 2.2 0 3.4-4 4.8-14.6z" fill="url(#sym-hyb-ice)" stroke="#fed7aa" stroke-width="1.4"/>
+                                <path d="M40 8L26 31h10l-3 21 17-25H39z" fill="url(#sym-hyb-ev)" stroke="#ccfbf1" stroke-width="1.6" stroke-linejoin="round"/>
+                                <circle cx="32" cy="49" r="3" fill="#2dd4bf"/>
+                            </svg>
+                        </span>
+                        <!-- Pistão + Fluxo Magnético pelo canto inferior direito -->
+                        <span class="pop-sym pop-br">
+                            <svg class="pop-svg pop-anim-piston" width="66" height="66" viewBox="0 0 64 64" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-hyb-pis" x1="16" y1="10" x2="48" y2="34" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#f8fafc"/>
+                                        <stop offset="100%" stop-color="#5eead4"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M12 34c0-11 9-20 20-20s20 9 20 20" stroke="#2dd4bf" stroke-width="2" stroke-dasharray="4 3" fill="none"/>
+                                <rect x="19" y="16" width="26" height="17" rx="3" fill="url(#sym-hyb-pis)" stroke="#2dd4bf" stroke-width="1.5"/>
+                                <line x1="19" y1="21" x2="45" y2="21" stroke="#0f172a" stroke-width="1.5"/>
+                                <path d="M29 33l-2 17h10l-2-17z" fill="#fb923c" stroke="#fed7aa" stroke-width="1.2"/>
+                                <circle cx="32" cy="52" r="6" fill="#0f172a" stroke="#2dd4bf" stroke-width="2"/>
+                            </svg>
+                        </span>
+                        <!-- Íman Bicolor pelo canto superior esquerdo -->
+                        <span class="pop-sym pop-tl">
+                            <svg class="pop-svg pop-anim-bolt" width="54" height="54" viewBox="0 0 48 48" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-hyb-mag-n" x1="10" y1="10" x2="24" y2="38" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#f97316"/>
+                                        <stop offset="100%" stop-color="#ef4444"/>
+                                    </linearGradient>
+                                    <linearGradient id="sym-hyb-mag-s" x1="24" y1="10" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#2dd4bf"/>
+                                        <stop offset="100%" stop-color="#38bdf8"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M11 10v14a13 13 0 0 0 13 13v-7a6 6 0 0 1-6-6V10h-7z" fill="url(#sym-hyb-mag-n)" stroke="#fed7aa" stroke-width="1.2"/>
+                                <path d="M37 10v14a13 13 0 0 1-13 13v-7a6 6 0 0 0 6-6V10h7z" fill="url(#sym-hyb-mag-s)" stroke="#bae6fd" stroke-width="1.2"/>
+                                <path d="M11 15h7M30 15h7" stroke="#f8fafc" stroke-width="1.8"/>
+                            </svg>
+                        </span>
                     </div>
                     <div>
                         <div class="launcher-card-head">
@@ -1724,18 +2419,66 @@
                     <span class="launcher-card-cta">
                         <span id="launcher-hyb-cta">Abrir Híbrido →</span>
                         <span class="launcher-cta-symbols" aria-hidden="true">
-                            <svg class="sym-pulse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="rgba(249,115,22,0.28)"/></svg>
-                            <svg class="sym-float" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="7" rx="1.5"/><path d="M12 11v7"/><circle cx="12" cy="19.5" r="2"/></svg>
-                            <svg class="sym-pulse" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(45,212,191,0.32)"/></svg>
-                            <svg class="sym-float" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z"/></svg>
+                            <svg class="pop-anim-flame" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2c1.5 3.2 4.8 4.8 4.8 9a4.8 4.8 0 1 1-9.6 0c0-1.9.9-3.6 2.1-4.8.2 1.6 1.2 2.4 2.2 2.4 1.2 0 1.4-2.1.5-6.6z" fill="#f97316" stroke="#fed7aa" stroke-width="1.3"/></svg>
+                            <svg class="pop-anim-bolt" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="#2dd4bf" stroke="#ccfbf1" stroke-width="1.4"/></svg>
                         </span>
                     </span>
                 </button>
 
                 <button type="button" class="launcher-card launcher-card-ev" id="btn-launch-electric">
-                    <div class="launcher-hover-watermark" aria-hidden="true">
-                        <svg class="sym-float" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v8a6 6 0 0 0 12 0V4h-3v8a3 3 0 0 1-6 0V4H6z" fill="rgba(56,189,248,0.22)"/><path d="M6 7.5h3M15 7.5h3" stroke="#bae6fd"/><path d="M3 10c-.6 2.5.4 5 2 6.5M21 10c.6 2.5-.4 5-2 6.5" stroke="#818cf8"/></svg>
-                        <svg class="sym-pulse" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(56,189,248,0.26)" stroke="#38bdf8"/></svg>
+                    <div class="launcher-popout-layer" aria-hidden="true">
+                        <!-- Relâmpago Alta Tensão a sair pelo canto superior direito -->
+                        <span class="pop-sym pop-tr">
+                            <svg class="pop-svg pop-anim-bolt" width="68" height="68" viewBox="0 0 64 64" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-ev-bolt" x1="16" y1="6" x2="48" y2="58" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#e0f2fe"/>
+                                        <stop offset="45%" stop-color="#38bdf8"/>
+                                        <stop offset="100%" stop-color="#6366f1"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M36 5L14 34h15l-4 25 25-31H34z" fill="url(#sym-ev-bolt)" stroke="#bae6fd" stroke-width="1.8" stroke-linejoin="round"/>
+                                <path d="M33 14L22 30h10l-2 15 12-17H32z" fill="#f0f9ff" opacity="0.65"/>
+                                <path d="M10 18l5 3M52 24l-5 2M14 48l4-3M48 48l-4-3" stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <!-- Íman Neodímio N/S + Linhas de Fluxo pelo canto inferior direito -->
+                        <span class="pop-sym pop-br">
+                            <svg class="pop-svg pop-anim-float" width="68" height="68" viewBox="0 0 64 64" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-ev-mag-n" x1="12" y1="10" x2="32" y2="48" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#fb7185"/>
+                                        <stop offset="100%" stop-color="#e11d48"/>
+                                    </linearGradient>
+                                    <linearGradient id="sym-ev-mag-s" x1="32" y1="10" x2="52" y2="48" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#38bdf8"/>
+                                        <stop offset="100%" stop-color="#2563eb"/>
+                                    </linearGradient>
+                                </defs>
+                                <!-- Linhas de campo magnético -->
+                                <path d="M9 18c-3.5 8-3.5 19 2 27M55 18c3.5 8 3.5 19-2 27" stroke="#7dd3fc" stroke-width="1.5" stroke-dasharray="3 3" stroke-linecap="round"/>
+                                <path d="M22 10c4-4 16-4 20 0" stroke="#bae6fd" stroke-width="1.4" stroke-dasharray="3 2"/>
+                                <!-- Ferradura N/S -->
+                                <path d="M14 14v18a18 18 0 0 0 18 18v-9a9 9 0 0 1-9-9V14h-9z" fill="url(#sym-ev-mag-n)" stroke="#fecdd3" stroke-width="1.3"/>
+                                <path d="M50 14v18a18 18 0 0 1-18 18v-9a9 9 0 0 0 9-9V14h9z" fill="url(#sym-ev-mag-s)" stroke="#bae6fd" stroke-width="1.3"/>
+                                <rect x="14" y="12" width="9" height="7" rx="1" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                                <rect x="41" y="12" width="9" height="7" rx="1" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1"/>
+                            </svg>
+                        </span>
+                        <!-- Estator Elétrico Rotativo pelo canto superior esquerdo -->
+                        <span class="pop-sym pop-tl">
+                            <svg class="pop-svg pop-anim-float" width="52" height="52" viewBox="0 0 48 48" fill="none">
+                                <defs>
+                                    <linearGradient id="sym-ev-stator" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                        <stop offset="0%" stop-color="#38bdf8"/>
+                                        <stop offset="100%" stop-color="#818cf8"/>
+                                    </linearGradient>
+                                </defs>
+                                <circle cx="24" cy="24" r="17" stroke="url(#sym-ev-stator)" stroke-width="2.4" stroke-dasharray="7 4" fill="rgba(14, 165, 233, 0.14)"/>
+                                <circle cx="24" cy="24" r="9" fill="#0f172a" stroke="#7dd3fc" stroke-width="2"/>
+                                <circle cx="24" cy="24" r="3.5" fill="#e0f2fe"/>
+                            </svg>
+                        </span>
                     </div>
                     <div>
                         <div class="launcher-card-head">
@@ -1750,8 +2493,8 @@
                     <span class="launcher-card-cta">
                         <span id="launcher-ev-cta">Abrir 100% Elétrico →</span>
                         <span class="launcher-cta-symbols" aria-hidden="true">
-                            <svg class="sym-float" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z" fill="rgba(56,189,248,0.25)"/><path d="M6 8h3M15 8h3"/></svg>
-                            <svg class="sym-pulse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="rgba(56,189,248,0.32)"/></svg>
+                            <svg class="pop-anim-float" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2"><path d="M6 5v7a6 6 0 0 0 12 0V5h-3v7a3 3 0 0 1-6 0V5H6z" fill="rgba(56,189,248,0.28)"/><path d="M6 8h3M15 8h3"/></svg>
+                            <svg class="pop-anim-bolt" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14h7l-1 8 9-12h-7z" fill="#38bdf8" stroke="#e0f2fe" stroke-width="1.3"/></svg>
                         </span>
                     </span>
                 </button>
@@ -2006,6 +2749,7 @@
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-autorotate" aria-pressed="false" title="Rodar o modelo automaticamente">Auto-Rodar</button>
                     <button type="button" class="btn-3d-ctrl" id="btn-3d-reset" title="Repor ângulo inicial da câmara">Repor Vista</button>
                     <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="btn-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
+                    <button type="button" class="btn-3d-ctrl btn-settings-trigger" id="btn-ice-settings" aria-haspopup="dialog" aria-expanded="false" title="Definições"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="ice-settings-lbl">Definições</span></button>
                 </div>
             </header>
         </div>
@@ -2136,11 +2880,11 @@
                     </div>
                     <div class="campo-grupo">
                         <label for="input-bore" id="lbl-bore">DIÂMETRO (mm)</label>
-                        <input type="number" id="input-bore" class="input-cyber" value="86.0" step="0.5" min="20" max="200">
+                        <input type="number" id="input-bore" class="input-cyber" value="86.0" step="0.5" min="20" max="1000">
                     </div>
                     <div class="campo-grupo">
                         <label for="input-stroke" id="lbl-stroke">CURSO (mm)</label>
-                        <input type="number" id="input-stroke" class="input-cyber" value="86.0" step="0.5" min="20" max="200">
+                        <input type="number" id="input-stroke" class="input-cyber" value="86.0" step="0.5" min="20" max="1000">
                     </div>
                     <div class="campo-grupo">
                         <label for="select-v-angle" id="lbl-v-angle">ÂNGULO EM V</label>
@@ -2285,11 +3029,11 @@
                     </div>
                     <div class="campo-grupo">
                         <label for="input-turbo-boost" id="lbl-turbo-boost">PRESSÃO TURBO (bar)</label>
-                        <input type="number" id="input-turbo-boost" class="input-cyber" value="0.0" step="0.1" min="0.1" max="6.0" disabled>
+                        <input type="number" id="input-turbo-boost" class="input-cyber" value="0.0" step="0.1" min="0.1" max="100" disabled>
                     </div>
                     <div class="campo-grupo">
                         <label for="input-sc-boost" id="lbl-sc-boost">PRESSÃO SUPERCHARGER (bar)</label>
-                        <input type="number" id="input-sc-boost" class="input-cyber" value="0.0" step="0.1" min="0.1" max="4.0" disabled>
+                        <input type="number" id="input-sc-boost" class="input-cyber" value="0.0" step="0.1" min="0.1" max="100" disabled>
                     </div>
                     <div class="campo-grupo">
                         <label for="select-radiator-type" id="lbl-radiator-type">TIPO DE RADIADOR</label>
@@ -2318,7 +3062,7 @@
                     </div>
                     <div class="campo-grupo">
                         <label for="input-cr" id="lbl-cr">COMPRESSÃO (:1)</label>
-                        <input type="number" id="input-cr" class="input-cyber" value="10.5" step="0.1" min="4" max="25">
+                        <input type="number" id="input-cr" class="input-cyber" value="10.5" step="0.1" min="4" max="200">
                     </div>
                     <div class="campo-grupo">
                         <label for="input-rpm" id="lbl-rpm">ROTAÇÃO MÁX. (RPM)</label>
@@ -2486,6 +3230,7 @@
                     <button type="button" class="btn-3d-ctrl" id="ev-btn-3d-autorotate" aria-pressed="false" title="Rodar o modelo automaticamente">Auto-Rodar</button>
                     <button type="button" class="btn-3d-ctrl" id="ev-btn-3d-reset" title="Repor ângulo inicial da câmara">Repor Vista</button>
                     <button type="button" class="btn-3d-ctrl btn-lang-toggle" id="ev-btn-lang-toggle" aria-pressed="false" title="Mudar idioma (Português / English)">PT → EN</button>
+                    <button type="button" class="btn-3d-ctrl btn-settings-trigger" id="ev-btn-settings" aria-haspopup="dialog" aria-expanded="false" title="Definições"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span id="ev-settings-lbl">Definições</span></button>
                 </div>
             </header>
         </div>
@@ -2599,11 +3344,11 @@
                     </div>
                     <div class="campo-grupo">
                         <label for="ev-input-stator-diam" id="ev-lbl-stator-diam">DIÂM. ESTATOR (mm)</label>
-                        <input type="number" id="ev-input-stator-diam" class="input-cyber" value="240" step="5" min="120" max="450">
+                        <input type="number" id="ev-input-stator-diam" class="input-cyber" value="240" step="5" min="120" max="1000">
                     </div>
                     <div class="campo-grupo">
                         <label for="ev-input-stack-len" id="ev-lbl-stack-len">COMPR. NÚCLEO (mm)</label>
-                        <input type="number" id="ev-input-stack-len" class="input-cyber" value="165" step="5" min="50" max="400">
+                        <input type="number" id="ev-input-stack-len" class="input-cyber" value="165" step="5" min="50" max="1000">
                     </div>
                     <div class="campo-grupo">
                         <label for="ev-select-poles" id="ev-lbl-poles">POLOS MAGNÉTICOS</label>
@@ -2772,6 +3517,19 @@
             </div>
         </section>
     </div>
+    </div>
+
+    <!-- Painel de Definições (vazio por enquanto) -->
+    <div id="settings-backdrop" class="settings-backdrop" hidden>
+        <div id="settings-modal" class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+            <div class="settings-modal-header">
+                <span class="ficha-titulo" id="settings-modal-title">DEFINIÇÕES</span>
+                <button type="button" class="btn-popover-close" id="btn-settings-close" aria-label="Fechar" title="Fechar">×</button>
+            </div>
+            <div class="settings-modal-body" id="settings-modal-body">
+                <p class="settings-empty-msg" id="settings-empty-msg">Espaço reservado para definições futuras.</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -4219,8 +4977,8 @@
         function computeIdealDamperKg(params) {
             const isWankel = params.formato === 'WANKEL';
             const cyl = Math.max(1, parseInt(params.cilindros, 10) || 4);
-            const bore = Math.max(10.0, Number(params.bore) || 86.0);
-            const stroke = Math.max(10.0, Number(params.stroke) || 86.0);
+            const bore = Math.max(10.0, Math.min(1000.0, Number(params.bore) || 86.0));
+            const stroke = Math.max(10.0, Math.min(1000.0, Number(params.stroke) || 86.0));
             const unitCc = (Math.PI / 4.0) * Math.pow(bore / 10.0, 2) * (stroke / 10.0);
             const litros = (unitCc * (isWankel ? 1.308 : 1.0) * cyl) / 1000.0;
             const baseMass = 1.25 + Math.pow(Math.max(0.3, litros), 0.72) * 1.10;
@@ -4238,7 +4996,7 @@
             else if (comb === 'Nitrometano') fuelMult = 1.34;
             else if (['Etanol (E85)', 'Metanol', 'Gasolina 102', 'Gasolina 110'].includes(comb)) fuelMult = 1.06;
             const cycleMult = (!isWankel && params.ciclo === '2T') ? 0.90 : 1.00;
-            const boostTotal = Math.max(0, Number(params.turbo_bar) || 0) + Math.max(0, Number(params.sc_bar) || 0);
+            const boostTotal = Math.max(0, Math.min(100, Number(params.turbo_bar) || 0)) + Math.max(0, Math.min(100, Number(params.sc_bar) || 0));
             const boostMult = 1.0 + Math.min(0.45, boostTotal * 0.08);
             const maxR = Math.max(1500, Number(params.max_rpm) || 7500);
             const rpmMult = Math.max(0.75, Math.min(1.16, 1.06 - (maxR - 6500) * 0.000022));
@@ -4336,8 +5094,8 @@
             const admKey = ['Atmosférico', 'Turbo', 'Supercompressor', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(params.admissao)
                 ? params.admissao
                 : 'Atmosférico';
-            const turboBar = Math.max(0, Math.min(6, Number(params.turbo_bar) || 0));
-            const scBar = Math.max(0, Math.min(4, Number(params.sc_bar) || 0));
+            const turboBar = Math.max(0, Math.min(100, Number(params.turbo_bar) || 0));
+            const scBar = Math.max(0, Math.min(100, Number(params.sc_bar) || 0));
             const hasMultiTurbo = admKey === 'Biturbo' || admKey === 'Quad Turbo';
             const turboCfg = (hasMultiTurbo && params.turbo_config === 'Sequencial') ? 'Sequencial' : 'Paralelo';
             const tcfgTq = (hasMultiTurbo && turboCfg === 'Sequencial') ? 1.025 : 1.00;
@@ -4371,7 +5129,10 @@
             const effValveType = is2T ? 'Reed Valve' : params.valve_type;
             const isFreevalve = !isWankel && !is2T && (params.camshaft === 'Freevalve' || effValveType === 'Freevalve');
 
-            const unitCc = (Math.PI / 4.0) * Math.pow(params.bore / 10.0, 2) * (params.stroke / 10.0);
+            const effBore = Math.max(10.0, Math.min(1000.0, Number(params.bore) || 86.0));
+            const effStroke = Math.max(10.0, Math.min(1000.0, Number(params.stroke) || 86.0));
+            const effCr = Math.max(2.0, Math.min(200.0, Number(params.compression_ratio) || 10.5));
+            const unitCc = (Math.PI / 4.0) * Math.pow(effBore / 10.0, 2) * (effStroke / 10.0);
             const litros = isWankel
                 ? (unitCc * 1.308 * params.cilindros) / 1000.0
                 : (unitCc * params.cilindros) / 1000.0;
@@ -4524,7 +5285,7 @@
             const pHm   = hybModeMap[params.hybrid_mode] || 0.95;
             const mguHBoost = (useHybrid && pHyb.noLag && ['Turbo', 'Biturbo', 'Quad Turbo', 'Twincharge'].includes(admKey)) ? 1.03 : 1.00;
 
-            const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (params.compression_ratio - 10.0) * 0.025));
+            const fatorCr = 1.0 + Math.max(-0.25, Math.min(0.35, (effCr - 10.0) * 0.025));
             const fatorCicloTq = isWankel ? 1.42 : (effCiclo === '2T' ? 1.25 : 1.00);
             const icePeakTorqueNm = Math.round(litros * 105.0 * fatorCr * perfilComb.tq * fatorCicloTq * admMb * tcfgTq * pCam.tq * pVal.tq * valTq * pPis.tq * pFw.tq * pDmp.tq * dmpStats.wTq * pInt.tq * pIMat.tq * pGb.tq * pCl.tq * pExh.tq * pJunc.tq * pEDiam.tq * pRad.tq * mguHBoost);
             const fatorRpmHp = isWankel ? 0.93 : (effCiclo === '4T' ? 0.88 : 0.94);
@@ -4544,7 +5305,7 @@
             const maxRpm = Math.max(1500, params.max_rpm);
             const startRpm = Math.min(1000, Math.round(maxRpm * 0.15));
             const steps = 48;
-            const strokeRatio = Math.max(0.75, Math.min(1.25, params.stroke / Math.max(1, params.bore)));
+            const strokeRatio = Math.max(0.75, Math.min(1.25, effStroke / Math.max(1, effBore)));
             const lowEndBias = (strokeRatio - 1.0) * 0.14 + (isDiesel ? 0.12 : 0.0) + (!isWankel && !is2T && params.camshaft === 'OHV' ? 0.04 : 0.0) + (!isWankel && !is2T && effValveType === 'VVT' ? 0.05 : 0.0) + (isFreevalve ? 0.06 : 0.0) + (!isWankel && !is2T && nVal === 2 ? 0.04 : 0.0) + pInt.lowEnd;
             const topFallScale = Math.max(0.60, 1.0 - pInt.topEnd * 2.5);
 
@@ -9551,9 +10312,9 @@
             const cicloVal = isWankelFmt ? '4T' : (selectCiclo.value === '2T' ? '2T' : '4T');
             const is2tVal = !isWankelFmt && cicloVal === '2T';
             return {
-                bore: Number.isFinite(rawBore) && rawBore > 0 ? Math.max(10.0, rawBore) : 86.0,
-                stroke: Number.isFinite(rawStroke) && rawStroke > 0 ? Math.max(10.0, rawStroke) : 86.0,
-                compression_ratio: Number.isFinite(rawCr) && rawCr > 0 ? Math.max(2.0, rawCr) : 10.5,
+                bore: Number.isFinite(rawBore) && rawBore > 0 ? Math.max(10.0, Math.min(1000.0, rawBore)) : 86.0,
+                stroke: Number.isFinite(rawStroke) && rawStroke > 0 ? Math.max(10.0, Math.min(1000.0, rawStroke)) : 86.0,
+                compression_ratio: Number.isFinite(rawCr) && rawCr > 0 ? Math.max(2.0, Math.min(200.0, rawCr)) : 10.5,
                 max_rpm: Number.isFinite(rawRpm) && rawRpm > 0 ? Math.max(500, rawRpm) : 7500,
                 combustivel: selectCombustivel.value || 'Gasolina 95',
                 ciclo: cicloVal,
@@ -9581,8 +10342,8 @@
                 camshaft: selectCamshaft ? selectCamshaft.value : 'DOHC',
                 valve_type: is2tVal ? 'Reed Valve' : (selectValveType ? selectValveType.value : 'Molas'),
                 num_valvulas: selectValves ? parseInt(selectValves.value, 10) : 4,
-                turbo_bar: (inputTurboBoost && !inputTurboBoost.disabled && Number.isFinite(rawTurbo)) ? Math.max(0, rawTurbo) : 0.0,
-                sc_bar: (inputScBoost && !inputScBoost.disabled && Number.isFinite(rawSc)) ? Math.max(0, rawSc) : 0.0,
+                turbo_bar: (inputTurboBoost && !inputTurboBoost.disabled && Number.isFinite(rawTurbo)) ? Math.max(0, Math.min(100.0, rawTurbo)) : 0.0,
+                sc_bar: (inputScBoost && !inputScBoost.disabled && Number.isFinite(rawSc)) ? Math.max(0, Math.min(100.0, rawSc)) : 0.0,
                 hybrid_type: selectHybridType ? selectHybridType.value : 'PHEV P2+P4',
                 emotor_arch: selectEmotorArch ? selectEmotorArch.value : 'PMSM Radial',
                 emotor_kw: inputEmotorKw ? Math.max(5, Math.min(600, parseFloat(inputEmotorKw.value) || 165)) : 165,
@@ -10143,7 +10904,40 @@
             });
         }
 
-        [inputBore, inputStroke, inputCr, inputRpm, inputTurboBoost, inputScBoost, selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial, selectRadiatorType].forEach(el => {
+        function bindNumericBounds(el, minVal, maxVal, fallbackVal, decimals, skipIfDisabled = false) {
+            if (!el) return;
+            el.addEventListener('input', () => {
+                if (skipIfDisabled && el.disabled) return;
+                const raw = parseFloat(el.value);
+                if (Number.isFinite(raw) && raw > maxVal) {
+                    el.value = String(maxVal);
+                }
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+            el.addEventListener('change', () => {
+                if (skipIfDisabled && el.disabled) {
+                    atualizarMotor3D();
+                    atualizarWidget3();
+                    return;
+                }
+                const raw = parseFloat(el.value);
+                const clamped = (Number.isFinite(raw) && raw > 0)
+                    ? Math.max(minVal, Math.min(maxVal, raw))
+                    : fallbackVal;
+                el.value = decimals === 0 ? String(Math.round(clamped)) : clamped.toFixed(decimals);
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+        }
+
+        bindNumericBounds(inputBore, 20.0, 1000.0, 86.0, 1, false);
+        bindNumericBounds(inputStroke, 20.0, 1000.0, 86.0, 1, false);
+        bindNumericBounds(inputCr, 4.0, 200.0, 10.5, 1, false);
+        bindNumericBounds(inputTurboBoost, 0.1, 100.0, 1.5, 1, true);
+        bindNumericBounds(inputScBoost, 0.1, 100.0, 0.8, 1, true);
+
+        [inputRpm, selectCombustivel, selectVAngle, selectMaterial, selectPistonMaterial, selectCamshaft, selectValveType, selectValves, selectFlywheel, selectDamper, selectIntakeType, selectIntakeMaterial, selectRadiatorType].forEach(el => {
             if (!el) return;
             el.addEventListener('input', () => {
                 atualizarMotor3D();
@@ -11192,8 +11986,8 @@ const selectTopology = document.getElementById('ev-select-topology');
         }
 
         function computeIdealRotorKg(params) {
-            const dM = Math.max(0.10, (Number(params.stator_diam) || 240) / 1000.0);
-            const lM = Math.max(0.03, (Number(params.stack_len) || 165) / 1000.0);
+            const dM = Math.max(0.10, Math.min(1.00, (Number(params.stator_diam) || 240) / 1000.0));
+            const lM = Math.max(0.03, Math.min(1.00, (Number(params.stack_len) || 165) / 1000.0));
             const cylVolRatio = (dM * dM * lM) / (0.24 * 0.24 * 0.165);
             const mTypeMult = {
                 'PMSM': 1.00,
@@ -11336,8 +12130,10 @@ const selectTopology = document.getElementById('ev-select-topology');
             engineSim.rotorIdealKg = rotorStats.idealKg;
             engineSim.inertiaFactor = gbEffMap.in * rotorStats.mInertia;
 
-            const diamScale = Math.pow((Number(params.stator_diam) || 240) / 240.0, 2);
-            const stackScale = (Number(params.stack_len) || 165) / 165.0;
+            const diamMm = Math.max(120, Math.min(1000, Number(params.stator_diam) || 240));
+            const stackMm = Math.max(50, Math.min(1000, Number(params.stack_len) || 165));
+            const diamScale = Math.pow(diamMm / 240.0, 2);
+            const stackScale = stackMm / 165.0;
             const currentRatio = Math.sqrt(Math.max(0.25, Math.min(2.6, (Number(params.current_limit) || 650) / 650.0)));
             const effTotal = Math.min(0.985, mTypeMap.eff * rotorMap.eff * windingMap.eff * invMap.eff * gbEffMap.hp * diffEffMap);
 
@@ -12467,8 +13263,8 @@ const selectTopology = document.getElementById('ev-select-topology');
 
             addEvDriveUnit({ x = 0, y = 0, z = 0, scale = 1.0, isInWheel = false, flipDir = 1, includeInverter = true, rotorIdx = 0 }) {
                 const s = scale;
-                const dMm = Math.max(150, Math.min(440, Number(this.config.statorDiam) || 240));
-                const lMm = Math.max(55, Math.min(340, Number(this.config.stackLen) || 165));
+                const dMm = Math.max(120, Math.min(1000, Number(this.config.statorDiam) || 240));
+                const lMm = Math.max(50, Math.min(1000, Number(this.config.stackLen) || 165));
                 const mType = this.config.motorType || 'PMSM';
                 const isAxial = mType === 'Axial Flux' || isInWheel;
                 const poles = Math.max(4, Math.min(16, parseInt(this.config.poles, 10) || 8));
@@ -12479,11 +13275,11 @@ const selectTopology = document.getElementById('ev-select-topology');
                 const hs = this.getHousingAppearance(this.config.housingMat || 'Alumínio Fundido');
                 const wd = this.getWindingStyle(this.config.winding || 'Hairpin Cobre');
 
-                const baseR = (0.31 + ((dMm - 160) / 260) * 0.23) * s;
+                const baseR = (0.31 + Math.min(0.42, Math.max(-0.04, (dMm - 160) / 840) * 0.42)) * s;
                 const rStat = isAxial ? baseR * 1.24 : baseR;
                 const lenCore = isAxial
-                    ? Math.max(0.14 * s, (0.14 + ((lMm - 60) / 260) * 0.18) * s)
-                    : Math.max(0.24 * s, (0.26 + ((lMm - 60) / 260) * 0.44) * s);
+                    ? Math.max(0.14 * s, (0.14 + Math.min(0.32, Math.max(-0.02, (lMm - 60) / 940) * 0.32)) * s)
+                    : Math.max(0.24 * s, (0.26 + Math.min(0.68, Math.max(-0.02, (lMm - 60) / 940) * 0.68)) * s);
                 const rRotor = isAxial ? rStat * 0.86 : rStat * 0.60;
                 const rInnerEnd = isAxial ? rStat * 0.34 : rStat * 0.65;
 
@@ -13947,8 +14743,8 @@ const selectTopology = document.getElementById('ev-select-topology');
             return {
                 topology: selectTopology ? selectTopology.value : 'Single',
                 motor_type: selectMotorType ? selectMotorType.value : 'PMSM',
-                stator_diam: (Number.isFinite(rawDiam) && rawDiam > 0) ? Math.max(120, Math.min(450, rawDiam)) : 240,
-                stack_len: (Number.isFinite(rawStack) && rawStack > 0) ? Math.max(50, Math.min(400, rawStack)) : 165,
+                stator_diam: (Number.isFinite(rawDiam) && rawDiam > 0) ? Math.max(120, Math.min(1000, rawDiam)) : 240,
+                stack_len: (Number.isFinite(rawStack) && rawStack > 0) ? Math.max(50, Math.min(1000, rawStack)) : 165,
                 poles: selectPoles ? (parseInt(selectPoles.value, 10) || 8) : 8,
                 winding: selectWinding ? selectWinding.value : 'Hairpin Cobre',
                 housing_mat: selectHousingMat ? selectHousingMat.value : 'Alumínio Fundido',
@@ -14325,7 +15121,31 @@ const selectTopology = document.getElementById('ev-select-topology');
             });
         }
 
-        [inputStatorDiam, inputStackLen, selectPoles, selectWinding, selectHousingMat, selectCooling, selectBearingType, selectFieldWeakening, selectRegenMode, selectVoltage, selectInverter, inputCurrentLimit, selectDriveMode, inputRpm].forEach(el => {
+        function bindEvNumericBounds(el, minVal, maxVal, fallbackVal) {
+            if (!el) return;
+            el.addEventListener('input', () => {
+                const raw = parseFloat(el.value);
+                if (Number.isFinite(raw) && raw > maxVal) {
+                    el.value = String(maxVal);
+                }
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+            el.addEventListener('change', () => {
+                const raw = parseFloat(el.value);
+                const clamped = (Number.isFinite(raw) && raw > 0)
+                    ? Math.max(minVal, Math.min(maxVal, raw))
+                    : fallbackVal;
+                el.value = String(Math.round(clamped));
+                atualizarMotor3D();
+                atualizarWidget3();
+            });
+        }
+
+        bindEvNumericBounds(inputStatorDiam, 120, 1000, 240);
+        bindEvNumericBounds(inputStackLen, 50, 1000, 165);
+
+        [selectPoles, selectWinding, selectHousingMat, selectCooling, selectBearingType, selectFieldWeakening, selectRegenMode, selectVoltage, selectInverter, inputCurrentLimit, selectDriveMode, inputRpm].forEach(el => {
             if (!el) return;
             el.addEventListener('input', () => {
                 atualizarMotor3D();
@@ -14397,7 +15217,6 @@ const selectTopology = document.getElementById('ev-select-topology');
         'use strict';
         const LAUNCHER_I18N = {
             pt: {
-                brandBadge: 'Dynamic Kinematrix',
                 langBtn: 'PT → EN',
                 langTitle: 'Mudar idioma (Português / English)',
                 title: 'Dynamic Kinematrix',
@@ -14413,10 +15232,32 @@ const selectTopology = document.getElementById('ev-select-topology');
                 evBadge: 'ELÉTRICO PURO',
                 evTitle: '100% Elétrico',
                 evDesc: 'Força invisível: no silêncio mais absoluto, desperta uma energia incrível que te empurra para a frente sem deixar rasto.',
-                evCta: 'Abrir 100% Elétrico →'
+                evCta: 'Abrir 100% Elétrico →',
+                bp01: '01 · TAMPA DE VÁLVULAS',
+                bp02: '02 · ÁRVORES DE CAMES DOHC',
+                bp03: '03 · DISTRIBUIÇÃO',
+                bp04: '04 · BOBINA & VELA',
+                bp05: '05 · VÁLVULAS & MOLAS',
+                bp06: '06 · INJETOR DE COMBUSTÍVEL',
+                bp07: '07 · COLETOR ADMISSÃO',
+                bp08: '08 · TURBOCOMPRESSOR',
+                bp09: '09 · INTERCOOLER',
+                bp10: '10 · COLETOR ESCAPE',
+                bp11: '11 · RADIADOR & BOMBA ÁGUA',
+                bp12: '12 · VOLANTE DO MOTOR',
+                bp13: '13 · BLOCO & CAMISAS',
+                bp14: '14 · PISTÕES & ANÉIS',
+                bp15: '15 · BIELAS FORJADAS',
+                bp16: '16 · CAMBOTA & CONTRAPESOS',
+                bp17: '17 · CÁRTER & ÓLEO',
+                bpSub: 'MOTOR 2D DISSECADO · 1:2',
+                settingsLbl: 'Definições',
+                settingsTitle: 'Abrir definições',
+                settingsHeading: 'DEFINIÇÕES',
+                settingsClose: 'Fechar',
+                settingsEmpty: 'Espaço reservado para definições futuras.'
             },
             en: {
-                brandBadge: 'Dynamic Kinematrix',
                 langBtn: 'EN → PT',
                 langTitle: 'Switch language (Português / English)',
                 title: 'Dynamic Kinematrix',
@@ -14432,7 +15273,30 @@ const selectTopology = document.getElementById('ev-select-topology');
                 evBadge: 'ALL-ELECTRIC',
                 evTitle: '100% Electric',
                 evDesc: 'Invisible force: in absolute silence, incredible energy awakens to push you forward without leaving a trace.',
-                evCta: 'Open 100% Electric →'
+                evCta: 'Open 100% Electric →',
+                bp01: '01 · VALVE COVER',
+                bp02: '02 · DOHC CAMSHAFTS',
+                bp03: '03 · TIMING DRIVE',
+                bp04: '04 · COIL & SPARK PLUG',
+                bp05: '05 · VALVES & SPRINGS',
+                bp06: '06 · FUEL INJECTOR',
+                bp07: '07 · INTAKE MANIFOLD',
+                bp08: '08 · TURBOCHARGER',
+                bp09: '09 · INTERCOOLER',
+                bp10: '10 · EXHAUST MANIFOLD',
+                bp11: '11 · RADIATOR & PUMP',
+                bp12: '12 · FLYWHEEL',
+                bp13: '13 · CYLINDER BLOCK',
+                bp14: '14 · PISTONS & RINGS',
+                bp15: '15 · FORGED CONRODS',
+                bp16: '16 · CRANKSHAFT',
+                bp17: '17 · OIL SUMP & PUMP',
+                bpSub: '2D DISSECTED ENGINE · 1:2',
+                settingsLbl: 'Settings',
+                settingsTitle: 'Open settings',
+                settingsHeading: 'SETTINGS',
+                settingsClose: 'Close',
+                settingsEmpty: 'Reserved space for upcoming settings.'
             }
         };
 
@@ -14446,11 +15310,25 @@ const selectTopology = document.getElementById('ev-select-topology');
         const btnHybrid = document.getElementById('btn-launch-hybrid');
         const btnElectric = document.getElementById('btn-launch-electric');
         const btnLauncherLang = document.getElementById('launcher-lang-toggle');
+        const settingsBackdrop = document.getElementById('settings-backdrop');
+        const btnLauncherSettings = document.getElementById('btn-launcher-settings');
+        const btnIceSettings = document.getElementById('btn-ice-settings');
+        const btnEvSettings = document.getElementById('ev-btn-settings');
+        const btnSettingsClose = document.getElementById('btn-settings-close');
+        const settingsTriggers = [btnLauncherSettings, btnIceSettings, btnEvSettings];
+
+        function setSettingsOpen(isOpen) {
+            if (settingsBackdrop) settingsBackdrop.hidden = !isOpen;
+            settingsTriggers.forEach(btn => {
+                if (!btn) return;
+                btn.classList.toggle('ativo', !!isOpen);
+                btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            });
+        }
 
         function applyLauncherLang(lang) {
             const t = LAUNCHER_I18N[lang] || LAUNCHER_I18N.pt;
             const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-            setTxt('launcher-brand-badge', t.brandBadge);
             setTxt('launcher-title', t.title);
             setTxt('launcher-subtitle', t.subtitle);
             setTxt('launcher-ice-badge', t.iceBadge);
@@ -14465,6 +15343,36 @@ const selectTopology = document.getElementById('ev-select-topology');
             setTxt('launcher-ev-title', t.evTitle);
             setTxt('launcher-ev-desc', t.evDesc);
             setTxt('launcher-ev-cta', t.evCta);
+            setTxt('bp-lbl-01', t.bp01);
+            setTxt('bp-lbl-02', t.bp02);
+            setTxt('bp-lbl-03', t.bp03);
+            setTxt('bp-lbl-04', t.bp04);
+            setTxt('bp-lbl-05', t.bp05);
+            setTxt('bp-lbl-06', t.bp06);
+            setTxt('bp-lbl-07', t.bp07);
+            setTxt('bp-lbl-08', t.bp08);
+            setTxt('bp-lbl-09', t.bp09);
+            setTxt('bp-lbl-10', t.bp10);
+            setTxt('bp-lbl-11', t.bp11);
+            setTxt('bp-lbl-12', t.bp12);
+            setTxt('bp-lbl-13', t.bp13);
+            setTxt('bp-lbl-14', t.bp14);
+            setTxt('bp-lbl-15', t.bp15);
+            setTxt('bp-lbl-16', t.bp16);
+            setTxt('bp-lbl-17', t.bp17);
+            setTxt('bp-stamp-sub', t.bpSub);
+            setTxt('launcher-settings-lbl', t.settingsLbl);
+            setTxt('ice-settings-lbl', t.settingsLbl);
+            setTxt('ev-settings-lbl', t.settingsLbl);
+            setTxt('settings-modal-title', t.settingsHeading);
+            setTxt('settings-empty-msg', t.settingsEmpty);
+            settingsTriggers.forEach(btn => {
+                if (btn) btn.title = t.settingsTitle;
+            });
+            if (btnSettingsClose) {
+                btnSettingsClose.title = t.settingsClose;
+                btnSettingsClose.setAttribute('aria-label', t.settingsClose);
+            }
             if (btnLauncherLang) {
                 btnLauncherLang.textContent = t.langBtn;
                 btnLauncherLang.title = t.langTitle;
@@ -14483,6 +15391,7 @@ const selectTopology = document.getElementById('ev-select-topology');
         };
 
         window.__showLauncher = function() {
+            setSettingsOpen(false);
             if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
             if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
             window.__activePowertrainMode = 'launcher';
@@ -14493,6 +15402,7 @@ const selectTopology = document.getElementById('ev-select-topology');
 
         window.__enterPowertrainMode = function(mode) {
             if (!['ice', 'hybrid', 'electric'].includes(mode)) return;
+            setSettingsOpen(false);
             if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
             if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
             window.__activePowertrainMode = mode;
@@ -14514,6 +15424,20 @@ const selectTopology = document.getElementById('ev-select-topology');
         if (btnLauncherLang) {
             btnLauncherLang.addEventListener('click', () => {
                 window.__setAppLang(window.__appLang === 'pt' ? 'en' : 'pt');
+            });
+        }
+        settingsTriggers.forEach(btn => {
+            if (btn) btn.addEventListener('click', () => setSettingsOpen(settingsBackdrop ? settingsBackdrop.hidden : true));
+        });
+        if (btnSettingsClose) btnSettingsClose.addEventListener('click', () => setSettingsOpen(false));
+        if (settingsBackdrop) {
+            settingsBackdrop.addEventListener('click', (e) => {
+                if (e.target === settingsBackdrop) setSettingsOpen(false);
+            });
+        }
+        if (typeof document.addEventListener === 'function') {
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && settingsBackdrop && !settingsBackdrop.hidden) setSettingsOpen(false);
             });
         }
         window.__setAppLang('pt');
