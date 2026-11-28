@@ -1723,6 +1723,10 @@ def gerar_dashboard_html(
             cursor: grabbing;
         }}
 
+        body.studio-bg-active .motor-3d-canvas {{
+            opacity: 1;
+        }}
+
         /* Camada de UI sobre o background (cliques fora dos painéis passam para o motor 3D) */
         .ui-layer {{
             position: relative;
@@ -3444,6 +3448,545 @@ def gerar_dashboard_html(
             }}
         }}
 
+        /* Animação de arranque ao clicar num tipo de motor no ecrã inicial */
+        .launch-shockwave {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 2px solid var(--card-accent);
+            box-shadow: 0 0 26px var(--card-glow), inset 0 0 18px var(--card-glow);
+            transform: translate(-50%, -50%) scale(0.4);
+            opacity: 0;
+            pointer-events: none;
+        }}
+
+        .launcher-card.is-selected-launch {{
+            z-index: 40;
+            border-color: var(--card-accent);
+            box-shadow: 0 0 54px -4px var(--card-glow), 0 24px 52px -12px rgba(0, 0, 0, 0.96);
+            animation: launchCardImpulse 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            pointer-events: none;
+        }}
+
+        .launcher-card.is-selected-launch .launch-shockwave {{
+            animation: launchShockwaveRing 0.68s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }}
+
+        .launcher-card.is-selected-launch .pop-sym.pop-tr {{
+            opacity: 1;
+            transform: translate(40px, -44px) scale(1.22) rotate(12deg);
+            transition-duration: 0.36s;
+        }}
+
+        .launcher-card.is-selected-launch .pop-sym.pop-br {{
+            opacity: 1;
+            transform: translate(40px, 42px) scale(1.2) rotate(-10deg);
+            transition-duration: 0.36s;
+        }}
+
+        .launcher-card.is-selected-launch .pop-sym.pop-tl {{
+            opacity: 1;
+            transform: translate(-36px, -38px) scale(1.18) rotate(-14deg);
+            transition-duration: 0.36s;
+        }}
+
+        .launcher-card.is-selected-launch .launcher-cta-symbols {{
+            opacity: 1;
+            transform: translateX(0) scale(1.12);
+        }}
+
+        .launcher-card.is-dismissed-launch {{
+            opacity: 0;
+            transform: scale(0.91) translateY(14px);
+            filter: blur(4px);
+            pointer-events: none;
+            transition: opacity 0.34s ease, transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), filter 0.34s ease;
+        }}
+
+        .launcher-screen.is-launching .launcher-hero {{
+            opacity: 0;
+            transform: translateY(-16px) scale(0.97);
+            transition: opacity 0.34s ease, transform 0.38s ease;
+        }}
+
+        .launcher-screen.is-launching .launcher-blueprint-bg {{
+            transform: scale(1.06);
+            opacity: 0.32;
+            transition: transform 0.88s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease;
+        }}
+
+        .launch-transition-overlay {{
+            --launch-accent: #f97316;
+            --launch-accent-2: #ef4444;
+            --launch-glow: rgba(249, 115, 22, 0.42);
+            position: fixed;
+            inset: 0;
+            z-index: 55;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 50%, rgba(8, 12, 20, 0.72) 0%, rgba(0, 0, 0, 0.94) 68%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: all;
+            transition: opacity 0.28s ease;
+        }}
+
+        .launch-transition-overlay[hidden] {{
+            display: none !important;
+        }}
+
+        .launch-transition-overlay.is-active {{
+            opacity: 1;
+        }}
+
+        .launch-transition-overlay[data-mode="ice"] {{
+            --launch-accent: #f97316;
+            --launch-accent-2: #fde047;
+            --launch-glow: rgba(249, 115, 22, 0.45);
+        }}
+
+        .launch-transition-overlay[data-mode="hybrid"] {{
+            --launch-accent: #2dd4bf;
+            --launch-accent-2: #f97316;
+            --launch-glow: rgba(45, 212, 191, 0.45);
+        }}
+
+        .launch-transition-overlay[data-mode="electric"] {{
+            --launch-accent: #38bdf8;
+            --launch-accent-2: #818cf8;
+            --launch-glow: rgba(56, 189, 248, 0.48);
+        }}
+
+        .launch-overlay-stage {{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 24px 28px;
+            text-align: center;
+            transform: scale(0.86);
+            opacity: 0;
+            transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+        }}
+
+        .launch-transition-overlay.is-active .launch-overlay-stage {{
+            transform: scale(1);
+            opacity: 1;
+        }}
+
+        .launch-emblem-wrap {{
+            position: relative;
+            width: 124px;
+            height: 124px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+
+        /* Camadas de efeitos específicos por tipo de motor (ICE Redline+Fogo, Elétrico, Híbrido Junção) */
+        .launch-fx-layer {{
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+            display: none;
+        }}
+
+        .launch-transition-overlay[data-mode="ice"] .launch-fx-ice,
+        .launch-transition-overlay[data-mode="electric"] .launch-fx-electric,
+        .launch-transition-overlay[data-mode="hybrid"] .launch-fx-hybrid {{
+            display: block;
+        }}
+
+        /* --- ICE: Redline Tachometer + Fogo a sair de lado --- */
+        .ice-redline-svg {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 210px;
+            height: 210px;
+            transform: translate(-50%, -50%);
+            overflow: visible;
+        }}
+
+        .ice-tach-sweep {{
+            stroke-dasharray: 420;
+            stroke-dashoffset: 420;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.85));
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-tach-sweep {{
+            animation: iceRedlineSweep 0.78s cubic-bezier(0.18, 0.88, 0.32, 1) forwards;
+        }}
+
+        .ice-tach-needle-wrap {{
+            transform-origin: 105px 105px;
+            transform: rotate(-130deg);
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-tach-needle-wrap {{
+            animation: iceNeedleRedline 0.88s cubic-bezier(0.18, 0.88, 0.32, 1) forwards;
+        }}
+
+        .ice-side-flame {{
+            position: absolute;
+            top: 50%;
+            width: 190px;
+            height: 86px;
+            opacity: 0;
+            filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.85)) drop-shadow(0 0 28px rgba(239, 68, 68, 0.65));
+        }}
+
+        .ice-side-flame.flame-left {{
+            right: calc(50% + 48px);
+            transform-origin: 100% 50%;
+            transform: translateY(-50%) scaleX(0.2);
+        }}
+
+        .ice-side-flame.flame-right {{
+            left: calc(50% + 48px);
+            transform-origin: 0% 50%;
+            transform: translateY(-50%) scaleX(0.2);
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-side-flame.flame-left {{
+            animation: iceFlameJetLeft 0.78s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-side-flame.flame-right {{
+            animation: iceFlameJetRight 0.78s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
+        }}
+
+        /* --- ELÉTRICO: Raios e Arcos de Alta Tensão --- */
+        .ev-electric-svg {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 460px;
+            height: 240px;
+            transform: translate(-50%, -50%);
+            overflow: visible;
+        }}
+
+        .ev-arc-bolt {{
+            stroke-dasharray: 260;
+            stroke-dashoffset: 260;
+            opacity: 0;
+            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 22px rgba(129, 140, 248, 0.75));
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-arc-bolt {{
+            animation: evArcZap 0.72s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-arc-bolt.arc-delay-1 {{
+            animation-delay: 0.10s;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-arc-bolt.arc-delay-2 {{
+            animation-delay: 0.22s;
+        }}
+
+        .ev-pulse-ring {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(56, 189, 248, 0.85);
+            box-shadow: 0 0 26px rgba(56, 189, 248, 0.65), inset 0 0 16px rgba(129, 140, 248, 0.45);
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-pulse-ring {{
+            animation: evFieldPulse 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-pulse-ring.ring-2 {{
+            animation-delay: 0.22s;
+            border-color: rgba(129, 140, 248, 0.8);
+        }}
+
+        /* --- HÍBRIDO: Junção Combustão (Esq.) + Eletricidade (Dir.) no Centro --- */
+        .hyb-junction-svg {{
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 460px;
+            height: 200px;
+            transform: translate(-50%, -50%);
+            overflow: visible;
+        }}
+
+        .hyb-stream-ice {{
+            opacity: 0;
+            transform-origin: 100% 50%;
+            filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.85));
+        }}
+
+        .hyb-stream-ev {{
+            opacity: 0;
+            transform-origin: 0% 50%;
+            filter: drop-shadow(0 0 14px rgba(45, 212, 191, 0.9));
+        }}
+
+        .hyb-merge-core {{
+            opacity: 0;
+            transform-origin: 230px 100px;
+            filter: drop-shadow(0 0 24px rgba(45, 212, 191, 0.85));
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="hybrid"] .hyb-stream-ice {{
+            animation: hybConvergeLeft 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="hybrid"] .hyb-stream-ev {{
+            animation: hybConvergeRight 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }}
+
+        .launch-transition-overlay.is-active[data-mode="hybrid"] .hyb-merge-core {{
+            animation: hybFusionFlash 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.32s forwards;
+        }}
+
+        .launch-emblem-aura {{
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--launch-glow) 0%, transparent 70%);
+            animation: launchAuraPulse 0.85s ease-out forwards;
+        }}
+
+        .launch-ring {{
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+        }}
+
+        .launch-ring-outer {{
+            inset: 0;
+            border-top-color: var(--launch-accent);
+            border-right-color: var(--launch-accent);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+            border-left-color: rgba(255, 255, 255, 0.08);
+            filter: drop-shadow(0 0 10px var(--launch-glow));
+            animation: launchSpinCW 0.85s cubic-bezier(0.25, 0.9, 0.35, 1) infinite;
+        }}
+
+        .launch-ring-inner {{
+            inset: 14px;
+            border-style: dashed;
+            border-color: var(--launch-accent-2);
+            opacity: 0.72;
+            animation: launchSpinCCW 1.1s linear infinite;
+        }}
+
+        .launch-emblem-core {{
+            position: relative;
+            z-index: 2;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, rgba(22, 28, 40, 0.95), rgba(5, 8, 14, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 0 28px var(--launch-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }}
+
+        .launch-mode-svg {{
+            display: none;
+            filter: drop-shadow(0 0 10px var(--launch-glow));
+        }}
+
+        .launch-transition-overlay[data-mode="ice"] .launch-mode-svg[data-icon="ice"],
+        .launch-transition-overlay[data-mode="hybrid"] .launch-mode-svg[data-icon="hybrid"],
+        .launch-transition-overlay[data-mode="electric"] .launch-mode-svg[data-icon="electric"] {{
+            display: block;
+            animation: launchCorePop 0.55s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+        }}
+
+        .launch-overlay-title {{
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-shadow: 0 0 22px var(--launch-glow);
+        }}
+
+        .launch-overlay-status {{
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--launch-accent);
+        }}
+
+        .launch-progress-track {{
+            width: min(260px, 68vw);
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            overflow: hidden;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+        }}
+
+        .launch-progress-fill {{
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--launch-accent), var(--launch-accent-2));
+            box-shadow: 0 0 14px var(--launch-glow);
+        }}
+
+        .launch-transition-overlay.is-active .launch-progress-fill {{
+            animation: launchProgressSweep 0.72s cubic-bezier(0.22, 0.85, 0.35, 1) forwards;
+        }}
+
+        .app-mode-shell.is-entering {{
+            animation: appShellReveal 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }}
+
+        @keyframes launchCardImpulse {{
+            0% {{ transform: translateY(-5px) scale(1); }}
+            24% {{ transform: translateY(-2px) scale(0.965); }}
+            62% {{ transform: translateY(-10px) scale(1.045); opacity: 1; }}
+            100% {{ transform: translateY(-16px) scale(1.07); opacity: 0; }}
+        }}
+
+        @keyframes launchShockwaveRing {{
+            0% {{ transform: translate(-50%, -50%) scale(0.45); opacity: 0.95; }}
+            100% {{ transform: translate(-50%, -50%) scale(8.5); opacity: 0; }}
+        }}
+
+        @keyframes launchAuraPulse {{
+            0% {{ transform: scale(0.55); opacity: 0.25; }}
+            55% {{ transform: scale(1.18); opacity: 0.95; }}
+            100% {{ transform: scale(1.35); opacity: 0.65; }}
+        }}
+
+        @keyframes launchSpinCW {{
+            from {{ transform: rotate(0deg); }}
+            to {{ transform: rotate(360deg); }}
+        }}
+
+        @keyframes launchSpinCCW {{
+            from {{ transform: rotate(360deg); }}
+            to {{ transform: rotate(0deg); }}
+        }}
+
+        @keyframes launchCorePop {{
+            0% {{ transform: scale(0.5) rotate(-14deg); opacity: 0; }}
+            65% {{ transform: scale(1.14) rotate(4deg); opacity: 1; }}
+            100% {{ transform: scale(1) rotate(0deg); opacity: 1; }}
+        }}
+
+        @keyframes launchProgressSweep {{
+            0% {{ width: 0%; }}
+            100% {{ width: 100%; }}
+        }}
+
+        @keyframes appShellReveal {{
+            from {{ opacity: 0; transform: scale(0.985); }}
+            to {{ opacity: 1; transform: scale(1); }}
+        }}
+
+        @keyframes iceRedlineSweep {{
+            0% {{ stroke-dashoffset: 420; }}
+            72% {{ stroke-dashoffset: 27; }}
+            84% {{ stroke-dashoffset: 46; }}
+            94% {{ stroke-dashoffset: 27; }}
+            100% {{ stroke-dashoffset: 34; }}
+        }}
+
+        @keyframes iceNeedleRedline {{
+            0% {{ transform: rotate(-130deg); }}
+            70% {{ transform: rotate(128deg); }}
+            82% {{ transform: rotate(116deg); }}
+            92% {{ transform: rotate(130deg); }}
+            100% {{ transform: rotate(122deg); }}
+        }}
+
+        @keyframes iceFlameJetLeft {{
+            0% {{ opacity: 0; transform: translateY(-50%) translateX(24px) scaleX(0.15) scaleY(0.55); }}
+            28% {{ opacity: 1; transform: translateY(-50%) translateX(0px) scaleX(1.12) scaleY(1.08); }}
+            48% {{ opacity: 0.95; transform: translateY(-50%) translateX(-6px) scaleX(0.94) scaleY(0.92); }}
+            70% {{ opacity: 1; transform: translateY(-50%) translateX(-14px) scaleX(1.18) scaleY(1.05); }}
+            100% {{ opacity: 0; transform: translateY(-50%) translateX(-34px) scaleX(1.32) scaleY(0.75); }}
+        }}
+
+        @keyframes iceFlameJetRight {{
+            0% {{ opacity: 0; transform: translateY(-50%) translateX(-24px) scaleX(0.15) scaleY(0.55); }}
+            28% {{ opacity: 1; transform: translateY(-50%) translateX(0px) scaleX(1.12) scaleY(1.08); }}
+            48% {{ opacity: 0.95; transform: translateY(-50%) translateX(6px) scaleX(0.94) scaleY(0.92); }}
+            70% {{ opacity: 1; transform: translateY(-50%) translateX(14px) scaleX(1.18) scaleY(1.05); }}
+            100% {{ opacity: 0; transform: translateY(-50%) translateX(34px) scaleX(1.32) scaleY(0.75); }}
+        }}
+
+        @keyframes evArcZap {{
+            0% {{ stroke-dashoffset: 260; opacity: 0; }}
+            22% {{ stroke-dashoffset: 60; opacity: 1; }}
+            40% {{ stroke-dashoffset: 0; opacity: 0.55; }}
+            56% {{ stroke-dashoffset: 0; opacity: 1; }}
+            74% {{ stroke-dashoffset: -40; opacity: 0.35; }}
+            88% {{ stroke-dashoffset: -80; opacity: 0.95; }}
+            100% {{ stroke-dashoffset: -140; opacity: 0; }}
+        }}
+
+        @keyframes evFieldPulse {{
+            0% {{ transform: translate(-50%, -50%) scale(0.55); opacity: 0.95; }}
+            100% {{ transform: translate(-50%, -50%) scale(2.85); opacity: 0; }}
+        }}
+
+        @keyframes hybConvergeLeft {{
+            0% {{ opacity: 0; transform: translateX(-110px) scale(0.7); }}
+            42% {{ opacity: 1; transform: translateX(-14px) scale(1.05); }}
+            72% {{ opacity: 0.95; transform: translateX(0px) scale(0.95); }}
+            100% {{ opacity: 0; transform: translateX(18px) scale(0.45); }}
+        }}
+
+        @keyframes hybConvergeRight {{
+            0% {{ opacity: 0; transform: translateX(110px) scale(0.7); }}
+            42% {{ opacity: 1; transform: translateX(14px) scale(1.05); }}
+            72% {{ opacity: 0.95; transform: translateX(0px) scale(0.95); }}
+            100% {{ opacity: 0; transform: translateX(-18px) scale(0.45); }}
+        }}
+
+        @keyframes hybFusionFlash {{
+            0% {{ opacity: 0; transform: scale(0.35); }}
+            45% {{ opacity: 1; transform: scale(1.22); }}
+            100% {{ opacity: 0; transform: scale(1.9); }}
+        }}
+
+        @media (prefers-reduced-motion: reduce) {{
+            .launcher-card.is-selected-launch,
+            .launcher-card.is-selected-launch .launch-shockwave,
+            .launch-ring-outer,
+            .launch-ring-inner,
+            .launch-emblem-aura,
+            .launch-transition-overlay.is-active .launch-progress-fill,
+            .launch-transition-overlay.is-active .ice-tach-sweep,
+            .launch-transition-overlay.is-active .ice-tach-needle-wrap,
+            .launch-transition-overlay.is-active .ice-side-flame,
+            .launch-transition-overlay.is-active .ev-arc-bolt,
+            .launch-transition-overlay.is-active .ev-pulse-ring,
+            .launch-transition-overlay.is-active .hyb-stream-ice,
+            .launch-transition-overlay.is-active .hyb-stream-ev,
+            .launch-transition-overlay.is-active .hyb-merge-core,
+            .app-mode-shell.is-entering {{
+                animation-duration: 0.01ms !important;
+            }}
+        }}
+
 {ev_css}
     </style>
 </head>
@@ -3811,6 +4354,7 @@ def gerar_dashboard_html(
             <div class="launcher-cards-grid">
                 <button type="button" class="launcher-card launcher-card-ice" id="btn-launch-ice">
                     <div class="launcher-popout-layer" aria-hidden="true">
+                        <span class="launch-shockwave"></span>
                         <!-- Chama multi-camada a sair pelo canto superior direito -->
                         <span class="pop-sym pop-tr">
                             <svg class="pop-svg pop-anim-flame" width="68" height="68" viewBox="0 0 64 64" fill="none">
@@ -3891,6 +4435,7 @@ def gerar_dashboard_html(
 
                 <button type="button" class="launcher-card launcher-card-hybrid" id="btn-launch-hybrid">
                     <div class="launcher-popout-layer" aria-hidden="true">
+                        <span class="launch-shockwave"></span>
                         <!-- Fusão Híbrida (Chama + Relâmpago) a sair pelo canto superior direito -->
                         <span class="pop-sym pop-tr">
                             <svg class="pop-svg pop-anim-float" width="72" height="72" viewBox="0 0 64 64" fill="none">
@@ -3965,6 +4510,7 @@ def gerar_dashboard_html(
 
                 <button type="button" class="launcher-card launcher-card-ev" id="btn-launch-electric">
                     <div class="launcher-popout-layer" aria-hidden="true">
+                        <span class="launch-shockwave"></span>
                         <!-- Relâmpago Alta Tensão a sair pelo canto superior direito -->
                         <span class="pop-sym pop-tr">
                             <svg class="pop-svg pop-anim-bolt" width="68" height="68" viewBox="0 0 64 64" fill="none">
@@ -4036,6 +4582,160 @@ def gerar_dashboard_html(
                         </span>
                     </span>
                 </button>
+            </div>
+        </div>
+
+        <div id="launch-transition-overlay" class="launch-transition-overlay" hidden aria-hidden="true">
+            <div class="launch-overlay-stage">
+                <div class="launch-emblem-wrap">
+                    <span class="launch-emblem-aura"></span>
+
+                    <!-- ICE: Redline Tachometer + Fogo lateral (backfire) -->
+                    <div class="launch-fx-layer launch-fx-ice" aria-hidden="true">
+                        <svg class="ice-redline-svg" viewBox="0 0 210 210" fill="none">
+                            <defs>
+                                <linearGradient id="ice-tach-grad" x1="25" y1="160" x2="185" y2="60" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#f97316"/>
+                                    <stop offset="55%" stop-color="#fbbf24"/>
+                                    <stop offset="100%" stop-color="#ef4444"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Arco base do conta-rotações -->
+                            <path d="M41 158 A82 82 0 1 1 169 158" stroke="rgba(255,255,255,0.14)" stroke-width="6" stroke-linecap="round"/>
+                            <!-- Zona Redline -->
+                            <path d="M160 51 A82 82 0 0 1 169 158" stroke="rgba(239,68,68,0.85)" stroke-width="7" stroke-linecap="round"/>
+                            <!-- Barra de aceleração até ao redline -->
+                            <path class="ice-tach-sweep" d="M41 158 A82 82 0 1 1 169 158" stroke="url(#ice-tach-grad)" stroke-width="6" stroke-linecap="round"/>
+                            <!-- Ponteiro -->
+                            <g class="ice-tach-needle-wrap">
+                                <line x1="105" y1="105" x2="105" y2="26" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                                <circle cx="105" cy="28" r="3" fill="#fef08a"/>
+                            </g>
+                        </svg>
+                        <!-- Chama lateral esquerda -->
+                        <svg class="ice-side-flame flame-left" viewBox="0 0 190 86" fill="none">
+                            <defs>
+                                <linearGradient id="ice-jet-outer" x1="190" y1="43" x2="10" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#fef08a"/>
+                                    <stop offset="32%" stop-color="#f97316"/>
+                                    <stop offset="75%" stop-color="#dc2626"/>
+                                    <stop offset="100%" stop-color="#991b1b" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="ice-jet-core" x1="190" y1="43" x2="65" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="45%" stop-color="#fef08a"/>
+                                    <stop offset="100%" stop-color="#fb923c" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M188 43 C152 14, 114 22, 68 12 C90 28, 44 30, 8 43 C44 56, 90 58, 68 74 C114 64, 152 72, 188 43 Z" fill="url(#ice-jet-outer)"/>
+                            <path d="M188 43 C162 28, 134 32, 92 26 C108 38, 76 38, 48 43 C76 48, 108 48, 92 60 C134 54, 162 58, 188 43 Z" fill="url(#ice-jet-core)"/>
+                            <circle cx="38" cy="24" r="2.4" fill="#fde047"/>
+                            <circle cx="20" cy="54" r="2" fill="#fb923c"/>
+                            <circle cx="56" cy="64" r="1.8" fill="#fef08a"/>
+                        </svg>
+                        <!-- Chama lateral direita -->
+                        <svg class="ice-side-flame flame-right" viewBox="0 0 190 86" fill="none">
+                            <defs>
+                                <linearGradient id="ice-jet-outer-r" x1="0" y1="43" x2="180" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#fef08a"/>
+                                    <stop offset="32%" stop-color="#f97316"/>
+                                    <stop offset="75%" stop-color="#dc2626"/>
+                                    <stop offset="100%" stop-color="#991b1b" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="ice-jet-core-r" x1="0" y1="43" x2="125" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="45%" stop-color="#fef08a"/>
+                                    <stop offset="100%" stop-color="#fb923c" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M2 43 C38 14, 76 22, 122 12 C100 28, 146 30, 182 43 C146 56, 100 58, 122 74 C76 64, 38 72, 2 43 Z" fill="url(#ice-jet-outer-r)"/>
+                            <path d="M2 43 C28 28, 56 32, 98 26 C82 38, 114 38, 142 43 C114 48, 82 48, 98 60 C56 54, 28 58, 2 43 Z" fill="url(#ice-jet-core-r)"/>
+                            <circle cx="152" cy="24" r="2.4" fill="#fde047"/>
+                            <circle cx="170" cy="54" r="2" fill="#fb923c"/>
+                            <circle cx="134" cy="64" r="1.8" fill="#fef08a"/>
+                        </svg>
+                    </div>
+
+                    <!-- ELÉTRICO: Raios de Alta Tensão e Ondas de Campo -->
+                    <div class="launch-fx-layer launch-fx-electric" aria-hidden="true">
+                        <span class="ev-pulse-ring"></span>
+                        <span class="ev-pulse-ring ring-2"></span>
+                        <svg class="ev-electric-svg" viewBox="0 0 460 240" fill="none">
+                            <path class="ev-arc-bolt" d="M172 120 L132 104 L112 126 L70 108 L42 132 L12 118" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-1" d="M176 106 L146 72 L118 82 L88 46 L52 54 L24 28" stroke="#bae6fd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-2" d="M178 136 L142 162 L114 152 L82 186 L46 178 L18 206" stroke="#818cf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt" d="M288 120 L328 104 L348 126 L390 108 L418 132 L448 118" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-1" d="M284 106 L314 72 L342 82 L372 46 L408 54 L436 28" stroke="#bae6fd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-2" d="M282 136 L318 162 L346 152 L378 186 L414 178 L442 206" stroke="#818cf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+
+                    <!-- HÍBRIDO: Junção (Chama Térmica da Esquerda + Eletricidade da Direita) -->
+                    <div class="launch-fx-layer launch-fx-hybrid" aria-hidden="true">
+                        <svg class="hyb-junction-svg" viewBox="0 0 460 200" fill="none">
+                            <defs>
+                                <linearGradient id="hyb-join-ice" x1="20" y1="100" x2="215" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#dc2626" stop-opacity="0"/>
+                                    <stop offset="45%" stop-color="#f97316"/>
+                                    <stop offset="100%" stop-color="#fde047"/>
+                                </linearGradient>
+                                <linearGradient id="hyb-join-ev" x1="440" y1="100" x2="245" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0"/>
+                                    <stop offset="45%" stop-color="#2dd4bf"/>
+                                    <stop offset="100%" stop-color="#ccfbf1"/>
+                                </linearGradient>
+                                <radialGradient id="hyb-fusion-grad" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="35%" stop-color="#5eead4" stop-opacity="0.9"/>
+                                    <stop offset="68%" stop-color="#f97316" stop-opacity="0.45"/>
+                                    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                                </radialGradient>
+                            </defs>
+                            <!-- Fluxo Combustão (Esquerda -> Centro) -->
+                            <g class="hyb-stream-ice">
+                                <path d="M24 100 C74 70, 128 76, 214 100 C128 124, 74 130, 24 100 Z" fill="url(#hyb-join-ice)"/>
+                                <path d="M44 76 Q128 84 206 96 M44 124 Q128 116 206 104" stroke="#fed7aa" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="90" cy="84" r="3" fill="#fde047"/>
+                                <circle cx="122" cy="116" r="2.5" fill="#fb923c"/>
+                            </g>
+                            <!-- Fluxo Elétrico (Direita -> Centro) -->
+                            <g class="hyb-stream-ev">
+                                <path d="M436 100 L382 84 L356 108 L308 88 L278 106 L246 100" stroke="url(#hyb-join-ev)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M416 74 L362 66 L332 86 L286 78 L250 96" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M416 126 L362 134 L332 114 L286 122 L250 104" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="366" cy="82" r="2.8" fill="#ccfbf1"/>
+                                <circle cx="330" cy="116" r="2.6" fill="#38bdf8"/>
+                            </g>
+                            <!-- Ponto de Junção / Fusão Central -->
+                            <g class="hyb-merge-core">
+                                <circle cx="230" cy="100" r="64" fill="url(#hyb-fusion-grad)"/>
+                                <circle cx="230" cy="100" r="46" stroke="#5eead4" stroke-width="2" stroke-dasharray="6 4"/>
+                                <circle cx="230" cy="100" r="54" stroke="#fb923c" stroke-width="1.6" stroke-dasharray="4 6"/>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <span class="launch-ring launch-ring-outer"></span>
+                    <span class="launch-ring launch-ring-inner"></span>
+                    <span class="launch-emblem-core">
+                        <svg class="launch-mode-svg" data-icon="ice" width="36" height="36" viewBox="0 0 64 64" fill="none">
+                            <path d="M33 6c3.2 9.4 13.8 14.2 13.8 26.8 0 9.8-6.6 18.2-15.4 18.2-8.8 0-15-7.4-15-16.8 0-5.4 2.4-10.6 6.2-14-.2 4.4 2.2 6.8 4.8 6.8 3.2 0 4.2-5.6 5.6-21z" fill="url(#sym-ice-f1)" stroke="#fed7aa" stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M32 25c2.2 4.6 6.8 7.8 6.8 14.2 0 4.8-3 8.4-6.8 8.4s-6.8-3.6-6.8-8.4c0-3.2 1.6-6 3.4-8.2.4 2.4 1.8 3.6 3.4 3.6" fill="url(#sym-ice-f2)"/>
+                        </svg>
+                        <svg class="launch-mode-svg" data-icon="hybrid" width="38" height="38" viewBox="0 0 64 64" fill="none">
+                            <path d="M25 10c2 6.8 9.2 10.6 9.2 19.6 0 7-4.8 12.6-11.2 12.6s-11-5.4-11-12.2c0-4 1.8-7.8 4.4-10.2.2 3.2 2 4.8 3.8 4.8 2.2 0 3.4-4 4.8-14.6z" fill="url(#sym-hyb-ice)" stroke="#fed7aa" stroke-width="1.5"/>
+                            <path d="M40 8L26 31h10l-3 21 17-25H39z" fill="url(#sym-hyb-ev)" stroke="#ccfbf1" stroke-width="1.6" stroke-linejoin="round"/>
+                        </svg>
+                        <svg class="launch-mode-svg" data-icon="electric" width="36" height="36" viewBox="0 0 64 64" fill="none">
+                            <path d="M36 5L14 34h15l-4 25 25-31H34z" fill="url(#sym-ev-bolt)" stroke="#bae6fd" stroke-width="1.8" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="launch-overlay-title" id="launch-overlay-title">ICE</div>
+                <div class="launch-overlay-status" id="launch-overlay-status">IGNIÇÃO · COMBUSTÃO INTERNA</div>
+                <div class="launch-progress-track">
+                    <div class="launch-progress-fill"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -4343,6 +5043,13 @@ def gerar_dashboard_html(
                         <span class="settings-sound-val" id="settings-sound-val">60%</span>
                         <button type="button" class="btn-3d-ctrl" id="settings-btn-sound-toggle" aria-pressed="true">Ativo</button>
                     </div>
+                </div>
+                <div class="settings-row" id="settings-bg-row">
+                    <div class="settings-row-info">
+                        <span class="settings-row-label" id="settings-bg-lbl">Ambiente 3D</span>
+                        <small class="settings-row-desc" id="settings-bg-desc">Sala fechada, piso preto, porta de garagem, vigas e objetos</small>
+                    </div>
+                    <button type="button" class="btn-3d-ctrl" id="settings-btn-bg-toggle" aria-pressed="false">Desativado</button>
                 </div>
             </div>
         </div>
@@ -4814,6 +5521,430 @@ def gerar_dashboard_html(
                     ramp(nodes.evFilter.Q, mType === 'SynRM' ? 3.2 : 1.4, 0.03);
                     ramp(nodes.evGain.gain, rpm < 25 ? 0.025 : Math.min(0.48, (0.08 + 0.34 * Math.min(1, u * 1.3)) * regGain), 0.03);
                 }}
+            }};
+        }})();
+
+        window.__studioBg = (function() {{
+            let enabled = false;
+            try {{
+                enabled = localStorage.getItem('dkm_studio_bg') === '1';
+            }} catch (_) {{}}
+
+            function syncUI() {{
+                if (document.body) {{
+                    document.body.classList.toggle('studio-bg-active', enabled);
+                }}
+                const lang = window.__appLang === 'en' ? 'en' : 'pt';
+                const btn = document.getElementById('settings-btn-bg-toggle');
+                if (btn) {{
+                    btn.classList.toggle('ativo', enabled);
+                    btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                    btn.textContent = enabled
+                        ? (lang === 'en' ? 'On' : 'Ativo')
+                        : (lang === 'en' ? 'Off' : 'Desativado');
+                }}
+            }}
+
+            function refreshViewers() {{
+                if (window.__iceModule && typeof window.__iceModule.refreshStudioBg === 'function') {{
+                    window.__iceModule.refreshStudioBg();
+                }}
+                if (window.__evModule && typeof window.__evModule.refreshStudioBg === 'function') {{
+                    window.__evModule.refreshStudioBg();
+                }}
+            }}
+
+            function setEnabled(next) {{
+                enabled = Boolean(next);
+                try {{
+                    localStorage.setItem('dkm_studio_bg', enabled ? '1' : '0');
+                }} catch (_) {{}}
+                syncUI();
+                refreshViewers();
+            }}
+
+            function build(viewer, opts) {{
+                const list = [];
+                if (!enabled || !viewer) return list;
+
+                const cx = viewer.sceneCenterX || 0;
+                const floorY = typeof (opts && opts.floorY) === 'number' ? opts.floorY : -1.62;
+                const accent = (opts && opts.accent) || [0.95, 0.42, 0.16, 1.0];
+
+                const halfW = 9.6;
+                const halfZ = 7.6;
+                const ceilY = 4.65;
+                const wallH = ceilY - floorY;
+                const wallMidY = (floorY + ceilY) * 0.5;
+
+                const pushPart = (type, model, color, spec, clipSide, clipLim) => {{
+                    list.push({{ type, model, color, spec, clipSide: clipSide || null, clipLim: clipLim || 0 }});
+                }};
+
+                const C_FLOOR = [0.028, 0.031, 0.038, 1.0];
+                const C_FLOOR_SEAM = [0.014, 0.016, 0.020, 1.0];
+                const C_GROUT = [0.015, 0.017, 0.022, 1.0];
+                const C_TILE_A = [0.038, 0.041, 0.049, 1.0];
+                const C_TILE_B = [0.052, 0.056, 0.066, 1.0];
+                const C_TILE_C = [0.044, 0.047, 0.056, 1.0];
+                const C_STEEL = [0.18, 0.20, 0.24, 1.0];
+                const C_STEEL_DARK = [0.10, 0.11, 0.14, 1.0];
+                const C_STEEL_BRUSH = [0.46, 0.50, 0.56, 1.0];
+                const C_CHROME = [0.76, 0.80, 0.86, 1.0];
+                const C_LED = [0.94, 0.97, 1.0, 1.0];
+                const C_RED = [0.64, 0.11, 0.12, 1.0];
+                const C_RUBBER = [0.08, 0.09, 0.11, 1.0];
+                const C_BRASS = [0.78, 0.60, 0.26, 1.0];
+
+                // 1. Piso preto limpo + juntas sutis + plataforma de testes/dyno
+                pushPart('box', viewer.matTRS(cx, floorY - 0.09, 0, 0, 0, 0, halfW * 2.1, 0.18, halfZ * 2.12), C_FLOOR, [0.76, 68], 'floor', floorY - 0.02);
+                for (let gx = -6.4; gx <= 6.41; gx += 3.2) {{
+                    pushPart('box', viewer.matTRS(cx + gx, floorY + 0.002, 0, 0, 0, 0, 0.035, 0.006, halfZ * 2.02), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                }}
+                for (let gz = -6.0; gz <= 6.01; gz += 3.0) {{
+                    pushPart('box', viewer.matTRS(cx, floorY + 0.002, gz, 0, 0, 0, halfW * 2.02, 0.006, 0.035), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                }}
+
+                // Plataforma baixa do dinamómetro sob o conjunto motriz
+                const plinthW = 3.8;
+                const plinthD = 2.35;
+                pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.032, 0, 0, 0, 0, plinthW, 0.064, plinthD), C_STEEL_DARK, [0.62, 46]);
+                for (const rz of [-0.72, 0.72]) {{
+                    pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.072, rz, 0, 0, 0, plinthW * 0.94, 0.022, 0.11), C_STEEL_BRUSH, [0.76, 58]);
+                }}
+                for (let bx = -1.4; bx <= 1.41; bx += 0.40) {{
+                    pushPart('box', viewer.matTRS(cx + bx, floorY + 0.066, 0, 0, 0, 0, 0.06, 0.012, 1.16), C_STEEL, [0.66, 48]);
+                }}
+                for (const sx of [-1, 1]) {{
+                    for (const sz of [-1, 1]) {{
+                        pushPart('box', viewer.matTRS(cx + sx * (plinthW * 0.46), floorY + 0.068, sz * (plinthD * 0.46), 0, 0, 0, 0.28, 0.014, 0.035), accent, [1.18, -1.0]);
+                        pushPart('bevelBox', viewer.matTRS(cx + sx * (plinthW * 0.47), floorY + 0.085, sz * (plinthD * 0.47), 0, 0, 0, 0.14, 0.06, 0.14), C_STEEL, [0.66, 50]);
+                    }}
+                }}
+
+                // 2. Azulejos pretos nas paredes laterais (-Z e +Z)
+                const cols = 12;
+                const rows = 5;
+                const tileW = (halfW * 2.0 - 0.36) / cols;
+                const tileH = (wallH - 0.62) / rows;
+                const tileCols = [C_TILE_A, C_TILE_B, C_TILE_C];
+                for (const side of [-1, 1]) {{
+                    const clipSide = side > 0 ? 'posZ' : 'negZ';
+                    const clipLim = side * (halfZ - 0.32);
+                    const wallZ = side * (halfZ + 0.10);
+                    pushPart('box', viewer.matTRS(cx, wallMidY, wallZ, 0, 0, 0, halfW * 2.04, wallH + 0.4, 0.14), C_GROUT, [0.18, 12], clipSide, clipLim);
+                    pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.14, side * (halfZ - 0.02), 0, 0, 0, halfW * 2.02, 0.28, 0.10), C_STEEL_DARK, [0.66, 48], clipSide, clipLim);
+                    pushPart('bevelBox', viewer.matTRS(cx, ceilY - 0.16, side * (halfZ - 0.02), 0, 0, 0, halfW * 2.02, 0.14, 0.12), C_STEEL, [0.70, 52], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(cx, floorY + 2.38, side * (halfZ - 0.055), 0, 0, 0, halfW * 1.94, 0.032, 0.03), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], clipSide, clipLim);
+
+                    for (let r = 0; r < rows; r++) {{
+                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                        for (let c = 0; c < cols; c++) {{
+                            const tx = cx - halfW + 0.18 + (c + 0.5) * tileW;
+                            const col = tileCols[(c + r * 2) % tileCols.length];
+                            pushPart(
+                                'bevelBox',
+                                viewer.matTRS(tx, ty, side * (halfZ - 0.015), 0, 0, 0, tileW * 0.945, tileH * 0.935, 0.065),
+                                col,
+                                [0.60, 50],
+                                clipSide,
+                                clipLim
+                            );
+                        }}
+                    }}
+                }}
+
+                // 2b. Paredes de topo (-X fechada com azulejos + +X com porta de garagem preta)
+                const endXClipPad = 0.35;
+                const endCols = 10;
+                const endTileZ = (halfZ * 2.0 - 0.36) / endCols;
+                // Parede -X totalmente fechada com azulejos pretos, quadro elétrico e conduta
+                {{
+                    const negXLim = cx - halfW + endXClipPad;
+                    const wallX = cx - halfW - 0.10;
+                    pushPart('box', viewer.matTRS(wallX, wallMidY, 0, 0, 0, 0, 0.14, wallH + 0.4, halfZ * 2.06), C_GROUT, [0.18, 12], 'negX', negXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.02, floorY + 0.14, 0, 0, 0, 0, 0.10, 0.28, halfZ * 2.04), C_STEEL_DARK, [0.66, 48], 'negX', negXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.02, ceilY - 0.16, 0, 0, 0, 0, 0.12, 0.14, halfZ * 2.04), C_STEEL, [0.70, 52], 'negX', negXLim);
+                    pushPart('box', viewer.matTRS(cx - halfW + 0.055, floorY + 2.38, 0, 0, 0, 0, 0.03, 0.032, halfZ * 1.94), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], 'negX', negXLim);
+                    for (let r = 0; r < rows; r++) {{
+                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                        for (let c = 0; c < endCols; c++) {{
+                            const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
+                            const col = tileCols[(c + r * 2) % tileCols.length];
+                            pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'negX', negXLim);
+                        }}
+                    }}
+                    // Quadro elétrico industrial & conduta de extração na parede -X
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.18, floorY + 1.85, -3.2, 0, 0, 0, 0.24, 1.15, 0.88), C_STEEL, [0.62, 46], 'negX', negXLim);
+                    pushPart('box', viewer.matTRS(cx - halfW + 0.305, floorY + 2.22, -3.42, 0, 0, 0, 0.02, 0.04, 0.14), accent, [1.28, -1.0], 'negX', negXLim);
+                    pushPart('cyl', viewer.matTRS(cx - halfW + 0.24, wallMidY + 0.2, 3.1, 0, 0, 0, 0.18, wallH - 0.5, 0.18), C_STEEL_BRUSH, [0.74, 56], 'negX', negXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.24, floorY + 1.1, 3.1, 0, 0, 0, 0.34, 0.42, 0.44), C_STEEL_DARK, [0.60, 44], 'negX', negXLim);
+                }}
+
+                // Parede +X fechada com Porta de Garagem Preta Seccionada + Azulejos laterais
+                {{
+                    const posXLim = cx + halfW - endXClipPad;
+                    const wallX = cx + halfW + 0.10;
+                    const doorHalfW = 3.15;
+                    const doorH = 3.85;
+                    const doorTopY = floorY + doorH;
+
+                    pushPart('box', viewer.matTRS(wallX, wallMidY, 0, 0, 0, 0, 0.14, wallH + 0.4, halfZ * 2.06), C_GROUT, [0.18, 12], 'posX', posXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.02, ceilY - 0.16, 0, 0, 0, 0, 0.12, 0.14, halfZ * 2.04), C_STEEL, [0.70, 52], 'posX', posXLim);
+                    for (const side of [-1, 1]) {{
+                        const flankW = halfZ - doorHalfW - 0.12;
+                        const flankMidZ = side * (doorHalfW + 0.12 + flankW * 0.5);
+                        pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.02, floorY + 0.14, flankMidZ, 0, 0, 0, 0.10, 0.28, flankW), C_STEEL_DARK, [0.66, 48], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(cx + halfW - 0.055, floorY + 2.38, flankMidZ, 0, 0, 0, 0.03, 0.032, flankW * 0.94), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], 'posX', posXLim);
+                    }}
+
+                    // Azulejos pretos à volta da porta de garagem
+                    for (let r = 0; r < rows; r++) {{
+                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                        for (let c = 0; c < endCols; c++) {{
+                            const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
+                            const inDoorSpan = Math.abs(tz) < (doorHalfW + 0.08) && (ty - tileH * 0.45) < (doorTopY + 0.10);
+                            if (inDoorSpan) continue;
+                            const col = tileCols[(c + r * 2) % tileCols.length];
+                            pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'posX', posXLim);
+                        }}
+                    }}
+
+                    // Aro estrutural em aço da porta de garagem
+                    for (const side of [-1, 1]) {{
+                        pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.07, floorY + doorH * 0.5, side * (doorHalfW + 0.08), 0, 0, 0, 0.16, doorH + 0.12, 0.18), C_STEEL_DARK, [0.66, 48], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(cx + halfW - 0.14, floorY + doorH * 0.5, side * (doorHalfW - 0.03), 0, 0, 0, 0.06, doorH, 0.06), C_STEEL_BRUSH, [0.76, 58], 'posX', posXLim);
+                    }}
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.07, doorTopY + 0.09, 0, 0, 0, 0, 0.18, 0.18, doorHalfW * 2.0 + 0.34), C_STEEL_DARK, [0.68, 50], 'posX', posXLim);
+
+                    // Painéis seccionados pretos da porta de garagem (5 secções horizontais)
+                    const C_DOOR_BLACK = [0.024, 0.027, 0.033, 1.0];
+                    const C_DOOR_RIB = [0.016, 0.018, 0.023, 1.0];
+                    const C_DOOR_GLASS = [0.075, 0.115, 0.165, 1.0];
+                    const nSections = 5;
+                    const secH = (doorH - 0.06) / nSections;
+                    const doorW = doorHalfW * 2.0 - 0.04;
+                    const doorX = cx + halfW - 0.04;
+
+                    // Vedante inferior em borracha preta + puxador + barra de reforço
+                    pushPart('box', viewer.matTRS(doorX - 0.02, floorY + 0.02, 0, 0, 0, 0, 0.07, 0.04, doorW), C_RUBBER, [0.20, 14], 'posX', posXLim);
+                    for (let si = 0; si < nSections; si++) {{
+                        const sy = floorY + 0.04 + (si + 0.5) * secH;
+                        pushPart('bevelBox', viewer.matTRS(doorX, sy, 0, 0, 0, 0, 0.075, secH * 0.94, doorW), C_DOOR_BLACK, [0.58, 46], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(doorX - 0.042, sy, 0, 0, 0, 0, 0.018, 0.028, doorW * 0.98), C_DOOR_RIB, [0.46, 36], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(doorX - 0.044, sy + secH * 0.47, 0, 0, 0, 0, 0.02, 0.016, doorW), C_STEEL_DARK, [0.52, 40], 'posX', posXLim);
+
+                        // 4 janelas fumadas horizontais na 4ª secção superior
+                        if (si === 3) {{
+                            for (const wz of [-2.10, -0.70, 0.70, 2.10]) {{
+                                pushPart('bevelBox', viewer.matTRS(doorX - 0.038, sy, wz, 0, 0, 0, 0.032, secH * 0.52, 1.04), C_STEEL_DARK, [0.64, 48], 'posX', posXLim);
+                                pushPart('box', viewer.matTRS(doorX - 0.048, sy, wz, 0, 0, 0, 0.020, secH * 0.39, 0.92), C_DOOR_GLASS, [0.88, 74], 'posX', posXLim);
+                            }}
+                        }}
+                    }}
+                    // Puxador de abertura e fecho lateral
+                    pushPart('bevelBox', viewer.matTRS(doorX - 0.065, floorY + 0.92, 0, 0, 0, 0, 0.045, 0.045, 0.42), C_STEEL_BRUSH, [0.80, 62], 'posX', posXLim);
+
+                    // Veio de molas de torção + tambores + calhas de teto + motor de abertura
+                    const shaftY = doorTopY + 0.26;
+                    pushPart('cyl', viewer.matTRS(cx + halfW - 0.16, shaftY, 0, Math.PI * 0.5, 0, 0, 0.032, doorW + 0.45, 0.032), C_STEEL_BRUSH, [0.78, 60], 'posX', posXLim);
+                    for (const dz of [-doorHalfW + 0.04, doorHalfW - 0.04]) {{
+                        pushPart('cyl', viewer.matTRS(cx + halfW - 0.16, shaftY, dz, Math.PI * 0.5, 0, 0, 0.085, 0.10, 0.085), C_STEEL, [0.68, 50], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(cx + halfW - 1.55, doorTopY + 0.06, dz, 0, 0, 0, 2.85, 0.055, 0.055), C_STEEL, [0.66, 48], 'ceil', ceilY - 0.48);
+                    }}
+                    pushPart('box', viewer.matTRS(cx + halfW - 1.65, doorTopY + 0.24, 0, 0, 0, 0, 3.15, 0.05, 0.08), C_STEEL_DARK, [0.62, 46], 'ceil', ceilY - 0.48);
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 3.25, doorTopY + 0.22, 0, 0, 0, 0, 0.44, 0.18, 0.28), C_STEEL_DARK, [0.64, 48], 'ceil', ceilY - 0.48);
+
+                    // Caixa de comando mural com LED de estado
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.10, floorY + 1.48, doorHalfW + 0.48, 0, 0, 0, 0.10, 0.28, 0.18), C_STEEL, [0.62, 46], 'posX', posXLim);
+                    pushPart('box', viewer.matTRS(cx + halfW - 0.155, floorY + 1.54, doorHalfW + 0.48, 0, 0, 0, 0.018, 0.035, 0.045), [0.18, 0.92, 0.52, 1.0], [1.30, -1.0], 'posX', posXLim);
+                }}
+
+                // Pilares de canto que fecham os 4 cantos da sala
+                for (const sx of [-1, 1]) {{
+                    const cxCorner = cx + sx * (halfW - 0.14);
+                    const cSide = sx > 0 ? 'posX' : 'negX';
+                    const cLim = cx + sx * (halfW - endXClipPad);
+                    for (const sz of [-1, 1]) {{
+                        pushPart('box', viewer.matTRS(cxCorner, wallMidY, sz * (halfZ - 0.14), 0, 0, 0, 0.26, wallH, 0.26), C_STEEL_DARK, [0.64, 46], cSide, cLim);
+                    }}
+                }}
+
+                // 3. Vigas de aço no teto + pilares verticais + fitas de luz LED
+                const addIBeamX = (x0, x1, y, z, h, w, clipSide, clipLim) => {{
+                    const len = Math.abs(x1 - x0);
+                    const mx = (x0 + x1) * 0.5;
+                    pushPart('box', viewer.matTRS(mx, y + h * 0.42, z, 0, 0, 0, len, h * 0.16, w), C_STEEL, [0.72, 54], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(mx, y, z, 0, 0, 0, len, h * 0.68, w * 0.24), C_STEEL_DARK, [0.64, 46], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(mx, y - h * 0.42, z, 0, 0, 0, len, h * 0.16, w), C_STEEL, [0.74, 56], clipSide, clipLim);
+                }};
+                const addIBeamZ = (x, y, z0, z1, h, w, clipSide, clipLim) => {{
+                    const len = Math.abs(z1 - z0);
+                    const mz = (z0 + z1) * 0.5;
+                    pushPart('box', viewer.matTRS(x, y + h * 0.42, mz, 0, 0, 0, w, h * 0.16, len), C_STEEL, [0.72, 54], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(x, y, mz, 0, 0, 0, w * 0.24, h * 0.68, len), C_STEEL_DARK, [0.64, 46], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(x, y - h * 0.42, mz, 0, 0, 0, w, h * 0.16, len), C_STEEL, [0.74, 56], clipSide, clipLim);
+                }};
+
+                const ceilClipLim = ceilY - 0.48;
+                pushPart('box', viewer.matTRS(cx, ceilY + 0.34, 0, 0, 0, 0, halfW * 2.08, 0.14, halfZ * 2.08), [0.015, 0.017, 0.022, 1.0], [0.22, 14], 'ceil', ceilClipLim);
+
+                // Vigas longitudinais ao longo de X + vigas perimetrais
+                for (const lz of [-4.2, 4.2]) {{
+                    addIBeamX(cx - halfW, cx + halfW, ceilY - 0.12, lz, 0.30, 0.20, 'ceil', ceilClipLim);
+                }}
+                for (const side of [-1, 1]) {{
+                    addIBeamX(cx - halfW, cx + halfW, ceilY - 0.06, side * (halfZ - 0.16), 0.28, 0.20, side > 0 ? 'posZ' : 'negZ', side * (halfZ - 0.32));
+                }}
+
+                // 5 vigas transversais principais de aço + pilares laterais com placas de base
+                const beamXs = [-7.2, -3.6, 0.0, 3.6, 7.2];
+                for (let bi = 0; bi < beamXs.length; bi++) {{
+                    const bx = cx + beamXs[bi];
+                    addIBeamZ(bx, ceilY, -halfZ, halfZ, 0.36, 0.24, 'ceil', ceilClipLim);
+                    if (bi % 2 === 0) {{
+                        for (const side of [-1, 1]) {{
+                            const clipSide = side > 0 ? 'posZ' : 'negZ';
+                            const clipLim = side * (halfZ - 0.32);
+                            const colZ = side * (halfZ - 0.20);
+                            pushPart('box', viewer.matTRS(bx, wallMidY, colZ, 0, 0, 0, 0.24, wallH, 0.06), C_STEEL, [0.70, 52], clipSide, clipLim);
+                            pushPart('box', viewer.matTRS(bx, wallMidY, colZ - side * 0.08, 0, 0, 0, 0.10, wallH, 0.18), C_STEEL_DARK, [0.62, 44], clipSide, clipLim);
+                            pushPart('bevelBox', viewer.matTRS(bx, floorY + 0.03, colZ - side * 0.05, 0, 0, 0, 0.36, 0.06, 0.32), C_STEEL_BRUSH, [0.74, 56], clipSide, clipLim);
+                            pushPart('bevelBox', viewer.matTRS(bx, ceilY - 0.28, colZ - side * 0.14, 0, 0, 0, 0.16, 0.34, 0.26), C_STEEL, [0.68, 50], clipSide, clipLim);
+                        }}
+                    }}
+                }}
+
+                // Fitas de luz LED no teto (longitudinais contínuas entre vigas + transversais)
+                const ledDropY = ceilY - 0.28;
+                for (const lz of [-2.4, 0.0, 2.4]) {{
+                    pushPart('box', viewer.matTRS(cx, ledDropY + 0.035, lz, 0, 0, 0, 14.8, 0.045, 0.13), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
+                    pushPart('box', viewer.matTRS(cx, ledDropY, lz, 0, 0, 0, 14.6, 0.034, 0.085), C_LED, [1.45, -1.0], 'ceil', ceilClipLim);
+                    for (const hx of [-5.4, -1.8, 1.8, 5.4]) {{
+                        pushPart('cyl', viewer.matTRS(cx + hx, ledDropY + 0.18, lz, 0, 0, 0, 0.014, 0.28, 0.014), C_CHROME, [0.80, 64], 'ceil', ceilClipLim);
+                    }}
+                }}
+                for (const bx of [-5.4, -1.8, 1.8, 5.4]) {{
+                    pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.04, 0, 0, 0, 0, 0.11, 0.04, 11.4), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
+                    pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.01, 0, 0, 0, 0, 0.075, 0.03, 11.2), C_LED, [1.35, -1.0], 'ceil', ceilClipLim);
+                }}
+
+                // 4. Objetos e detalhes de oficina/dinamómetro ao redor do motor
+                // A) Carro de ferramentas vermelho e grafite (cx - 4.8, z = -5.55)
+                const tcX = cx - 4.8;
+                const tcZ = -5.55;
+                pushPart('bevelBox', viewer.matTRS(tcX, floorY + 0.64, tcZ, 0, 0, 0, 1.48, 1.06, 0.68), C_RED, [0.58, 46]);
+                pushPart('bevelBox', viewer.matTRS(tcX, floorY + 1.24, tcZ - 0.04, 0, 0, 0, 1.40, 0.22, 0.58), C_STEEL_DARK, [0.62, 48]);
+                pushPart('box', viewer.matTRS(tcX, floorY + 1.18, tcZ, 0, 0, 0, 1.50, 0.03, 0.70), C_RUBBER, [0.22, 14]);
+                for (let di = 0; di < 5; di++) {{
+                    const dy = floorY + 0.26 + di * 0.185;
+                    pushPart('bevelBox', viewer.matTRS(tcX, dy, tcZ + 0.345, 0, 0, 0, 1.32, 0.14, 0.03), [0.52, 0.09, 0.10, 1.0], [0.55, 42]);
+                    pushPart('box', viewer.matTRS(tcX, dy + 0.035, tcZ + 0.365, 0, 0, 0, 1.18, 0.022, 0.02), C_CHROME, [0.85, 68]);
+                }}
+                pushPart('cyl', viewer.matTRS(tcX - 0.80, floorY + 1.02, tcZ, Math.PI * 0.5, 0, 0, 0.022, 0.54, 0.022), C_CHROME, [0.84, 66]);
+                for (const wx of [-0.62, 0.62]) {{
+                    for (const wz of [-0.26, 0.26]) {{
+                        pushPart('cyl', viewer.matTRS(tcX + wx, floorY + 0.06, tcZ + wz, 0, 0, Math.PI * 0.5, 0.06, 0.05, 0.06), C_RUBBER, [0.26, 18]);
+                    }}
+                }}
+                pushPart('box', viewer.matTRS(tcX - 0.26, floorY + 1.365, tcZ + 0.06, 0, 0.28, 0, 0.36, 0.018, 0.04), C_CHROME, [0.88, 72]);
+                pushPart('box', viewer.matTRS(tcX + 0.18, floorY + 1.365, tcZ - 0.02, 0, -0.18, 0, 0.28, 0.016, 0.035), C_CHROME, [0.88, 72]);
+
+                // B) Consola móvel de telemetria / dyno (cx + 4.4, z = -5.2)
+                const dcX = cx + 4.4;
+                const dcZ = -5.2;
+                pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.07, dcZ, 0, -0.35, 0, 0.92, 0.06, 0.72), C_STEEL_DARK, [0.58, 44]);
+                for (const wx of [-0.36, 0.36]) {{
+                    for (const wz of [-0.26, 0.26]) {{
+                        pushPart('cyl', viewer.matTRS(dcX + wx * 0.9, floorY + 0.03, dcZ + wz * 0.9, 0, 0, Math.PI * 0.5, 0.038, 0.04, 0.038), C_RUBBER, [0.24, 16]);
+                    }}
+                }}
+                pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.42, dcZ, 0, -0.35, 0, 0.64, 0.62, 0.52), C_STEEL, [0.62, 46]);
+                pushPart('box', viewer.matTRS(dcX - 0.12, floorY + 0.64, dcZ + 0.24, 0, -0.35, 0, 0.12, 0.022, 0.02), accent, [1.3, -1.0]);
+                pushPart('cyl', viewer.matTRS(dcX, floorY + 1.15, dcZ - 0.06, 0, 0, 0, 0.045, 0.88, 0.045), C_STEEL_BRUSH, [0.76, 58]);
+                pushPart('bevelBox', viewer.matTRS(dcX + 0.05, floorY + 0.92, dcZ + 0.14, 0, -0.35, 0, 0.84, 0.04, 0.42), C_STEEL_DARK, [0.56, 42]);
+                pushPart('bevelBox', viewer.matTRS(dcX - 0.05, floorY + 1.50, dcZ - 0.04, -0.10, -0.35, 0, 1.12, 0.56, 0.06), C_STEEL_DARK, [0.52, 40]);
+                pushPart('box', viewer.matTRS(dcX - 0.03, floorY + 1.50, dcZ - 0.005, -0.10, -0.35, 0, 1.02, 0.46, 0.02), [0.04, 0.10, 0.16, 1.0], [0.95, -1.0]);
+                pushPart('box', viewer.matTRS(dcX - 0.20, floorY + 1.56, dcZ + 0.01, -0.10, -0.35, 0.18, 0.52, 0.026, 0.022), [0.22, 0.86, 0.98, 1.0], [1.28, -1.0]);
+                pushPart('box', viewer.matTRS(dcX - 0.16, floorY + 1.46, dcZ + 0.01, -0.10, -0.35, -0.12, 0.48, 0.022, 0.022), [0.96, 0.48, 0.18, 1.0], [1.25, -1.0]);
+                viewer.addPipe(list, [[dcX - 0.2, floorY + 0.12, dcZ + 0.2], [dcX - 1.2, floorY + 0.022, dcZ + 1.6], [cx + 1.6, floorY + 0.022, -0.9]], 0.024, C_RUBBER, [0.22, 16], [], true);
+
+                // C) Bancada de trabalho em aço com torno e peças (cx + 0.2, z = -6.45)
+                const wbX = cx + 0.2;
+                const wbZ = -6.45;
+                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 1.02, wbZ, 0, 0, 0, 2.65, 0.09, 0.92), C_STEEL_BRUSH, [0.68, 52]);
+                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 1.26, wbZ - 0.42, 0, 0, 0, 2.65, 0.42, 0.05), C_STEEL_DARK, [0.54, 40]);
+                for (const lx of [-1.22, 1.22]) {{
+                    for (const lz of [-0.38, 0.38]) {{
+                        pushPart('box', viewer.matTRS(wbX + lx, floorY + 0.50, wbZ + lz, 0, 0, 0, 0.08, 1.00, 0.08), C_STEEL, [0.66, 48]);
+                    }}
+                }}
+                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 0.32, wbZ, 0, 0, 0, 2.42, 0.04, 0.78), C_STEEL_DARK, [0.58, 42]);
+                // Torno de bancada + disco de travão e pinça + lata de óleo
+                pushPart('bevelBox', viewer.matTRS(wbX - 0.95, floorY + 1.16, wbZ + 0.26, 0, 0, 0, 0.22, 0.20, 0.30), [0.18, 0.34, 0.54, 1.0], [0.56, 42]);
+                pushPart('cyl', viewer.matTRS(wbX - 0.95, floorY + 1.18, wbZ + 0.44, Math.PI * 0.5, 0, 0, 0.018, 0.22, 0.018), C_CHROME, [0.85, 68]);
+                pushPart('cyl', viewer.matTRS(wbX + 0.25, floorY + 1.09, wbZ + 0.05, 0, 0, 0, 0.24, 0.045, 0.24), C_STEEL_BRUSH, [0.82, 66]);
+                pushPart('bevelBox', viewer.matTRS(wbX + 0.44, floorY + 1.12, wbZ + 0.14, 0, 0.4, 0, 0.14, 0.10, 0.18), C_RED, [0.64, 50]);
+                pushPart('cyl', viewer.matTRS(wbX + 0.92, floorY + 1.19, wbZ - 0.05, 0, 0, 0, 0.075, 0.24, 0.075), [0.82, 0.62, 0.20, 1.0], [0.62, 48]);
+
+                // D) Garrafas de gás industrial + tambor de óleo 200L + extintor (cx - 6.6, z = +5.4)
+                const gdX = cx - 6.6;
+                const gdZ = 5.4;
+                pushPart('bevelBox', viewer.matTRS(gdX, floorY + 0.04, gdZ, 0, 0, 0, 0.96, 0.08, 0.52), C_STEEL_DARK, [0.58, 42]);
+                pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 0.88, gdZ, 0, 0, 0, 0.17, 1.55, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
+                pushPart('sphere', viewer.matTRS(gdX - 0.22, floorY + 1.65, gdZ, 0, 0, 0, 0.17, 0.18, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
+                pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 1.87, gdZ, 0, 0, 0, 0.045, 0.12, 0.045), C_BRASS, [0.80, 64]);
+                pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 0.82, gdZ, 0, 0, 0, 0.16, 1.44, 0.16), C_STEEL, [0.60, 48]);
+                pushPart('sphere', viewer.matTRS(gdX + 0.22, floorY + 1.54, gdZ, 0, 0, 0, 0.16, 0.16, 0.16), C_STEEL, [0.60, 48]);
+                pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 1.74, gdZ, 0, 0, 0, 0.042, 0.11, 0.042), C_BRASS, [0.80, 64]);
+                // Tambor de óleo 200L com aros
+                const drX = gdX + 1.25;
+                const drZ = gdZ + 0.25;
+                pushPart('cyl', viewer.matTRS(drX, floorY + 0.58, drZ, 0, 0, 0, 0.36, 1.16, 0.36), C_STEEL_DARK, [0.52, 38]);
+                for (const ry of [0.36, 0.78, 1.14]) {{
+                    pushPart('torus', viewer.matTRS(drX, floorY + ry, drZ, Math.PI * 0.5, 0, 0, 0.37, 0.37, 0.08), C_STEEL_BRUSH, [0.68, 50]);
+                }}
+                // Extintor fixo no pilar traseiro
+                pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 0.95, halfZ - 0.42, 0, 0, 0, 0.11, 0.62, 0.11), C_RED, [0.64, 52], 'posZ', halfZ - 0.32);
+                pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 1.32, halfZ - 0.42, 0, 0, 0, 0.04, 0.12, 0.04), C_BRASS, [0.80, 62], 'posZ', halfZ - 0.32);
+
+                // E) Pilha de pneus & jantes + macaco hidráulico (cx + 5.6, z = +5.3)
+                const trX = cx + 5.6;
+                const trZ = 5.3;
+                for (let ti = 0; ti < 3; ti++) {{
+                    const ty = floorY + 0.18 + ti * 0.36;
+                    const offX = ti === 2 ? 0.06 : 0;
+                    pushPart('torus', viewer.matTRS(trX + offX, ty, trZ, Math.PI * 0.5, 0, 0, 0.46, 0.46, 0.32), C_RUBBER, [0.22, 16]);
+                    pushPart('cyl', viewer.matTRS(trX + offX, ty, trZ, 0, 0, 0, 0.33, 0.30, 0.33), [0.36, 0.32, 0.24, 1.0], [0.78, 60]);
+                    pushPart('cyl', viewer.matTRS(trX + offX, ty + 0.13, trZ, 0, 0, 0, 0.12, 0.06, 0.12), C_STEEL_DARK, [0.66, 52]);
+                }}
+                // Macaco hidráulico baixo
+                const jkX = cx + 3.2;
+                const jkZ = 5.75;
+                pushPart('bevelBox', viewer.matTRS(jkX, floorY + 0.09, jkZ, 0, 0.42, 0, 0.96, 0.12, 0.38), C_RED, [0.62, 48]);
+                pushPart('cyl', viewer.matTRS(jkX - 0.24, floorY + 0.17, jkZ - 0.10, 0, 0, 0, 0.09, 0.04, 0.09), C_STEEL_BRUSH, [0.76, 58]);
+                pushPart('cyl', viewer.matTRS(jkX + 0.45, floorY + 0.56, jkZ + 0.20, 0, 0.42, -0.78, 0.022, 1.15, 0.022), C_CHROME, [0.86, 68]);
+                for (const rx of [-0.36, 0.36]) {{
+                    for (const rz of [-0.20, 0.20]) {{
+                        pushPart('cyl', viewer.matTRS(jkX + rx, floorY + 0.045, jkZ + rz, Math.PI * 0.5, 0.42, 0, 0.045, 0.04, 0.045), C_STEEL_DARK, [0.60, 44]);
+                    }}
+                }}
+
+                // F) Enrolador de mangueira na parede + rampa de proteção de cabos
+                pushPart('cyl', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, 0, Math.PI * 0.5, 0.24, 0.26, 0.24), C_STEEL, [0.62, 46], 'negZ', -(halfZ - 0.32));
+                pushPart('torus', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, Math.PI * 0.5, 0, 0.19, 0.19, 0.18), [0.16, 0.42, 0.72, 1.0], [0.40, 28], 'negZ', -(halfZ - 0.32));
+                pushPart('bevelBox', viewer.matTRS(cx - 2.9, floorY + 0.03, 5.9, 0, 0.15, 0, 1.45, 0.06, 0.38), C_RUBBER, [0.24, 16]);
+                pushPart('box', viewer.matTRS(cx - 2.9, floorY + 0.062, 5.9, 0, 0.15, 0, 1.32, 0.012, 0.14), [0.85, 0.62, 0.14, 1.0], [0.42, 28]);
+
+                return list;
+            }}
+
+            return {{
+                isEnabled() {{ return enabled; }},
+                setEnabled,
+                toggle() {{ setEnabled(!enabled); }},
+                syncUI,
+                build
             }};
         }})();
 
@@ -7077,6 +8208,7 @@ def gerar_dashboard_html(
 
                 this.staticOpaque = [];
                 this.staticTrans = [];
+                this.envOpaque = [];
                 this.dynamicCyls = [];
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
@@ -7118,6 +8250,10 @@ def gerar_dashboard_html(
                     uniform vec2 uSpec;
                     uniform vec3 uCamPos;
                     void main() {{
+                        if (uSpec.y < 0.0) {{
+                            gl_FragColor = vec4(uColor.rgb * uSpec.x, uColor.a);
+                            return;
+                        }}
                         vec3 N = normalize(vNorm);
                         vec3 V = normalize(uCamPos - vWorldPos);
                         vec3 R = reflect(-V, N);
@@ -8301,913 +9437,6 @@ def gerar_dashboard_html(
                         this.addPart(this.staticOpaque, 'cyl', this.matTRS(jX, yLine, zMid, Math.PI * 0.5, 0, 0, pipeR * 1.08, 0.06, pipeR * 1.08), [0.84, 0.88, 0.92, 1.0], [0.80, 64]);
                     }} else if (exJunc === 'Y-Pipe') {{
                         this.addPipe(this.staticOpaque, [[preEnd, yLine, zL], [jX - 0.06, yLine, (zL + zMid) * 0.5], [jX + 0.10, yLine, zMid]], pipeR * 0.96, st.col, st.spec);
-                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zR], [jX - 0.06, yLine, (zR + zMid) * 0.5], [jX + 0.10, yLine, zMid]], pipeR * 0.96, st.col, st.spec);
-                        this.addPart(this.staticOpaque, 'cone', this.matTRS(jX + 0.12, yLine, zMid, 0, 0, -Math.PI * 0.5, trunkR * 1.34, 0.28, trunkR * 1.34), st.catCol, st.spec);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(postStart, yLine, zMid, 0, 0, Math.PI * 0.5, trunkR * 1.22, 0.05, trunkR * 1.22), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
-                    }} else if (exJunc === 'Coletor Merge') {{
-                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zL], [jX - 0.05, yLine, zMid]], pipeR * 0.95, st.col, st.spec);
-                        this.addPipe(this.staticOpaque, [[preEnd, yLine, zR], [jX - 0.05, yLine, zMid]], pipeR * 0.95, st.col, st.spec);
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(jX - 0.08, yLine, zMid, 0, 0, 0, 0.16, pipeR * 2.2, Math.abs(zR - zL) * 0.65), [0.28, 0.32, 0.38, 1.0], [0.64, 48]);
-                        this.addPart(this.staticOpaque, 'cone', this.matTRS(jX + 0.08, yLine, zMid, 0, 0, -Math.PI * 0.5, trunkR * 1.56, 0.30, trunkR * 1.56), [0.76, 0.58, 0.28, 1.0], [0.74, 58]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(postStart, yLine, zMid, 0, 0, Math.PI * 0.5, trunkR * 1.25, 0.05, trunkR * 1.25), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
-                    }}
-                }} else if (exJunc === 'Coletor Merge' || exJunc === 'Y-Pipe') {{
-                    this.addPart(this.staticOpaque, 'cone', this.matTRS(jX, yLine, lanesZ[0], 0, 0, -Math.PI * 0.5, pipeR * 1.65, 0.28, pipeR * 1.65), [0.76, 0.58, 0.28, 1.0], [0.74, 58]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(jX + 0.15, yLine, lanesZ[0], 0, 0, Math.PI * 0.5, pipeR * 1.28, 0.05, pipeR * 1.28), [0.86, 0.89, 0.94, 1.0], [0.82, 68]);
-                }}
-
-                // Troço a jusante (junção -> catalisador opcional -> panela -> ponteiras)
-                for (let oi = 0; oi < outLanesZ.length; oi++) {{
-                    const lzOut = outLanesZ[oi];
-                    this.addPipe(this.staticOpaque, [[postStart, yLine, lzOut], [xTip - 0.06, yLine, lzOut]], trunkR, st.col, st.spec);
-                    if (st.hasCat && !placeCatBeforeJunc) {{
-                        drawCatAt(lzOut, trunkR);
-                    }}
-                    if (st.hasMuf) {{
-                        const mufR = Math.max(0.15, trunkR * 1.75);
-                        const mufLen = exType === 'Inconel 4-1' ? 0.42 : 0.56;
-                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xMuf, yLine, lzOut, 0, 0, 0, mufLen, mufR * 1.45, mufR * 1.90), st.mufCol, st.spec);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMuf, yLine, lzOut, 0, 0, Math.PI * 0.5, trunkR * 0.88, mufLen * 0.92, trunkR * 0.88), [0.78, 0.82, 0.88, 1.0], [0.65, 52]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(xMuf - 0.09, yLine, lzOut, 0, 0, 0, 0.024, mufR * 1.32, mufR * 1.70), st.col, [0.5, 36]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(xMuf + 0.09, yLine, lzOut, 0, 0, 0, 0.024, mufR * 1.32, mufR * 1.70), st.col, [0.5, 36]);
-                        if (st.valved) {{
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(xMuf + 0.16, yLine + mufR * 1.05, lzOut, 0, 0, 0, 0.056, 0.12, 0.056), [0.84, 0.64, 0.24, 1.0], [0.78, 62]);
-                            this.addPipe(this.staticOpaque, [[xMuf - 0.34, yLine, lzOut], [xMuf, yLine, lzOut + (lzOut <= 0 ? -mufR * 1.12 : mufR * 1.12)], [xTip - 0.28, yLine, lzOut]], trunkR * 0.72, st.tipCol, [0.80, 64]);
-                        }}
-                    }}
-                }}
-
-                const hasOutDual = outLanesZ.length >= 2;
-                const tipPositions = [];
-                if (tipsMode === 'Simples') {{
-                    const cZ = hasOutDual ? (outLanesZ[0] + outLanesZ[1]) * 0.5 : outLanesZ[0];
-                    if (hasOutDual) {{
-                        this.addPipe(this.staticOpaque, [[xTip - 0.42, yLine, outLanesZ[0]], [xTip - 0.10, yLine, cZ]], trunkR * 0.92, st.col, st.spec);
-                        this.addPipe(this.staticOpaque, [[xTip - 0.42, yLine, outLanesZ[1]], [xTip - 0.10, yLine, cZ]], trunkR * 0.92, st.col, st.spec);
-                    }}
-                    tipPositions.push({{ lz: outLanesZ[0], tz: cZ }});
-                }} else if (tipsMode === 'Dupla') {{
-                    if (hasOutDual) {{
-                        tipPositions.push({{ lz: outLanesZ[0], tz: outLanesZ[0] }}, {{ lz: outLanesZ[1], tz: outLanesZ[1] }});
-                    }} else {{
-                        for (const s of [-1, 1]) {{
-                            const tz = outLanesZ[0] + s * Math.max(0.14, pipeR * 1.38);
-                            this.addPipe(this.staticOpaque, [[xTip - 0.30, yLine, outLanesZ[0]], [xTip - 0.08, yLine, tz]], pipeR * 0.85, st.col, st.spec);
-                            tipPositions.push({{ lz: outLanesZ[0], tz }});
-                        }}
-                    }}
-                }} else {{
-                    if (hasOutDual) {{
-                        for (const bZ of outLanesZ) {{
-                            const off = Math.max(0.11, pipeR * 1.28);
-                            for (const s of [-1, 1]) {{
-                                const tz = bZ + s * off;
-                                this.addPipe(this.staticOpaque, [[xTip - 0.30, yLine, bZ], [xTip - 0.08, yLine, tz]], pipeR * 0.82, st.col, st.spec);
-                                tipPositions.push({{ lz: bZ, tz }});
-                            }}
-                        }}
-                    }} else {{
-                        const stepZ = Math.max(0.13, pipeR * 1.50);
-                        for (let qi = -1.5; qi <= 1.5; qi += 1.0) {{
-                            const tz = outLanesZ[0] + qi * stepZ;
-                            this.addPipe(this.staticOpaque, [[xTip - 0.32, yLine, outLanesZ[0]], [xTip - 0.08, yLine, tz]], pipeR * 0.78, st.col, st.spec);
-                            tipPositions.push({{ lz: outLanesZ[0], tz }});
-                        }}
-                    }}
-                }}
-
-                const tipR = pipeR * 1.24;
-                for (const tp of tipPositions) {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xTip + 0.08, yLine, tp.tz, 0, 0, Math.PI * 0.5, tipR, 0.32, tipR), st.tipCol, [0.85, 72]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xTip + 0.25, yLine, tp.tz, 0, 0, Math.PI * 0.5, tipR * 0.82, 0.02, tipR * 0.82), [0.06, 0.07, 0.09, 1.0], [0.1, 8]);
-                    this.exhaustTips.push({{ x: xTip + 0.26, y: yLine, z: tp.tz, r: tipR * 0.90, hot: exType === 'Straight Pipe' || exType === 'Inconel 4-1' || exType === 'Titânio Valvetronic' }});
-                }}
-
-                for (let pi = 0; pi < pathItems.length; pi++) {{
-                    const pItem = pathItems[pi];
-                    let postLz = pItem.lz;
-                    const jPts = [];
-                    if (hasDualLanes && exJunc === 'X-Pipe') {{
-                        const otherLz = pItem.lz === lanesZ[0] ? lanesZ[1] : lanesZ[0];
-                        jPts.push([preEnd, yLine, pItem.lz], [jX, yLine, zMid], [postStart, yLine, otherLz]);
-                        postLz = otherLz;
-                    }} else if (hasDualLanes && isMergedJunc) {{
-                        jPts.push([preEnd, yLine, pItem.lz], [jX + 0.08, yLine, zMid]);
-                        postLz = zMid;
-                    }} else {{
-                        jPts.push([jX, yLine, pItem.lz]);
-                    }}
-                    const matchTips = tipPositions.filter(tp => tp.lz === postLz);
-                    const chosenTip = matchTips.length ? matchTips[pi % matchTips.length] : tipPositions[pi % tipPositions.length];
-                    const midAndCat = placeCatBeforeJunc
-                        ? [[xMid, yLine, pItem.lz], [xCat, yLine, pItem.lz], ...jPts]
-                        : [[xMid, yLine, pItem.lz], ...jPts, [xCat, yLine, postLz]];
-                    const fullPath = [
-                        ...pItem.prefixPts,
-                        ...midAndCat,
-                        [xMuf, yLine, postLz],
-                        [xTip - 0.12, yLine, chosenTip.tz],
-                        [xTip + 0.32, yLine, chosenTip.tz]
-                    ];
-                    this.exhaustGasPaths.push({{ pts: fullPath, phaseOff: pi / Math.max(1, pathItems.length), r: Math.max(0.030, pipeR * 0.54) }});
-                }}
-            }}
-
-            buildStandaloneGearboxScene() {{
-                this.sceneCenterX = 0;
-                const isEcvt = this.config.gearboxType === 'E-CVT';
-                const speeds = Math.max(4, Math.min(9, parseInt(this.config.gearboxSpeeds, 10) || 6));
-                const extraLen = isEcvt ? 0.16 : (speeds - 6) * 0.14;
-                this.addGearboxModel(-1.45 - extraLen * 0.3, 0.68);
-                this.baseDist = 5.4 + (isEcvt ? 0.15 : Math.max(0, speeds - 6) * 0.25);
-            }}
-
-            buildStandaloneExhaustScene() {{
-                this.sceneCenterX = 0;
-                const n = Math.max(1, Math.min(16, parseInt(this.config.cilindros, 10) || 4));
-                const fmt = ['I', 'V', 'VR', 'W', 'B', 'WANKEL'].includes(this.config.formato) ? this.config.formato : 'I';
-                const supportsJunc = EXHAUST_JUNCTION_FORMATS.includes(fmt);
-                const {{ exType, tipsMode, exJunc, pipeR, st }} = this.getExhaustParams();
-                const effJunc = supportsJunc ? exJunc : 'Sem União';
-                const runnerR = Math.max(0.036, Math.min(0.095, pipeR * 0.66));
-
-                const useDualHeaders = supportsJunc;
-                const lanesZ = useDualHeaders ? [-0.46, 0.46] : [0.0];
-                const portCounts = useDualHeaders
-                    ? [Math.max(1, Math.min(5, Math.ceil(n / 2))), Math.max(1, Math.min(5, Math.floor(n / 2)))]
-                    : [Math.min(6, n)];
-                const xPortStart = -1.78, xPortEnd = -1.04;
-                const xCol = -0.82, xMid = -0.44, xJunc = 0.00, xCat = 0.54, xMuf = 1.14, xTip = 1.80;
-                const yLine = -0.06;
-                const pathItems = [];
-                const xStartPipe = [];
-
-                for (let bi = 0; bi < lanesZ.length; bi++) {{
-                    const lz = lanesZ[bi];
-                    const collPt = [xCol, yLine, lz];
-                    xStartPipe.push(collPt);
-                    const pCount = portCounts[bi];
-
-                    for (let pi = 0; pi < pCount; pi++) {{
-                        const frac = pCount > 1 ? pi / (pCount - 1) : 0.5;
-                        const px = xPortStart + frac * (xPortEnd - xPortStart);
-                        const py = 0.24;
-                        const pz = useDualHeaders ? (lz * 1.15) : ((pi % 2 === 0 ? -0.10 : 0.10));
-                        this.addPart(this.staticTrans, 'cyl', this.matTRS(px, py + 0.14, pz, 0, 0, 0, 0.10, 0.26, 0.10), [0.56, 0.60, 0.66, 1.0], [0.46, 36]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(px, py + 0.04, pz, 0, 0, 0, 0.072, 0.025, 0.072), [0.95, 0.46, 0.18, 1.0], [0.7, 50]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(px, py + 0.17, pz, 0, 0, 0, 0.016, 0.22, 0.016), [0.80, 0.84, 0.88, 1.0], [0.8, 64]);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(px, py, pz, 0, 0, 0, 0.13, 0.036, 0.14), st.col, st.spec);
-
-                        const midRun = [px + 0.18, 0.08 + (pi % 2) * 0.05, lz * (1.12 + 0.08 * (1 - frac))];
-                        this.addPipe(this.staticOpaque, [[px, py, pz], midRun, collPt], runnerR, st.col, st.spec);
-                        pathItems.push({{ lz, prefixPts: [[px, py, pz], midRun, collPt] }});
-                    }}
-
-                    this.addPart(this.staticOpaque, 'cone', this.matTRS(xCol + 0.08, yLine, lz, 0, 0, -Math.PI * 0.5, runnerR * 1.85, 0.22, runnerR * 1.85), st.catCol, st.spec);
-                }}
-
-                this.addExhaustDownstreamSystem({{ lanesZ, yLine, xStartPipe, xMid, xJunc, xCat, xMuf, xTip, pathItems, st, pipeR, exType, tipsMode, exJunc: effJunc, placeCatBeforeJunc: false }});
-                this.baseDist = 5.4;
-            }}
-
-            getWindingStyle(wName) {{
-                switch (wName) {{
-                    case 'Litz Alta Freq.':
-                        return {{ col: [0.92, 0.66, 0.24, 1.0], spec: [0.84, 66], barStyle: 'hairpin' }};
-                    case 'Concentrado':
-                        return {{ col: [0.78, 0.36, 0.16, 1.0], spec: [0.74, 54], barStyle: 'bobbin' }};
-                    case 'Alumínio Leve':
-                        return {{ col: [0.76, 0.80, 0.86, 1.0], spec: [0.84, 68], barStyle: 'alu' }};
-                    default:
-                        return {{ col: [0.89, 0.49, 0.20, 1.0], spec: [0.86, 68], barStyle: 'hairpin' }};
-                }}
-            }}
-
-            addInverterUnit(x, y, z, scale = 1.0, phaseTargets = null) {{
-                const inv = this.config.inverterType || 'SiC Dual 800V';
-                const s = scale;
-                const isGan = inv === 'GaN Alta Freq.';
-                const isSic = inv === 'SiC Dual 800V';
-                const isMos = inv === 'MOSFET 48V';
-
-                const wX = (isGan ? 0.34 : (isSic ? 0.52 : (isMos ? 0.32 : 0.46))) * s;
-                const hY = (isGan ? 0.11 : (isMos ? 0.10 : 0.15)) * s;
-                const dZ = (isSic ? 0.42 : (isMos ? 0.28 : 0.36)) * s;
-
-                const bodyCol = isSic ? [0.16, 0.19, 0.24, 1.0] : (isGan ? [0.26, 0.32, 0.40, 1.0] : [0.58, 0.63, 0.70, 1.0]);
-                const trimCol = isSic ? [0.52, 0.40, 0.90, 1.0] : (isGan ? [0.18, 0.76, 0.74, 1.0] : (isMos ? [0.78, 0.60, 0.24, 1.0] : [0.38, 0.44, 0.52, 1.0]));
-
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y, z, 0, 0, 0, wX, hY, dZ), bodyCol, [0.68, 52]);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y + hY * 0.48, z, 0, 0, 0, wX * 0.90, hY * 0.16, dZ * 0.86), trimCol, [0.76, 60]);
-
-                const finCnt = isGan ? 9 : 6;
-                for (let f = 0; f < finCnt; f++) {{
-                    const fz = z + (-0.36 + (0.72 * f) / Math.max(1, finCnt - 1)) * dZ;
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(x, y + hY * 0.59, fz, 0, 0, 0, wX * 0.80, hY * 0.14, 0.012 * s), [0.74, 0.78, 0.84, 1.0], [0.80, 64]);
-                }}
-
-                const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
-                const C_COPPER = [0.88, 0.50, 0.20, 1.0];
-                for (const sgn of [-1, 1]) {{
-                    const hz = z + sgn * dZ * 0.24;
-                    const hx = x - wX * 0.53;
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(hx, y, hz, 0, 0, Math.PI * 0.5, 0.032 * s, 0.09 * s, 0.032 * s), C_HV_ORANGE, [0.55, 38]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(hx - 0.035 * s, y, hz, 0, 0, Math.PI * 0.5, 0.020 * s, 0.05 * s, 0.020 * s), [0.84, 0.87, 0.92, 1.0], [0.84, 68]);
-                }}
-
-                const targets = phaseTargets || [
-                    [x + wX * 0.14, y - hY * 1.45, z - dZ * 0.24],
-                    [x + wX * 0.14, y - hY * 1.45, z],
-                    [x + wX * 0.14, y - hY * 1.45, z + dZ * 0.24]
-                ];
-                for (let p = 0; p < 3; p++) {{
-                    const pz = z + (p - 1) * dZ * 0.22;
-                    const pStart = [x + wX * 0.24, y - hY * 0.36, pz];
-                    const pMid = [x + wX * 0.30, (pStart[1] + targets[p][1]) * 0.52, (pz + targets[p][2]) * 0.5];
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(pStart[0], pStart[1], pStart[2], 0, 0, 0, 0.052 * s, 0.038 * s, 0.042 * s), C_HV_ORANGE, [0.52, 36]);
-                    this.addPipe(this.staticOpaque, [pStart, pMid, targets[p]], 0.018 * s, C_COPPER, [0.86, 68], [], true);
-                    this.hvPaths.push({{ pts: [pStart, pMid, targets[p]], r: 0.024 * s, phaseOff: p * 0.22, kind: 'phase' }});
-                }}
-
-                return {{
-                    hvInputPos: [x - wX * 0.55, y, z - dZ * 0.24],
-                    hvInputNeg: [x - wX * 0.55, y, z + dZ * 0.24]
-                }};
-            }}
-
-            addEvMguUnit({{ x = 0, y = 0, z = 0, scale = 1.0, flipDir = 1, includeInverter = true, rotorIdx = 0, archOverride = null, includeDiffAxle = false, isCompactPancake = false }}) {{
-                const s = scale;
-                const mArch = archOverride || this.config.emotorArch || 'PMSM Radial';
-                const isInWheel = mArch === 'In-Wheel Hub';
-                const isAxial = mArch === 'Axial Flux' || isInWheel;
-                const emKw = Math.max(5, Math.min(600, Number(this.config.emotorKw) || 165));
-                const cooling = this.config.emotorCooling || 'Glicol (Camisa)';
-                const wd = this.getWindingStyle(this.config.emotorWinding || 'Hairpin Cobre');
-
-                const kwNorm = Math.min(1.0, emKw / 320.0);
-                const rStat = (isAxial ? 0.44 : 0.36) * (0.86 + kwNorm * 0.24) * s;
-                const lenCore = isCompactPancake
-                    ? Math.max(0.18 * s, 0.24 * s)
-                    : (isAxial ? Math.max(0.16 * s, 0.22 * s) : Math.max(0.32 * s, (0.36 + kwNorm * 0.28) * s));
-                const rRotor = isAxial ? rStat * 0.85 : rStat * 0.62;
-                const rInnerEnd = isAxial ? rStat * 0.34 : rStat * 0.65;
-                const poles = 8;
-
-                const C_CASE = [0.54, 0.59, 0.66, 1.0];
-                const C_BELL = [0.22, 0.25, 0.31, 1.0];
-                const C_CORE = [0.20, 0.24, 0.30, 1.0];
-                const C_STEEL = [0.76, 0.80, 0.86, 1.0];
-                const C_INSUL = [0.90, 0.92, 0.95, 1.0];
-                const C_HV = [0.96, 0.42, 0.08, 1.0];
-
-                const rotorMode = mArch === 'Motor Indução' ? 'cage' : (mArch === 'EESM Bobinado' ? 'eesm' : 'n52');
-
-                if (isInWheel) {{
-                    // Motor Hub em eixo Z (roda/cubo)
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, 0.050 * s, lenCore + 0.34 * s, 0.050 * s), C_STEEL, [0.80, 66]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, rStat * 0.94, lenCore * 0.34, rStat * 0.94), C_CORE, [0.44, 32]);
-                    for (let i = 0; i < 12; i++) {{
-                        const a = (i * Math.PI * 2) / 12;
-                        const cr = rStat * 0.66;
-                        const coilH = (rStat - rInnerEnd) * 0.72;
-                        const coilW = Math.min(0.10 * s, (rStat * 1.4) / 12);
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x + Math.cos(a) * cr, y + Math.sin(a) * cr, z, 0, 0, a, coilH, coilW, lenCore * 0.54), wd.col, wd.spec);
-                    }}
-                    this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, Math.PI * 0.5, 0, 0, rStat * 1.07, lenCore * 1.12, rStat * 1.07), C_CASE, [0.58, 46]);
-                    const sideDir = z >= 0 ? 1 : -1;
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x - rStat * 0.72, y + rStat * 0.54, z + sideDir * lenCore * 0.56, 0, 0, 0.45, 0.14 * s, 0.22 * s, 0.11 * s), [0.84, 0.18, 0.16, 1.0], [0.76, 58]);
-                }} else {{
-                    // Veio central X + rolamentos internos + estator Radial / Fluxo Axial
-                    const shaftLen = lenCore + (isAxial ? 0.34 : 0.42) * s;
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, 0.052 * s, shaftLen, 0.052 * s), [0.60, 0.65, 0.72, 1.0], [0.80, 68]);
-                    if (isAxial) {{
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 0.94, lenCore * 0.34, rStat * 0.94), C_CORE, [0.42, 30]);
-                        for (let i = 0; i < 12; i++) {{
-                            const a = (i * Math.PI * 2) / 12;
-                            const cr = rStat * 0.66;
-                            const coilH = (rStat - rInnerEnd) * 0.72;
-                            const coilW = Math.min(0.10 * s, (rStat * 1.45) / 12);
-                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y + Math.cos(a) * cr, z + Math.sin(a) * cr, a, 0, 0, lenCore * 0.54, coilH, coilW), wd.col, wd.spec);
-                        }}
-                        this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.07, lenCore * 1.12, rStat * 1.07), C_CASE, [0.58, 46]);
-                        for (const endS of [-1, 1]) {{
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(x + endS * lenCore * 0.58, y, z, 0, 0, Math.PI * 0.5, rStat * 1.07, 0.045 * s, rStat * 1.07), C_BELL, [0.64, 50]);
-                        }}
-                    }} else {{
-                        const lamSlices = 5;
-                        for (let ls = 0; ls < lamSlices; ls++) {{
-                            const lx = x + (-0.42 + (0.84 * ls) / (lamSlices - 1)) * lenCore;
-                            const colLam = ls % 2 === 0 ? C_CORE : [0.16, 0.19, 0.24, 1.0];
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(lx, y, z, 0, 0, Math.PI * 0.5, rStat * 0.94, lenCore / lamSlices * 0.92, rStat * 0.94), colLam, [0.38, 28]);
-                        }}
-                        const slotCount = 12;
-                        for (let i = 0; i < slotCount; i++) {{
-                            const a = (i * Math.PI * 2) / slotCount;
-                            const tr = rStat * 0.82;
-                            const ty = y + Math.cos(a) * tr;
-                            const tz = z + Math.sin(a) * tr;
-                            const toothW = Math.min(0.068 * s, (rStat * 1.35) / slotCount);
-                            this.addPart(this.staticOpaque, 'box', this.matTRS(x, ty, tz, a, 0, 0, lenCore * 1.02, rStat * 0.24, toothW), C_CORE, [0.40, 28]);
-                            for (const endS of [-1, 1]) {{
-                                const ex = x + endS * (lenCore * 0.52 + 0.025 * s);
-                                const wr = rStat * 0.78;
-                                const wy = y + Math.cos(a) * wr;
-                                const wz = z + Math.sin(a) * wr;
-                                if (wd.barStyle === 'bobbin') {{
-                                    this.addPart(this.staticOpaque, 'box', this.matTRS(ex, wy, wz, a, 0, 0, 0.06 * s, rStat * 0.22, toothW), C_INSUL, [0.24, 16]);
-                                }}
-                                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(ex, wy, wz, a, 0, 0, 0.075 * s, rStat * 0.20, toothW * 0.86), wd.col, wd.spec);
-                            }}
-                        }}
-                        this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.07, lenCore * 1.24, rStat * 1.07), C_CASE, [0.58, 46]);
-                        for (const endS of [-1, 1]) {{
-                            const bx = x + endS * (lenCore * 0.62);
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(bx, y, z, 0, 0, Math.PI * 0.5, rStat * 1.09, 0.062 * s, rStat * 1.09), C_BELL, [0.64, 50]);
-                        }}
-                    }}
-
-                    // Arrefecimento EV visível na carcaça
-                    if (cooling === 'Ar (Aletas)') {{
-                        const finNum = isAxial ? 4 : 7;
-                        for (let f = 0; f < finNum; f++) {{
-                            const fx = x + (-0.42 + (0.84 * f) / Math.max(1, finNum - 1)) * lenCore;
-                            this.addPart(this.staticTrans, 'cyl', this.matTRS(fx, y, z, 0, 0, Math.PI * 0.5, rStat * 1.14, 0.015 * s, rStat * 1.14), C_CASE, [0.56, 44]);
-                        }}
-                        this.dynamicRotors.push({{
-                            type: 'coolingFan',
-                            cx: x - lenCore * 0.68, cy: y, cz: z,
-                            r: rStat * 0.64, speedMult: flipDir * 1.0, symmetry: 7,
-                            colorHub: C_STEEL, colorBlade: [0.64, 0.70, 0.78, 1.0]
-                        }});
-                    }} else if (cooling === 'Glicol (Camisa)') {{
-                        if (!isAxial) {{
-                            this.addPart(this.staticTrans, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, rStat * 1.10, lenCore * 0.72, rStat * 1.10), [0.34, 0.42, 0.52, 1.0], [0.64, 52]);
-                        }}
-                        for (const pSgn of [-1, 1]) {{
-                            const px = x + pSgn * lenCore * 0.30, py = y + rStat * 1.08, pz = z - pSgn * rStat * 0.36;
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(px, py, pz, 0, 0, 0, 0.032 * s, 0.09 * s, 0.032 * s), C_STEEL, [0.80, 64]);
-                            this.addPart(this.staticOpaque, 'hex', this.matTRS(px, py + 0.05 * s, pz, 0, 0, 0, 0.040 * s, 0.032 * s, 0.040 * s), [0.22, 0.42, 0.64, 1.0], [0.78, 60]);
-                        }}
-                    }} else if (cooling === 'Óleo Direto') {{
-                        const C_BRASS = [0.82, 0.64, 0.24, 1.0];
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y - rStat * 1.04, z, 0, 0, 0, lenCore * 0.90, 0.08 * s, rStat * 0.80), [0.18, 0.21, 0.26, 1.0], [0.46, 34]);
-                        this.addPipe(this.staticOpaque, [
-                            [x - lenCore * 0.42, y - rStat * 0.96, z + rStat * 0.35],
-                            [x - lenCore * 0.42, y + rStat * 0.10, z + rStat * 1.02],
-                            [x + lenCore * 0.42, y + rStat * 0.10, z + rStat * 1.02],
-                            [x + lenCore * 0.42, y + rStat * 0.62, z + rStat * 0.62]
-                        ], 0.020 * s, C_BRASS, [0.78, 60], [], true);
-                    }} else if (cooling === 'Imersão Dielétrica') {{
-                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(x, y, z, 0, 0, 0, lenCore * 1.14, rStat * 2.12, rStat * 2.12), [0.16, 0.24, 0.40, 1.0], [0.65, 50]);
-                        for (const sgn of [-1, 1]) {{
-                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y, z + sgn * rStat * 1.12, 0, 0, 0, lenCore * 0.92, 0.12 * s, 0.06 * s), [0.42, 0.28, 0.86, 1.0], [0.72, 56]);
-                        }}
-                    }}
-                }}
-
-                this.dynamicEvRotors.push({{
-                    cx: x, cy: y, cz: z,
-                    rRotor, lenCore, poles,
-                    rotorMode, isAxial, isInWheel,
-                    scale: s, speedMult: flipDir, angle: rotorIdx * 0.45
-                }});
-
-                if (includeDiffAxle) {{
-                    const xDiff = x + lenCore * 0.68 + 0.16 * s;
-                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(xDiff, y, z, 0, 0, 0, 0.36 * s, rStat * 1.45, rStat * 1.45), C_CASE, [0.48, 36]);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(xDiff, y, z, Math.PI * 0.5, 0, 0, 0.038 * s, 1.48 * s, 0.038 * s), [0.22, 0.26, 0.34, 1.0], [0.68, 52]);
-                    this.dynamicRotors.push({{ type: 'gearboxGear', symmetry: 18, cx: xDiff, cy: y, cz: z, r: rStat * 0.58, thick: 0.08 * s, speedMult: 0.72, colorRim: C_STEEL }});
-                    for (const side of [-1, 1]) {{
-                        const hubZ = z + side * 0.74 * s;
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(xDiff, y, hubZ, Math.PI * 0.5, 0, 0, 0.095 * s, 0.055 * s, 0.095 * s), C_STEEL, [0.80, 64]);
-                    }}
-                }}
-
-                const termY = y + rStat * 1.06;
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, termY, z, 0, 0, 0, 0.15 * s, 0.065 * s, 0.22 * s), C_HV, [0.54, 40]);
-
-                let hvPorts = null;
-                if (includeInverter) {{
-                    const phaseTargets = [
-                        [x, termY + 0.02 * s, z - 0.06 * s],
-                        [x, termY + 0.02 * s, z],
-                        [x, termY + 0.02 * s, z + 0.06 * s]
-                    ];
-                    hvPorts = this.addInverterUnit(x - 0.03 * s, termY + 0.24 * s, z, s * 0.86, phaseTargets);
-                }}
-
-                return {{ x, y, z, rStat, lenCore, hvPorts }};
-            }}
-
-            addHvBatteryPack(cx, cy, cz, lenXBase, widthZBase) {{
-                const chem = this.config.batteryChem || 'NMC 811';
-                const cellFmt = this.config.cellFormat || 'Prismática';
-                const packArch = this.config.batteryArch || 'Sub-Piso';
-                const kwh = Math.max(0.5, Math.min(60.0, Number(this.config.batteryKwh) || 18.5));
-                const capNorm = (kwh - 0.5) / 59.5;
-                const isRearPack = packArch === 'Traseira Compacta';
-                const isTPack = packArch === 'T-Pack Central';
-
-                const lenX = lenXBase * (isRearPack ? 0.58 : (0.76 + capNorm * 0.26));
-                const widthZ = widthZBase * (isRearPack ? 0.74 : (0.82 + capNorm * 0.20));
-                const thickY = (isRearPack ? 0.28 : 0.20) + capNorm * 0.11;
-
-                const C_TRAY = packArch === 'Estrutural 800V' ? [0.15, 0.18, 0.24, 1.0] : [0.22, 0.26, 0.32, 1.0];
-                const C_COOLPLATE = [0.22, 0.38, 0.48, 1.0];
-                const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
-                const C_COPPER = [0.86, 0.52, 0.22, 1.0];
-                const C_STEEL = [0.76, 0.80, 0.86, 1.0];
-
-                let cellCol = [0.46, 0.38, 0.86, 1.0];
-                let cellSpec = [0.68, 52];
-                if (chem === 'LFP (LiFePO4)') {{
-                    cellCol = [0.24, 0.62, 0.66, 1.0];
-                    cellSpec = [0.56, 42];
-                }} else if (chem === 'NCA Performance') {{
-                    cellCol = [0.22, 0.48, 0.84, 1.0];
-                    cellSpec = [0.76, 60];
-                }} else if (chem === 'NiMH Clássica') {{
-                    cellCol = [0.80, 0.66, 0.28, 1.0];
-                    cellSpec = [0.74, 58];
-                }} else if (chem === 'Supercondensador') {{
-                    cellCol = [0.16, 0.78, 0.72, 1.0];
-                    cellSpec = [0.82, 64];
-                }}
-
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy - thickY * 0.46, cz, 0, 0, 0, lenX * 1.04, 0.044, widthZ * 1.04), C_TRAY, [0.52, 38]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy - thickY * 0.36, cz, 0, 0, 0, lenX * 0.96, 0.020, widthZ * 0.96), C_COOLPLATE, [0.64, 48]);
-                this.addPart(this.staticTrans, 'bevelBox', this.matTRS(cx, cy + 0.02, cz, 0, 0, 0, lenX, thickY, widthZ), [0.32, 0.38, 0.48, 1.0], [0.56, 46]);
-
-                for (const sz of [-1, 1]) {{
-                    const railZ = cz + sz * widthZ * 0.51;
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, railZ, 0, 0, 0, lenX * 1.03, thickY * 0.85, 0.052), [0.44, 0.48, 0.54, 1.0], [0.62, 46]);
-                    for (let lb = 0; lb < 5; lb++) {{
-                        const lx = cx + (-0.42 + (0.84 * lb) / 4) * lenX;
-                        this.addPart(this.staticOpaque, 'hex', this.matTRS(lx, cy + thickY * 0.44, railZ, 0, 0, 0, 0.020, 0.030, 0.020), C_STEEL, [0.84, 68]);
-                    }}
-                }}
-
-                for (const sz of [-1, 1]) {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - lenX * 0.54, cy - thickY * 0.28, cz + sz * widthZ * 0.26, 0, 0, Math.PI * 0.5, 0.024, 0.10, 0.024), [0.54, 0.62, 0.72, 1.0], [0.80, 62]);
-                }}
-
-                if (packArch === 'Estrutural 800V') {{
-                    for (let r = 0; r < 3; r++) {{
-                        const rxPos = cx + (-0.26 + r * 0.26) * lenX;
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(rxPos, cy + thickY * 0.05, cz, 0, 0, 0, 0.032, thickY * 0.80, widthZ * 0.94), [0.28, 0.32, 0.38, 1.0], [0.64, 48]);
-                    }}
-                }}
-
-                if (cellFmt === 'Cilíndrica 4680') {{
-                    const rows = 8, cols = 5;
-                    const cellH = thickY * 0.68;
-                    for (let rx = 0; rx < rows; rx++) {{
-                        const mx = cx + (-0.39 + (0.72 * rx) / (rows - 1)) * lenX;
-                        for (let czIdx = 0; czIdx < cols; czIdx++) {{
-                            const mz = cz + (-0.36 + (0.72 * czIdx) / (cols - 1)) * widthZ;
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, 0.044, cellH, 0.044), [0.74, 0.79, 0.86, 1.0], [0.84, 68]);
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, cy + cellH * 0.50, mz, 0, 0, 0, 0.022, 0.014, 0.022), cellCol, cellSpec);
-                        }}
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + cellH * 0.53, cz, 0, 0, 0, 0.024, 0.012, widthZ * 0.78), C_COPPER, [0.84, 64]);
-                    }}
-                }} else if (cellFmt === 'Blade (Lâmina)') {{
-                    const blades = 10;
-                    const bladeH = thickY * 0.66;
-                    for (let bx = 0; bx < blades; bx++) {{
-                        const mx = cx + (-0.40 + (0.74 * bx) / (blades - 1)) * lenX;
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, cz, 0, 0, 0, (lenX * 0.64) / blades, bladeH, widthZ * 0.84), cellCol, cellSpec);
-                        this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + bladeH * 0.51, cz + widthZ * 0.34, 0, 0, 0, (lenX * 0.52) / blades, 0.014, 0.060), C_COPPER, [0.82, 62]);
-                    }}
-                }} else if (cellFmt === 'Pouch (Bolsa)') {{
-                    const stacks = 6;
-                    const pouchH = thickY * 0.70;
-                    for (let sx = 0; sx < stacks; sx++) {{
-                        const mx = cx + (-0.39 + (0.72 * sx) / (stacks - 1)) * lenX;
-                        for (const sgn of [-1, 1]) {{
-                            const mz = cz + sgn * widthZ * 0.23;
-                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, (lenX * 0.62) / stacks, pouchH, widthZ * 0.38), [0.76, 0.79, 0.84, 1.0], [0.80, 62]);
-                            this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + pouchH * 0.52, mz, 0, 0, 0, (lenX * 0.48) / stacks, 0.020, widthZ * 0.14), C_COPPER, [0.84, 66]);
-                        }}
-                    }}
-                }} else {{
-                    const rowsX = chem === 'LFP (LiFePO4)' ? 7 : 5;
-                    const colsZ = chem === 'LFP (LiFePO4)' ? 1 : 2;
-                    for (let rx = 0; rx < rowsX; rx++) {{
-                        const mx = cx + (-0.39 + (0.72 * rx) / Math.max(1, rowsX - 1)) * lenX;
-                        for (let czIdx = 0; czIdx < colsZ; czIdx++) {{
-                            const mz = colsZ === 1 ? cz : cz + (czIdx === 0 ? -0.23 : 0.23) * widthZ;
-                            const mwX = (lenX * 0.66) / rowsX;
-                            const mwZ = (widthZ * 0.80) / colsZ;
-                            const mhY = thickY * 0.68;
-                            this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(mx, cy - 0.01, mz, 0, 0, 0, mwX, mhY, mwZ), cellCol, cellSpec);
-                            this.addPart(this.staticOpaque, 'box', this.matTRS(mx, cy + mhY * 0.52, mz, 0, 0, 0, mwX * 0.84, 0.014, mwZ * 0.28), C_COPPER, [0.80, 62]);
-                        }}
-                    }}
-                }}
-
-                if (isTPack) {{
-                    const spineH = thickY * 0.74;
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx - lenX * 0.04, cy + thickY * 0.78, cz, 0, 0, 0, lenX * 0.56, spineH, widthZ * 0.26), cellCol, cellSpec);
-                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(cx - lenX * 0.04, cy + thickY * 0.80, cz, 0, 0, 0, lenX * 0.60, spineH * 1.15, widthZ * 0.30), C_TRAY, [0.56, 44]);
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(cx - lenX * 0.04, cy + thickY * 1.16, cz, 0, 0, 0, lenX * 0.50, 0.022, 0.056), C_HV_ORANGE, [0.58, 42]);
-                }}
-
-                if (chem === 'Supercondensador') {{
-                    for (let sc = 0; sc < 5; sc++) {{
-                        const scz = cz + (-0.30 + (0.60 * sc) / 4) * widthZ;
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - lenX * 0.32, cy + thickY * 0.32, scz, 0, 0, Math.PI * 0.5, 0.040, 0.20, 0.040), [0.18, 0.80, 0.74, 1.0], [0.82, 66]);
-                    }}
-                }}
-
-                const xBdu = cx + lenX * 0.40;
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xBdu, cy + thickY * 0.42, cz, 0, 0, 0, 0.24, 0.13, 0.32), [0.14, 0.16, 0.22, 1.0], [0.46, 36]);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(xBdu, cy + thickY * 0.52, cz, 0, 0, 0, 0.16, 0.04, 0.20), C_HV_ORANGE, [0.58, 42]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(cx, cy + thickY * 0.36, cz, 0, 0, 0, lenX * 0.74, 0.018, 0.042), C_HV_ORANGE, [0.56, 40]);
-
-                return {{
-                    frontHv: [cx - lenX * 0.48, cy + thickY * 0.22, cz],
-                    rearHv: [cx + lenX * 0.48, cy + thickY * 0.22, cz]
-                }};
-            }}
-
-            routeHvConduit(pA, pB, r = 0.025) {{
-                const C_HV_ORANGE = [0.96, 0.42, 0.08, 1.0];
-                const mx = (pA[0] + pB[0]) * 0.5;
-                const my = Math.max(pA[1], pB[1]) + 0.08;
-                const mz = (pA[2] + pB[2]) * 0.5;
-                const pts = [pA, [mx, my, mz], pB];
-                this.addPipe(this.staticOpaque, pts, r, C_HV_ORANGE, [0.58, 42], [], true);
-                this.hvPaths.push({{ pts, r: r * 1.45, phaseOff: 0.15, kind: 'hv' }});
-            }}
-
-            buildStandaloneElectricScene() {{
-                const hyb = this.config.hybridType || 'PHEV P2+P4';
-                const arch = this.config.emotorArch || 'PMSM Radial';
-                const hvNodes = [];
-                const yMotor = 0.42;
-
-                if (arch === 'In-Wheel Hub') {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0.18, yMotor, 0, Math.PI * 0.5, 0, 0, 0.045, 1.48, 0.045), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
-                    const uL = this.addEvMguUnit({{ x: 0.18, y: yMotor, z: -0.74, scale: 0.86, flipDir: 1, includeInverter: true, rotorIdx: 0 }});
-                    const uR = this.addEvMguUnit({{ x: 0.18, y: yMotor, z: 0.74, scale: 0.86, flipDir: 1, includeInverter: true, rotorIdx: 1 }});
-                    if (uL.hvPorts) hvNodes.push(uL.hvPorts.hvInputPos);
-                    if (uR.hvPorts) hvNodes.push(uR.hvPorts.hvInputPos);
-                }} else if (hyb === 'Hypercar MGU-K+H') {{
-                    const mguK = this.addEvMguUnit({{ x: -0.14, y: yMotor, z: 0, scale: 0.94, flipDir: 1, includeInverter: true, rotorIdx: 0 }});
-                    const mguH = this.addEvMguUnit({{ x: 0.78, y: yMotor + 0.14, z: 0.54, scale: 0.54, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' }});
-                    if (mguK.hvPorts) hvNodes.push(mguK.hvPorts.hvInputPos);
-                    hvNodes.push([mguH.x, mguH.y + mguH.rStat * 1.08, mguH.z]);
-                }} else if (hyb === 'HEV Power-Split') {{
-                    const mg1 = this.addEvMguUnit({{ x: -0.34, y: yMotor, z: 0, scale: 0.80, flipDir: -1, includeInverter: false, rotorIdx: 0, isCompactPancake: true }});
-                    const mg2 = this.addEvMguUnit({{ x: 0.44, y: yMotor, z: 0, scale: 0.92, flipDir: 1, includeInverter: true, rotorIdx: 1 }});
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0.05, yMotor, 0, 0, 0, Math.PI * 0.5, 0.11, 0.40, 0.11), [0.76, 0.80, 0.86, 1.0], [0.78, 62]);
-                    hvNodes.push([mg1.x, mg1.y + mg1.rStat * 1.08, mg1.z]);
-                    if (mg2.hvPorts) hvNodes.push(mg2.hvPorts.hvInputPos);
-                }} else if (hyb === 'EREV Série') {{
-                    const gen = this.addEvMguUnit({{ x: -0.52, y: yMotor, z: 0, scale: 0.72, flipDir: -1, includeInverter: false, rotorIdx: 0, isCompactPancake: true }});
-                    const trac = this.addEvMguUnit({{ x: 0.42, y: yMotor, z: 0, scale: 0.96, flipDir: 1, includeInverter: true, rotorIdx: 1, includeDiffAxle: true }});
-                    hvNodes.push([gen.x, gen.y + gen.rStat * 1.08, gen.z]);
-                    if (trac.hvPorts) hvNodes.push(trac.hvPorts.hvInputPos);
-                }} else {{
-                    const mgu = this.addEvMguUnit({{ x: 0.14, y: yMotor, z: 0, scale: 0.98, flipDir: 1, includeInverter: true, rotorIdx: 0, includeDiffAxle: hyb === 'PHEV P2+P4' }});
-                    if (mgu.hvPorts) hvNodes.push(mgu.hvPorts.hvInputPos);
-                }}
-
-                const pack = this.addHvBatteryPack(-0.08, -0.78, 0, hyb === 'MHEV 48V' ? 1.25 : 2.05, hyb === 'MHEV 48V' ? 0.96 : 1.28);
-                for (let hi = 0; hi < hvNodes.length; hi++) {{
-                    const srcHv = (hi % 2 === 0) ? pack.frontHv : pack.rearHv;
-                    this.routeHvConduit(srcHv, hvNodes[hi], 0.024);
-                }}
-                this.sceneCenterX = 0;
-                this.baseDist = 4.6;
-            }}
-
-            buildStandaloneEmotorScene() {{
-                const hyb = this.config.hybridType || 'PHEV P2+P4';
-                const arch = this.config.emotorArch || 'PMSM Radial';
-                if (arch === 'In-Wheel Hub') {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, 0, 0, Math.PI * 0.5, 0, 0, 0.045, 1.48, 0.045), [0.34, 0.38, 0.44, 1.0], [0.68, 52]);
-                    const uL = this.addEvMguUnit({{ x: 0, y: 0, z: -0.74, scale: 0.92, flipDir: 1, includeInverter: true, rotorIdx: 0 }});
-                    const uR = this.addEvMguUnit({{ x: 0, y: 0, z: 0.74, scale: 0.92, flipDir: 1, includeInverter: true, rotorIdx: 1 }});
-                    this.routeHvConduit([0, 0.12, 0], uL.hvPorts.hvInputPos, 0.022);
-                    this.routeHvConduit([0, 0.12, 0], uR.hvPorts.hvInputPos, 0.022);
-                    this.baseDist = 3.8;
-                }} else if (hyb === 'Hypercar MGU-K+H') {{
-                    const mguK = this.addEvMguUnit({{ x: -0.22, y: 0, z: 0, scale: 1.05, flipDir: 1, includeInverter: true, rotorIdx: 0 }});
-                    const mguH = this.addEvMguUnit({{ x: 0.82, y: 0.18, z: 0.62, scale: 0.62, flipDir: -1, includeInverter: false, rotorIdx: 1, archOverride: 'PMSM Radial' }});
-                    this.routeHvConduit(mguK.hvPorts.hvInputPos, [mguH.x, mguH.y + mguH.rStat * 1.08, mguH.z], 0.024);
-                    this.baseDist = 4.1;
-                }} else if (hyb === 'HEV Power-Split') {{
-                    const mg1 = this.addEvMguUnit({{ x: -0.46, y: 0, z: 0, scale: 0.88, flipDir: -1, includeInverter: false, rotorIdx: 0, isCompactPancake: true }});
-                    const mg2 = this.addEvMguUnit({{ x: 0.42, y: 0, z: 0, scale: 1.02, flipDir: 1, includeInverter: true, rotorIdx: 1 }});
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(-0.02, 0, 0, 0, 0, Math.PI * 0.5, 0.12, 0.42, 0.12), [0.76, 0.80, 0.86, 1.0], [0.78, 62]);
-                    this.routeHvConduit([mg1.x, mg1.y + mg1.rStat * 1.08, mg1.z], mg2.hvPorts.hvInputPos, 0.024);
-                    this.baseDist = 3.9;
-                }} else {{
-                    this.addEvMguUnit({{ x: 0, y: 0, z: 0, scale: 1.15, flipDir: 1, includeInverter: true, rotorIdx: 0, includeDiffAxle: hyb === 'PHEV P2+P4' || hyb === 'EREV Série' }});
-                    this.baseDist = 3.5;
-                }}
-                this.sceneCenterX = 0;
-            }}
-
-            buildStandaloneBatteryScene() {{
-                this.addHvBatteryPack(0, 0, 0, 2.25, 1.40);
-                this.sceneCenterX = 0;
-                this.baseDist = 3.8;
-            }}
-
-            addSequentialCrossover(pA, pB, dropY = -0.14, rad = 0.052) {{
-                const mx = (pA[0] + pB[0]) * 0.5;
-                const my = (pA[1] + pB[1]) * 0.5 + dropY;
-                const mz = (pA[2] + pB[2]) * 0.5;
-                this.addPipe(this.staticOpaque, [pA, [mx, my, mz], pB], rad, [0.76, 0.54, 0.22, 1.0], [0.62, 48]);
-                // Válvula de derivação sequencial (flapper + atuador)
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, my + 0.08, mz, 0, 0, 0, rad * 1.65, 0.14, rad * 1.65), [0.80, 0.62, 0.24, 1.0], [0.74, 58]);
-                this.addPart(this.staticOpaque, 'box', this.matTRS(mx, my, mz, 0, 0, 0, rad * 2.2, rad * 2.2, rad * 2.2), [0.22, 0.25, 0.30, 1.0], [0.55, 40]);
-            }}
-
-            getIntakeAppearance(matName) {{
-                const map = {{
-                    'Alumínio Fundido': {{ col: [0.54, 0.58, 0.64, 1.0], runner: [0.60, 0.64, 0.70, 1.0], spec: [0.46, 34], rSpec: [0.50, 38], accent: [0.70, 0.74, 0.80, 1.0], isCarbon: false, isTitanium: false }},
-                    'Plástico ABS':     {{ col: [0.16, 0.18, 0.22, 1.0], runner: [0.22, 0.24, 0.29, 1.0], spec: [0.22, 16], rSpec: [0.24, 18], accent: [0.44, 0.48, 0.54, 1.0], isCarbon: false, isTitanium: false }},
-                    'Alumínio Billet':  {{ col: [0.78, 0.83, 0.90, 1.0], runner: [0.70, 0.75, 0.82, 1.0], spec: [0.85, 72], rSpec: [0.78, 64], accent: [0.92, 0.95, 0.99, 1.0], isCarbon: false, isTitanium: false }},
-                    'Fibra de Carbono': {{ col: [0.13, 0.15, 0.19, 1.0], runner: [0.19, 0.21, 0.26, 1.0], spec: [0.68, 58], rSpec: [0.58, 46], accent: [0.78, 0.62, 0.22, 1.0], isCarbon: true,  isTitanium: false }},
-                    'Magnésio':         {{ col: [0.62, 0.54, 0.43, 1.0], runner: [0.56, 0.49, 0.40, 1.0], spec: [0.50, 38], rSpec: [0.50, 38], accent: [0.78, 0.68, 0.54, 1.0], isCarbon: false, isTitanium: false }},
-                    'Titânio':          {{ col: [0.64, 0.61, 0.56, 1.0], runner: [0.60, 0.58, 0.66, 1.0], spec: [0.76, 62], rSpec: [0.74, 58], accent: [0.38, 0.48, 0.78, 1.0], isCarbon: false, isTitanium: true }}
-                }};
-                return map[matName] || map['Alumínio Fundido'];
-            }}
-
-            addPlenumRibsAndFinish(x, y, z, plenumW, radY, radZ, isCyl, app) {{
-                const ribCol = (app.isCarbon || app.isTitanium) ? app.accent : app.runner;
-                const ribSpec = app.isTitanium ? [0.82, 68] : app.rSpec;
-                for (let r = -2; r <= 2; r++) {{
-                    const rx = x + r * (plenumW * 0.18);
-                    if (isCyl) {{
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(rx, y, z, 0, 0, Math.PI * 0.5, radY * 1.07, 0.032, radZ * 1.07), ribCol, ribSpec);
-                    }} else {{
-                        this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(rx, y, z, 0, 0, 0, 0.036, radY * 1.07, radZ * 1.05), ribCol, ribSpec);
-                    }}
-                }}
-                if (app.isCarbon && !isCyl) {{
-                    this.addPart(this.staticOpaque, 'box', this.matTRS(x, y - radY * 0.48, z, 0, 0, 0, plenumW * 0.96, 0.022, radZ * 0.92), [0.82, 0.64, 0.22, 1.0], [0.78, 62]);
-                }}
-            }}
-
-            addVelocityTrumpet(tx, ty, tz, tiltX, tiltZ, radScale, app, tall = false) {{
-                const bodyR = 0.078 * radScale;
-                const bodyH = (tall ? 0.16 : 0.12) * radScale;
-                const bellH = (tall ? 0.15 : 0.11) * radScale;
-                const bellR = (tall ? 0.135 : 0.115) * radScale;
-                const ux = -Math.sin(tiltZ);
-                const uy = Math.cos(tiltX) * Math.cos(tiltZ);
-                const uz = Math.sin(tiltX) * Math.cos(tiltZ);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(tx, ty, tz, tiltX, 0, tiltZ, bodyR, bodyH, bodyR), app.col, app.spec);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(tx + ux * bodyH * 0.38, ty + uy * bodyH * 0.38, tz + uz * bodyH * 0.38, tiltX, 0, tiltZ, bodyR * 1.20, 0.026, bodyR * 1.20), [0.76, 0.62, 0.26, 1.0], [0.76, 60]);
-                const bellDist = bodyH * 0.5 + bellH * 0.48;
-                const bx = tx + ux * bellDist, by = ty + uy * bellDist, bz = tz + uz * bellDist;
-                this.addPart(this.staticOpaque, 'cone', this.matTRS(bx, by, bz, tiltX + Math.PI, 0, -tiltZ, bellR, bellH, bellR), app.runner, app.rSpec);
-                const rimDist = bodyH * 0.5 + bellH * 0.96;
-                const mx = tx + ux * rimDist, my = ty + uy * rimDist, mz = tz + uz * rimDist;
-                this.addPart(this.staticOpaque, 'torus', this.matTRS(mx, my, mz, tiltX + Math.PI * 0.5, 0, tiltZ, bellR * 0.78, bellR * 0.78, bellR * 0.78), app.accent, [0.84, 68]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(mx, my, mz, tiltX, 0, tiltZ, bellR * 0.76, 0.012, bellR * 0.76), [0.16, 0.18, 0.22, 1.0], [0.22, 16]);
-            }}
-
-            addIntakeFeedEnd(x, y, z, dirX, isBoosted, isCAI, app) {{
-                if (isBoosted) {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y, z, 0, 0, Math.PI * 0.5, 0.125, 0.14, 0.125), app.accent, app.spec);
-                    return;
-                }}
-                this.addThrottleBody(x + dirX * 0.04, y, z);
-                if (isCAI) {{
-                    const boxX = x + dirX * 0.62;
-                    this.addPipe(this.staticOpaque, [[x + dirX * 0.02, y, z], [x + dirX * 0.26, y + 0.05, z + 0.08], [boxX - dirX * 0.12, y + 0.02, z + 0.10]], 0.124, app.runner, app.rSpec, [0]);
-                    this.addPart(this.staticTrans, 'bevelBox', this.matTRS(boxX + dirX * 0.08, y + 0.02, z + 0.10, 0, 0, 0, 0.56, 0.56, 0.56), app.col, app.spec);
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(boxX + dirX * 0.08, y - 0.24, z + 0.10, 0, 0, 0, 0.58, 0.06, 0.58), app.accent, app.rSpec);
-                    this.addConeFilter(boxX + dirX * 0.08, y + 0.02, z + 0.10, dirX);
-                }} else {{
-                    this.addPipe(this.staticOpaque, [[x, y, z], [x + dirX * 0.42, y, z]], 0.11, app.runner, app.rSpec, [0]);
-                    this.addConeFilter(x + dirX * 0.62, y, z, dirX);
-                }}
-            }}
-
-            addSideIntakeAssembly({{ halfLenX, py, pz, plenumW, runnersX, feedDirX, isBoosted, intType, app, boreScale }}) {{
-                const feedX = feedDirX < 0 ? -halfLenX * 0.94 : halfLenX * 0.94;
-                if (intType === 'ITBs' || intType === 'Velocity Stacks') {{
-                    const isStacks = intType === 'Velocity Stacks';
-                    for (const rx of runnersX) {{
-                        if (isStacks) {{
-                            this.addVelocityTrumpet(rx, py + 0.10, pz + 0.04, 0.24, 0, boreScale * 1.05, app, true);
-                        }} else {{
-                            this.addVelocityTrumpet(rx, py + 0.05, pz + 0.02, 0.42, 0, boreScale * 0.95, app, false);
-                        }}
-                    }}
-                    if (!isStacks) {{
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, py + 0.06, pz + 0.06, 0, 0, Math.PI * 0.5, 0.020, plenumW * 0.94, 0.020), [0.84, 0.88, 0.92, 1.0], [0.82, 66]);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(feedDirX * plenumW * 0.48, py + 0.06, pz + 0.06, 0, 0, Math.PI * 0.5, 0.048, 0.024, 0.048), [0.76, 0.58, 0.22, 1.0], [0.74, 58]);
-                    }}
-                    if (isBoosted) {{
-                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, py + 0.10, pz + 0.06, 0, 0, 0, plenumW * 1.04, 0.34, 0.42), app.col, app.spec);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(feedX, py, pz, 0, 0, Math.PI * 0.5, 0.125, 0.14, 0.125), app.accent, app.spec);
-                    }}
-                    return;
-                }}
-                if (intType === 'Dual-Plenum') {{
-                    const zA = pz - 0.04, zB = pz + 0.22;
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, py, zA, 0, 0, Math.PI * 0.5, 0.14, plenumW, 0.14), app.col, app.spec);
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, py + 0.06, zB, 0, 0, Math.PI * 0.5, 0.13, plenumW * 0.92, 0.13), app.col, app.spec);
-                    for (const bx of [-plenumW * 0.30, 0, plenumW * 0.30]) {{
-                        this.addPipe(this.staticOpaque, [[bx, py, zA], [bx, py + 0.06, zB]], 0.056, app.runner, app.rSpec);
-                    }}
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(feedDirX * plenumW * 0.44, py + 0.20, zB, 0, 0, 0, 0.062, 0.09, 0.062), app.accent, app.rSpec);
-                    this.addPipe(this.staticOpaque, [[feedX, py, zA], [feedX, py + 0.06, zB]], 0.095, app.runner, app.rSpec);
-                    this.addIntakeFeedEnd(feedX, py, pz, feedDirX, isBoosted, false, app);
-                    return;
-                }}
-                if (intType === 'Cold Air Intake') {{
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, py + 0.02, pz + 0.02, 0, 0, 0, plenumW, 0.30, 0.36), app.col, app.spec);
-                    this.addPlenumRibsAndFinish(0, py + 0.02, pz + 0.02, plenumW, 0.30, 0.36, false, app);
-                    this.addIntakeFeedEnd(feedX, py, pz, feedDirX, isBoosted, true, app);
-                    return;
-                }}
-                // Plenum OEM (default)
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, py, pz, 0, 0, Math.PI * 0.5, 0.19, plenumW, 0.19), app.col, app.spec);
-                this.addPlenumRibsAndFinish(0, py, pz, plenumW, 0.19, 0.19, true, app);
-                this.addIntakeFeedEnd(feedX, py, pz, feedDirX, isBoosted, false, app);
-            }}
-
-            addValleyIntakeAssembly({{ halfLenX, topY, plenumW, cylSpecs, isBoosted, intType, app, boreScale }}) {{
-                const feedX = isBoosted ? -halfLenX * 0.90 : halfLenX * 0.94;
-                const feedDirX = isBoosted ? -1 : 1;
-                if (intType === 'ITBs' || intType === 'Velocity Stacks') {{
-                    const isStacks = intType === 'Velocity Stacks';
-                    for (const c of cylSpecs) {{
-                        const s = c.bank >= 0 ? 1 : -1;
-                        const zOff = s * 0.16;
-                        const tilt = s * (isStacks ? 0.16 : 0.24);
-                        this.addVelocityTrumpet(c.x, topY - 0.04, zOff, tilt, 0, boreScale * (isStacks ? 1.02 : 0.92), app, isStacks);
-                    }}
-                    if (!isStacks) {{
-                        for (const s of [-1, 1]) {{
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, topY + 0.02, s * 0.21, 0, 0, Math.PI * 0.5, 0.018, plenumW * 0.92, 0.018), [0.84, 0.88, 0.92, 1.0], [0.82, 66]);
-                        }}
-                    }}
-                    if (isBoosted) {{
-                        this.addPart(this.staticTrans, 'bevelBox', this.matTRS(0, topY + 0.06, 0, 0, 0, 0, plenumW * 1.04, 0.30, 0.56), app.col, app.spec);
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(feedX, topY, 0, 0, 0, Math.PI * 0.5, 0.125, 0.14, 0.125), app.accent, app.spec);
-                    }}
-                    return;
-                }}
-                if (intType === 'Dual-Plenum') {{
-                    for (const s of [-1, 1]) {{
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, topY, s * 0.17, 0, 0, Math.PI * 0.5, 0.145, plenumW, 0.145), app.col, app.spec);
-                    }}
-                    for (const bx of [-plenumW * 0.34, 0, plenumW * 0.34]) {{
-                        this.addPipe(this.staticOpaque, [[bx, topY, -0.17], [bx, topY + 0.06, 0], [bx, topY, 0.17]], 0.062, app.runner, app.rSpec);
-                    }}
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(0, topY + 0.14, 0, 0, 0, 0, 0.068, 0.10, 0.068), app.accent, app.rSpec);
-                    this.addPipe(this.staticOpaque, [[feedX, topY, -0.17], [feedX, topY, 0], [feedX, topY, 0.17]], 0.10, app.runner, app.rSpec);
-                    this.addIntakeFeedEnd(feedX, topY, 0, feedDirX, isBoosted, false, app);
-                    return;
-                }}
-                if (intType === 'Cold Air Intake') {{
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, topY, 0, 0, 0, 0, plenumW, 0.24, 0.58), app.col, app.spec);
-                    this.addPlenumRibsAndFinish(0, topY, 0, plenumW, 0.24, 0.58, false, app);
-                    this.addIntakeFeedEnd(feedX, topY, 0, feedDirX, isBoosted, true, app);
-                    return;
-                }}
-                // Plenum OEM
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(0, topY, 0, 0, 0, 0, plenumW, 0.27, 0.52), app.col, app.spec);
-                this.addPlenumRibsAndFinish(0, topY, 0, plenumW, 0.27, 0.52, false, app);
-                this.addIntakeFeedEnd(feedX, topY, 0, feedDirX, isBoosted, false, app);
-            }}
-
-            addSuperchargerUnit(x, y, z, lenX, widthZ, pulleyX, app = null, intType = 'Plenum OEM') {{
-                const C_BODY = app ? app.col : [0.35, 0.40, 0.47, 1.0];
-                const C_RIB  = app ? app.accent : [0.60, 0.65, 0.72, 1.0];
-                const C_SNOUT = app ? app.runner : [0.68, 0.73, 0.79, 1.0];
-                const sp = app ? app.spec : [0.55, 44];
-                const C_BELT = [0.15, 0.17, 0.20, 1.0];
-
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y - 0.18, z, 0, 0, 0, lenX * 1.06, 0.08, widthZ * 1.08), app ? app.runner : C_BODY, sp);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y, z, 0, 0, 0, lenX, 0.42, widthZ), C_BODY, sp);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y + 0.08, z - widthZ * 0.22, 0, 0, Math.PI * 0.5, 0.18, lenX * 0.98, 0.18), C_RIB, [0.68, 58]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y + 0.08, z + widthZ * 0.22, 0, 0, Math.PI * 0.5, 0.18, lenX * 0.98, 0.18), C_RIB, [0.68, 58]);
-                for (let k = -3; k <= 3; k++) {{
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x + k * (lenX * 0.13), y + 0.25, z, 0, 0, 0, 0.045, 0.055, widthZ * 0.94), C_RIB, [0.62, 50]);
-                }}
-                if (intType === 'ITBs' || intType === 'Velocity Stacks') {{
-                    this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x, y + 0.36, z, 0, 0, 0, lenX * 0.58, 0.20, widthZ * 0.72), C_RIB, [0.80, 66]);
-                    for (const bOff of [-widthZ * 0.18, widthZ * 0.18]) {{
-                        this.addPart(this.staticOpaque, 'cyl', this.matTRS(x + lenX * 0.31, y + 0.36, z + bOff, 0, 0, Math.PI * 0.5, 0.095, 0.08, 0.095), [0.76, 0.22, 0.22, 1.0], [0.65, 52]);
-                    }}
-                }} else if (intType === 'Dual-Plenum') {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(x, y + 0.30, z + widthZ * 0.34, 0, 0, Math.PI * 0.5, 0.065, lenX * 0.62, 0.065), C_RIB, [0.72, 58]);
-                }}
-                const snoutLen = Math.max(0.25, (x - lenX * 0.5) - pulleyX);
-                const snoutCx = pulleyX + snoutLen * 0.5;
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(snoutCx, y, z, 0, 0, Math.PI * 0.5, 0.098, snoutLen + 0.14, 0.098), C_SNOUT, [0.72, 62]);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(x - lenX * 0.5, y, z, 0, 0, 0, 0.07, 0.30, 0.32), C_RIB, [0.65, 52]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(x + lenX * 0.2, y + 0.10, z + widthZ * 0.55, Math.PI * 0.5, 0, 0, 0.07, 0.16, 0.07), C_SNOUT, [0.6, 48]);
-
-                this.dynamicRotors.push({{
-                    type: 'pulley',
-                    cx: pulleyX - 0.04, cy: y, cz: z,
-                    r: 0.21, thick: 0.095, speedMult: 1.5,
-                    colorRim: [0.62, 0.44, 0.20, 1.0],
-                    colorHub: [0.80, 0.84, 0.88, 1.0]
-                }});
-                const px = pulleyX - 0.04;
-                this.addPipe(this.staticOpaque, [
-                    [px, y, z - 0.18],
-                    [px, 0, -0.25],
-                    [px, -0.25, 0],
-                    [px, 0, 0.25],
-                    [px, y, z + 0.18],
-                    [px, y + 0.19, z],
-                    [px, y, z - 0.18]
-                ], 0.030, C_BELT, [0.15, 10]);
-            }}
-
-            addConeFilter(cx, cy, cz, dirX = -1) {{
-                const rotZ = dirX < 0 ? Math.PI * 0.5 : -Math.PI * 0.5;
-                this.addPart(this.staticOpaque, 'cone', this.matTRS(cx, cy, cz, 0, 0, rotZ, 0.25, 0.40, 0.25), [0.58, 0.22, 0.22, 1.0], [0.22, 14]);
-                for (let r = -1; r <= 1; r++) {{
-                    this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + r * 0.08, cy, cz, 0, 0, rotZ, 0.215 - r * dirX * 0.025, 0.015, 0.215 - r * dirX * 0.025), [0.35, 0.14, 0.14, 1.0], [0.15, 10]);
-                }}
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx + dirX * 0.21, cy, cz, 0, 0, rotZ, 0.15, 0.055, 0.15), [0.78, 0.82, 0.87, 1.0], [0.76, 64]);
-                this.addPart(this.staticOpaque, 'cyl', this.matTRS(cx - dirX * 0.20, cy, cz, 0, 0, rotZ, 0.255, 0.04, 0.255), [0.72, 0.76, 0.82, 1.0], [0.7, 56]);
-            }}
-
-            addIntercooler(cx, cy, cz, wX, hY, dZ) {{
-                const rType = this.config.radiatorType || 'OEM Alumínio';
-                const isDual = rType === 'Duplo Núcleo';
-                const isRace = rType === 'Triple-Pass Racing';
-                const isCopper = rType === 'Cobre / Latão';
-                const isWater = rType === 'Água-Ar (Charge Cooler)';
-
-                const coreW = isRace ? wX * 1.56 : (isDual ? wX * 1.42 : (isWater ? wX * 1.18 : wX));
-                const coreH = isRace ? hY * 1.12 : (isDual ? hY * 1.08 : (isWater ? hY * 0.90 : hY));
-                const coreD = isRace ? dZ * 1.08 : (isWater ? dZ * 0.88 : dZ);
-
-                const C_CORE = isCopper ? [0.72, 0.42, 0.20, 1.0]
-                             : (isWater ? [0.18, 0.22, 0.28, 1.0]
-                             : (isRace ? [0.80, 0.84, 0.90, 1.0] : [0.74, 0.78, 0.84, 1.0]));
-                const C_TANK = isCopper ? [0.78, 0.58, 0.24, 1.0]
-                             : (isWater ? [0.24, 0.28, 0.35, 1.0]
-                            [tx, -0.25, 0],
-                            [tx, 0, -0.25]
-                        ], 0.028, C_BELT, [0.15, 10]);
-                    }} else if (camMode === 'SOHC') {{
-                        this.addPipe(this.staticOpaque, [
-                            [tx, 0, -0.25],
-                            [tx, wpY, -blockZ * 0.22 - 0.12],
-                            [tx, deckDist + 0.23, -0.23],
-                            [tx, deckDist + 0.47, 0],
-                            [tx, deckDist + 0.23, 0.23],
-                            [tx, altY + 0.06, altZ + 0.08],
-                            [tx, altY - 0.08, altZ],
-                            [tx, -0.25, 0],
-                            [tx, 0, -0.25]
-                        ], 0.028, C_BELT, [0.15, 10]);
-                    }} else {{
-                        const ohvY = deckDist * 0.36;
-                        const ohvZ = blockZ * 0.28;
-                        this.addPipe(this.staticOpaque, [
-                            [tx, 0, -0.25],
-                            [tx, wpY, -blockZ * 0.22 - 0.12],
-                            [tx, ohvY + 0.18, ohvZ],
-                            [tx, altY + 0.06, altZ + 0.08],
-                            [tx, altY - 0.08, altZ],
-                            [tx, -0.25, 0],
-                            [tx, 0, -0.25]
-                        ], 0.028, C_BELT, [0.15, 10]);
-                    }}
-
-                    // Admissão, rampa de injeção, injetores e coletores de escape com flanges
-                    const intZ = blockZ * 0.5 + 0.48;
-                    const exhZ = -(blockZ * 0.5 + 0.46);
-                    const portY = deckDist + 0.15;
-
-                    for (let i = 0; i < n; i++) {{
-                        const cx = cylSpecs[i].x;
-                        if (is2Stroke) {{
-                            this.addReedValveCage(cx, portY + 0.02, blockZ * 0.50, 'z+', boreScale, 0);
-                        }}
-                        this.addPipe(this.staticOpaque, [
-                            [cx, portY, blockZ * 0.45],
-                            [cx, portY + 0.11, intZ * 0.84],
-                            [cx, portY + 0.02, intZ]
-                        ], 0.072 * boreScale, C_RUNNER, intApp.rSpec);
-                             : (isRace ? [0.68, 0.73, 0.80, 1.0] : [0.42, 0.47, 0.54, 1.0]));
-                const C_FIN  = isCopper ? [0.46, 0.26, 0.14, 1.0]
-                             : (isWater ? [0.28, 0.34, 0.42, 1.0] : [0.48, 0.52, 0.58, 1.0]);
-                const coreSpec = isCopper ? [0.78, 60] : (isRace ? [0.82, 66] : [0.65, 50]);
-                const tankSpec = isCopper ? [0.80, 62] : (isRace ? [0.84, 68] : [0.54, 44]);
-
-                // Núcleo e depósitos laterais adaptados ao tipo de radiador
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz, 0, 0, 0, coreW, coreH, coreD * 0.76), C_CORE, coreSpec);
-                this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz - coreD * 0.48, 0, 0, 0, coreW * 1.08, coreH * 1.04, coreD * 0.20), C_TANK, tankSpec);
                 this.addPart(this.staticOpaque, 'bevelBox', this.matTRS(cx, cy, cz + coreD * 0.48, 0, 0, 0, coreW * 1.08, coreH * 1.04, coreD * 0.20), C_TANK, tankSpec);
 
                 const finSpan = (isDual || isRace) ? 5 : 3;
@@ -9304,6 +9533,7 @@ def gerar_dashboard_html(
             rebuildScene() {{
                 this.staticOpaque = [];
                 this.staticTrans = [];
+                this.envOpaque = [];
                 this.dynamicCyls = [];
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
@@ -9317,22 +9547,27 @@ def gerar_dashboard_html(
                 const viewMode = this.config.viewMode || 'engine';
                 if (viewMode === 'gearbox') {{
                     this.buildStandaloneGearboxScene();
+                    this.rebuildEnv();
                     return;
                 }}
                 if (viewMode === 'exhaust') {{
                     this.buildStandaloneExhaustScene();
+                    this.rebuildEnv();
                     return;
                 }}
                 if (viewMode === 'electric') {{
                     this.buildStandaloneElectricScene();
+                    this.rebuildEnv();
                     return;
                 }}
                 if (viewMode === 'emotor') {{
                     this.buildStandaloneEmotorScene();
+                    this.rebuildEnv();
                     return;
                 }}
                 if (viewMode === 'battery') {{
                     this.buildStandaloneBatteryScene();
+                    this.rebuildEnv();
                     return;
                 }}
 
@@ -10631,6 +10866,15 @@ def gerar_dashboard_html(
                     this.sceneCenterX = 0;
                     this.baseDist = Math.max(5.5, Math.hypot(halfLenX + 0.90, maxSpanZ) * 2.25 + 1.6);
                 }}
+                this.rebuildEnv();
+            }}
+
+            rebuildEnv() {{
+                const hybOn = this.config.hybridEnabled !== false;
+                const accent = hybOn ? [0.18, 0.85, 0.72, 1.0] : [0.95, 0.42, 0.16, 1.0];
+                this.envOpaque = (window.__studioBg && typeof window.__studioBg.build === 'function')
+                    ? window.__studioBg.build(this, {{ floorY: -1.62, accent }})
+                    : [];
             }}
 
             bindEvents() {{
@@ -10777,7 +11021,8 @@ def gerar_dashboard_html(
                         engineSim.preSpaceThrottlePct = 0;
                         setThrottlePercent(0);
                     }}
-                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 5.2 * invInertia);
+                    const offDrop = engineSim.currentRpm * Math.min(1, dt * 1.85 * invInertia) + dt * 190 * invInertia;
+                    engineSim.currentRpm = Math.max(0, engineSim.currentRpm - offDrop);
                     if (engineSim.currentRpm < 15) engineSim.currentRpm = 0;
                 }} else {{
                     const thr = Math.max(0, Math.min(1, (engineSim.throttlePct || 0) / 100));
@@ -10786,12 +11031,10 @@ def gerar_dashboard_html(
                     const idleJitter = idle + Math.sin(now * 0.008) * 18;
                     if (thr <= 0.005) {{
                         if (engineSim.currentRpm > idle + 25) {{
-                            const decayFactor = Math.min(1, dt * 5.6 * invInertia);
-                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.14) * invInertia * 0.55;
-                            const expDrop = engineSim.currentRpm - (engineSim.currentRpm - idleJitter) * decayFactor;
-                            engineSim.currentRpm = Math.max(idleJitter, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                            const coastDrop = (engineSim.currentRpm - idleJitter) * Math.min(1, dt * 1.55 * invInertia) + dt * 220 * invInertia;
+                            engineSim.currentRpm = Math.max(idleJitter, engineSim.currentRpm - coastDrop);
                         }} else {{
-                            engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 6.2 * invInertia);
+                            engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 2.8 * invInertia);
                         }}
                     }} else {{
                         const targetRpm = idle + (maxR - idle) * Math.pow(thr, 0.85);
@@ -10806,10 +11049,8 @@ def gerar_dashboard_html(
                             const step = thr >= 0.98 ? rawStep : Math.min(rawStep, gap * Math.min(1, dt * 11.0));
                             engineSim.currentRpm += step;
                         }} else if (engineSim.currentRpm > targetRpm) {{
-                            const decayFactor = Math.min(1, dt * 4.4 * invInertia);
-                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.14) * invInertia * 0.55;
-                            const expDrop = engineSim.currentRpm - (engineSim.currentRpm - targetRpm) * decayFactor;
-                            engineSim.currentRpm = Math.max(targetRpm, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                            const decelDrop = (engineSim.currentRpm - targetRpm) * Math.min(1, dt * 1.35 * invInertia) + dt * 180 * invInertia;
+                            engineSim.currentRpm = Math.max(targetRpm, engineSim.currentRpm - decelDrop);
                         }}
                         if (thr >= 0.98 && engineSim.currentRpm >= maxR * 0.985) {{
                             // Oscilação realista de corte de rotação proporcional ao volante e potência
@@ -10911,7 +11152,12 @@ def gerar_dashboard_html(
                 const w = this.canvas.width, h = this.canvas.height;
                 if (!w || !h) return;
                 gl.viewport(0, 0, w, h);
-                gl.clearColor(0, 0, 0, 0);
+                const studioOn = !!(window.__studioBg && window.__studioBg.isEnabled());
+                if (studioOn) {{
+                    gl.clearColor(0.012, 0.014, 0.020, 1.0);
+                }} else {{
+                    gl.clearColor(0, 0, 0, 0);
+                }}
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
                 const dist = this.baseDist / this.cam.zoom;
@@ -10940,6 +11186,18 @@ def gerar_dashboard_html(
 
                 for (const item of this.staticOpaque) {{
                     this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                }}
+
+                if (this.envOpaque && this.envOpaque.length) {{
+                    for (const item of this.envOpaque) {{
+                        if (item.clipSide === 'posZ' && eye[2] > item.clipLim) continue;
+                        if (item.clipSide === 'negZ' && eye[2] < item.clipLim) continue;
+                        if (item.clipSide === 'posX' && eye[0] > item.clipLim) continue;
+                        if (item.clipSide === 'negX' && eye[0] < item.clipLim) continue;
+                        if (item.clipSide === 'ceil' && eye[1] > item.clipLim) continue;
+                        if (item.clipSide === 'floor' && eye[1] < item.clipLim) continue;
+                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                    }}
                 }}
 
                 // Pistões, bielas e contrapesos da cambota
@@ -12366,6 +12624,11 @@ def gerar_dashboard_html(
                     applyLanguage();
                 }}
             }},
+            refreshStudioBg() {{
+                if (motor3D && typeof motor3D.rebuildEnv === 'function') {{
+                    motor3D.rebuildEnv();
+                }}
+            }},
             isHybrid() {{ return hybridEnabled; }}
         }};
 
@@ -12426,7 +12689,12 @@ def gerar_dashboard_html(
                 settingsLangLbl: 'Idioma',
                 settingsLangDesc: 'Alterar entre Português e Inglês',
                 settingsSoundLbl: 'Som do Motor',
-                settingsSoundDesc: 'Síntese áudio Web Audio por tipo de motor'
+                settingsSoundDesc: 'Síntese áudio Web Audio por tipo de motor',
+                settingsBgLbl: 'Ambiente 3D',
+                settingsBgDesc: 'Sala fechada, piso preto, porta de garagem, vigas e objetos',
+                launchStatusIce: 'IGNIÇÃO · COMBUSTÃO INTERNA',
+                launchStatusHybrid: 'SINCRONIZAÇÃO · SISTEMA HÍBRIDO',
+                launchStatusElectric: 'ALTA TENSÃO · TRAÇÃO ELÉTRICA'
             }},
             en: {{
                 langBtn: 'EN → PT',
@@ -12469,7 +12737,12 @@ def gerar_dashboard_html(
                 settingsLangLbl: 'Language',
                 settingsLangDesc: 'Switch between Portuguese and English',
                 settingsSoundLbl: 'Engine Sound',
-                settingsSoundDesc: 'Web Audio synthesis tailored per powertrain'
+                settingsSoundDesc: 'Web Audio synthesis tailored per powertrain',
+                settingsBgLbl: '3D Studio Background',
+                settingsBgDesc: 'Enclosed bay, black floor, garage door, steel beams & props',
+                launchStatusIce: 'IGNITION · INTERNAL COMBUSTION',
+                launchStatusHybrid: 'POWER-SPLIT SYNC · HYBRID',
+                launchStatusElectric: 'HIGH VOLTAGE · ELECTRIC DRIVE'
             }}
         }};
 
@@ -12482,6 +12755,13 @@ def gerar_dashboard_html(
         const btnIce = document.getElementById('btn-launch-ice');
         const btnHybrid = document.getElementById('btn-launch-hybrid');
         const btnElectric = document.getElementById('btn-launch-electric');
+        const launchOverlay = document.getElementById('launch-transition-overlay');
+        const launchOverlayTitle = document.getElementById('launch-overlay-title');
+        const launchOverlayStatus = document.getElementById('launch-overlay-status');
+        const launcherCards = [btnIce, btnHybrid, btnElectric].filter(Boolean);
+        let launchTransitionTimer = null;
+        let shellEnterTimer = null;
+        let isLaunchingMode = false;
         const settingsBackdrop = document.getElementById('settings-backdrop');
         const btnLauncherSettings = document.getElementById('btn-launcher-settings');
         const btnIceSettings = document.getElementById('btn-ice-settings');
@@ -12490,6 +12770,7 @@ def gerar_dashboard_html(
         const btnSettingsLang = document.getElementById('settings-btn-lang-toggle');
         const btnSettingsSound = document.getElementById('settings-btn-sound-toggle');
         const rangeSettingsSound = document.getElementById('settings-sound-range');
+        const btnSettingsBg = document.getElementById('settings-btn-bg-toggle');
         const settingsTriggers = [btnLauncherSettings, btnIceSettings, btnEvSettings];
 
         function setSettingsOpen(isOpen) {{
@@ -12543,6 +12824,11 @@ def gerar_dashboard_html(
             setTxt('settings-lang-desc', t.settingsLangDesc);
             setTxt('settings-sound-lbl', t.settingsSoundLbl);
             setTxt('settings-sound-desc', t.settingsSoundDesc);
+            setTxt('settings-bg-lbl', t.settingsBgLbl);
+            setTxt('settings-bg-desc', t.settingsBgDesc);
+            if (window.__studioBg && typeof window.__studioBg.syncUI === 'function') {{
+                window.__studioBg.syncUI();
+            }}
             settingsTriggers.forEach(btn => {{
                 if (btn) btn.title = t.settingsTitle;
             }});
@@ -12571,14 +12857,94 @@ def gerar_dashboard_html(
             if (window.__engineAudio && typeof window.__engineAudio.syncUI === 'function') window.__engineAudio.syncUI();
         }};
 
+        function resetLauncherTransition() {{
+            if (launchTransitionTimer) {{
+                clearTimeout(launchTransitionTimer);
+                launchTransitionTimer = null;
+            }}
+            isLaunchingMode = false;
+            if (screenLauncher) screenLauncher.classList.remove('is-launching');
+            launcherCards.forEach(card => {{
+                card.classList.remove('is-selected-launch', 'is-dismissed-launch');
+            }});
+            if (launchOverlay) {{
+                launchOverlay.classList.remove('is-active');
+                launchOverlay.hidden = true;
+                launchOverlay.removeAttribute('data-mode');
+            }}
+        }}
+
+        function launchWithAnimation(mode, selectedCard) {{
+            if (!['ice', 'hybrid', 'electric'].includes(mode) || isLaunchingMode) return;
+            isLaunchingMode = true;
+            setSettingsOpen(false);
+
+            const t = LAUNCHER_I18N[window.__appLang] || LAUNCHER_I18N.pt;
+            const modeMeta = {{
+                ice: {{ title: t.iceTitle, status: t.launchStatusIce }},
+                hybrid: {{ title: t.hybTitle, status: t.launchStatusHybrid }},
+                electric: {{ title: t.evTitle, status: t.launchStatusElectric }}
+            }}[mode];
+
+            if (screenLauncher) screenLauncher.classList.add('is-launching');
+            launcherCards.forEach(card => {{
+                if (card === selectedCard) {{
+                    card.classList.add('is-selected-launch');
+                    card.classList.remove('is-dismissed-launch');
+                }} else {{
+                    card.classList.add('is-dismissed-launch');
+                    card.classList.remove('is-selected-launch');
+                }}
+            }});
+
+            if (launchOverlay) {{
+                launchOverlay.setAttribute('data-mode', mode);
+                if (launchOverlayTitle && modeMeta) launchOverlayTitle.textContent = modeMeta.title;
+                if (launchOverlayStatus && modeMeta) launchOverlayStatus.textContent = modeMeta.status;
+                launchOverlay.hidden = false;
+                launchOverlay.classList.remove('is-active');
+                void launchOverlay.offsetWidth;
+                requestAnimationFrame(() => {{
+                    if (launchOverlay && isLaunchingMode) launchOverlay.classList.add('is-active');
+                }});
+            }}
+
+            const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const durationMs = reduceMotion ? 120 : 1050;
+
+            launchTransitionTimer = setTimeout(() => {{
+                launchTransitionTimer = null;
+                window.__enterPowertrainMode(mode);
+                resetLauncherTransition();
+                const activeShell = mode === 'electric' ? shellEv : shellIce;
+                if (activeShell) {{
+                    if (shellEnterTimer) clearTimeout(shellEnterTimer);
+                    activeShell.classList.remove('is-entering');
+                    void activeShell.offsetWidth;
+                    activeShell.classList.add('is-entering');
+                    shellEnterTimer = setTimeout(() => {{
+                        activeShell.classList.remove('is-entering');
+                        shellEnterTimer = null;
+                    }}, 460);
+                }}
+            }}, durationMs);
+        }}
+
         window.__showLauncher = function() {{
+            resetLauncherTransition();
             setSettingsOpen(false);
             if (window.__engineAudio) window.__engineAudio.silence();
             if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
             if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
             window.__activePowertrainMode = 'launcher';
-            if (shellIce) shellIce.hidden = true;
-            if (shellEv) shellEv.hidden = true;
+            if (shellIce) {{
+                shellIce.classList.remove('is-entering');
+                shellIce.hidden = true;
+            }}
+            if (shellEv) {{
+                shellEv.classList.remove('is-entering');
+                shellEv.hidden = true;
+            }}
             if (screenLauncher) screenLauncher.hidden = false;
         }};
 
@@ -12601,9 +12967,9 @@ def gerar_dashboard_html(
             }}
         }};
 
-        if (btnIce) btnIce.addEventListener('click', () => window.__enterPowertrainMode('ice'));
-        if (btnHybrid) btnHybrid.addEventListener('click', () => window.__enterPowertrainMode('hybrid'));
-        if (btnElectric) btnElectric.addEventListener('click', () => window.__enterPowertrainMode('electric'));
+        if (btnIce) btnIce.addEventListener('click', () => launchWithAnimation('ice', btnIce));
+        if (btnHybrid) btnHybrid.addEventListener('click', () => launchWithAnimation('hybrid', btnHybrid));
+        if (btnElectric) btnElectric.addEventListener('click', () => launchWithAnimation('electric', btnElectric));
         if (btnSettingsLang) {{
             btnSettingsLang.addEventListener('click', () => {{
                 window.__setAppLang(window.__appLang === 'pt' ? 'en' : 'pt');
@@ -12612,6 +12978,11 @@ def gerar_dashboard_html(
         if (btnSettingsSound) {{
             btnSettingsSound.addEventListener('click', () => {{
                 if (window.__engineAudio) window.__engineAudio.toggleMute();
+            }});
+        }}
+        if (btnSettingsBg) {{
+            btnSettingsBg.addEventListener('click', () => {{
+                if (window.__studioBg) window.__studioBg.toggle();
             }});
         }}
         if (rangeSettingsSound) {{
