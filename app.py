@@ -1727,6 +1727,34 @@ def gerar_dashboard_html(
             opacity: 1;
         }}
 
+        /* Modo Leve: desativa blurs em tempo real e animações decorativas para reduzir uso de GPU/CPU */
+        body.perf-mode-active .dashboard-topbar,
+        body.perf-mode-active .subsystem-popover,
+        body.perf-mode-active .motor-3d-hint,
+        body.perf-mode-active .engine-action-dock,
+        body.perf-mode-active .widget-card,
+        body.perf-mode-active .settings-backdrop,
+        body.perf-mode-active .launcher-card,
+        body.perf-mode-active .launch-transition-overlay {{
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }}
+
+        body.perf-mode-active .dashboard-topbar,
+        body.perf-mode-active .engine-action-dock,
+        body.perf-mode-active .motor-3d-hint {{
+            background: rgba(11, 13, 19, 0.94);
+        }}
+
+        body.perf-mode-active .widget-card {{
+            background: linear-gradient(180deg, rgba(16, 19, 27, 0.96) 0%, rgba(10, 12, 17, 0.97) 100%);
+            box-shadow: 0 8px 20px -10px rgba(0, 0, 0, 0.85);
+        }}
+
+        body.perf-mode-active .bp-ignition-pulse {{
+            animation: none;
+        }}
+
         /* Camada de UI sobre o background (cliques fora dos painéis passam para o motor 3D) */
         .ui-layer {{
             position: relative;
@@ -5051,6 +5079,13 @@ def gerar_dashboard_html(
                     </div>
                     <button type="button" class="btn-3d-ctrl" id="settings-btn-bg-toggle" aria-pressed="false">Desativado</button>
                 </div>
+                <div class="settings-row" id="settings-perf-row">
+                    <div class="settings-row-info">
+                        <span class="settings-row-label" id="settings-perf-lbl">Modo Leve</span>
+                        <small class="settings-row-desc" id="settings-perf-desc">Simplifica modelos 3D, blurs e resolução mantendo 40–60 FPS</small>
+                    </div>
+                    <button type="button" class="btn-3d-ctrl" id="settings-btn-perf-toggle" aria-pressed="false">Desativado</button>
+                </div>
             </div>
         </div>
     </div>
@@ -5524,6 +5559,53 @@ def gerar_dashboard_html(
             }};
         }})();
 
+        window.__perfMode = (function() {{
+            let enabled = false;
+            try {{
+                enabled = localStorage.getItem('dkm_perf_mode') === '1';
+            }} catch (_) {{}}
+
+            function syncUI() {{
+                if (document.body) {{
+                    document.body.classList.toggle('perf-mode-active', enabled);
+                }}
+                const lang = window.__appLang === 'en' ? 'en' : 'pt';
+                const btn = document.getElementById('settings-btn-perf-toggle');
+                if (btn) {{
+                    btn.classList.toggle('ativo', enabled);
+                    btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                    btn.textContent = enabled
+                        ? (lang === 'en' ? 'On' : 'Ativo')
+                        : (lang === 'en' ? 'Off' : 'Desativado');
+                }}
+            }}
+
+            function refreshViewers() {{
+                if (window.__iceModule && typeof window.__iceModule.refreshPerfMode === 'function') {{
+                    window.__iceModule.refreshPerfMode();
+                }}
+                if (window.__evModule && typeof window.__evModule.refreshPerfMode === 'function') {{
+                    window.__evModule.refreshPerfMode();
+                }}
+            }}
+
+            function setEnabled(next) {{
+                enabled = Boolean(next);
+                try {{
+                    localStorage.setItem('dkm_perf_mode', enabled ? '1' : '0');
+                }} catch (_) {{}}
+                syncUI();
+                refreshViewers();
+            }}
+
+            return {{
+                isEnabled() {{ return enabled; }},
+                setEnabled,
+                toggle() {{ setEnabled(!enabled); }},
+                syncUI
+            }};
+        }})();
+
         window.__studioBg = (function() {{
             let enabled = false;
             try {{
@@ -5567,6 +5649,7 @@ def gerar_dashboard_html(
                 const list = [];
                 if (!enabled || !viewer) return list;
 
+                const lowPerf = !!(window.__perfMode && window.__perfMode.isEnabled());
                 const cx = viewer.sceneCenterX || 0;
                 const floorY = typeof (opts && opts.floorY) === 'number' ? opts.floorY : -1.62;
                 const accent = (opts && opts.accent) || [0.95, 0.42, 0.16, 1.0];
@@ -5598,11 +5681,13 @@ def gerar_dashboard_html(
 
                 // 1. Piso preto limpo + juntas sutis + plataforma de testes/dyno
                 pushPart('box', viewer.matTRS(cx, floorY - 0.09, 0, 0, 0, 0, halfW * 2.1, 0.18, halfZ * 2.12), C_FLOOR, [0.76, 68], 'floor', floorY - 0.02);
-                for (let gx = -6.4; gx <= 6.41; gx += 3.2) {{
-                    pushPart('box', viewer.matTRS(cx + gx, floorY + 0.002, 0, 0, 0, 0, 0.035, 0.006, halfZ * 2.02), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
-                }}
-                for (let gz = -6.0; gz <= 6.01; gz += 3.0) {{
-                    pushPart('box', viewer.matTRS(cx, floorY + 0.002, gz, 0, 0, 0, halfW * 2.02, 0.006, 0.035), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                if (!lowPerf) {{
+                    for (let gx = -6.4; gx <= 6.41; gx += 3.2) {{
+                        pushPart('box', viewer.matTRS(cx + gx, floorY + 0.002, 0, 0, 0, 0, 0.035, 0.006, halfZ * 2.02), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                    }}
+                    for (let gz = -6.0; gz <= 6.01; gz += 3.0) {{
+                        pushPart('box', viewer.matTRS(cx, floorY + 0.002, gz, 0, 0, 0, halfW * 2.02, 0.006, 0.035), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                    }}
                 }}
 
                 // Plataforma baixa do dinamómetro sob o conjunto motriz
@@ -5612,13 +5697,15 @@ def gerar_dashboard_html(
                 for (const rz of [-0.72, 0.72]) {{
                     pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.072, rz, 0, 0, 0, plinthW * 0.94, 0.022, 0.11), C_STEEL_BRUSH, [0.76, 58]);
                 }}
-                for (let bx = -1.4; bx <= 1.41; bx += 0.40) {{
-                    pushPart('box', viewer.matTRS(cx + bx, floorY + 0.066, 0, 0, 0, 0, 0.06, 0.012, 1.16), C_STEEL, [0.66, 48]);
-                }}
-                for (const sx of [-1, 1]) {{
-                    for (const sz of [-1, 1]) {{
-                        pushPart('box', viewer.matTRS(cx + sx * (plinthW * 0.46), floorY + 0.068, sz * (plinthD * 0.46), 0, 0, 0, 0.28, 0.014, 0.035), accent, [1.18, -1.0]);
-                        pushPart('bevelBox', viewer.matTRS(cx + sx * (plinthW * 0.47), floorY + 0.085, sz * (plinthD * 0.47), 0, 0, 0, 0.14, 0.06, 0.14), C_STEEL, [0.66, 50]);
+                if (!lowPerf) {{
+                    for (let bx = -1.4; bx <= 1.41; bx += 0.40) {{
+                        pushPart('box', viewer.matTRS(cx + bx, floorY + 0.066, 0, 0, 0, 0, 0.06, 0.012, 1.16), C_STEEL, [0.66, 48]);
+                    }}
+                    for (const sx of [-1, 1]) {{
+                        for (const sz of [-1, 1]) {{
+                            pushPart('box', viewer.matTRS(cx + sx * (plinthW * 0.46), floorY + 0.068, sz * (plinthD * 0.46), 0, 0, 0, 0.28, 0.014, 0.035), accent, [1.18, -1.0]);
+                            pushPart('bevelBox', viewer.matTRS(cx + sx * (plinthW * 0.47), floorY + 0.085, sz * (plinthD * 0.47), 0, 0, 0, 0.14, 0.06, 0.14), C_STEEL, [0.66, 50]);
+                        }}
                     }}
                 }}
 
@@ -5637,20 +5724,24 @@ def gerar_dashboard_html(
                     pushPart('bevelBox', viewer.matTRS(cx, ceilY - 0.16, side * (halfZ - 0.02), 0, 0, 0, halfW * 2.02, 0.14, 0.12), C_STEEL, [0.70, 52], clipSide, clipLim);
                     pushPart('box', viewer.matTRS(cx, floorY + 2.38, side * (halfZ - 0.055), 0, 0, 0, halfW * 1.94, 0.032, 0.03), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], clipSide, clipLim);
 
-                    for (let r = 0; r < rows; r++) {{
-                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
-                        for (let c = 0; c < cols; c++) {{
-                            const tx = cx - halfW + 0.18 + (c + 0.5) * tileW;
-                            const col = tileCols[(c + r * 2) % tileCols.length];
-                            pushPart(
-                                'bevelBox',
-                                viewer.matTRS(tx, ty, side * (halfZ - 0.015), 0, 0, 0, tileW * 0.945, tileH * 0.935, 0.065),
-                                col,
-                                [0.60, 50],
-                                clipSide,
-                                clipLim
-                            );
+                    if (!lowPerf) {{
+                        for (let r = 0; r < rows; r++) {{
+                            const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                            for (let c = 0; c < cols; c++) {{
+                                const tx = cx - halfW + 0.18 + (c + 0.5) * tileW;
+                                const col = tileCols[(c + r * 2) % tileCols.length];
+                                pushPart(
+                                    'bevelBox',
+                                    viewer.matTRS(tx, ty, side * (halfZ - 0.015), 0, 0, 0, tileW * 0.945, tileH * 0.935, 0.065),
+                                    col,
+                                    [0.60, 50],
+                                    clipSide,
+                                    clipLim
+                                );
+                            }}
                         }}
+                    }} else {{
+                        pushPart('box', viewer.matTRS(cx, wallMidY, side * (halfZ - 0.02), 0, 0, 0, halfW * 1.96, wallH - 0.62, 0.04), C_TILE_A, [0.48, 36], clipSide, clipLim);
                     }}
                 }}
 
@@ -5666,13 +5757,17 @@ def gerar_dashboard_html(
                     pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.02, floorY + 0.14, 0, 0, 0, 0, 0.10, 0.28, halfZ * 2.04), C_STEEL_DARK, [0.66, 48], 'negX', negXLim);
                     pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.02, ceilY - 0.16, 0, 0, 0, 0, 0.12, 0.14, halfZ * 2.04), C_STEEL, [0.70, 52], 'negX', negXLim);
                     pushPart('box', viewer.matTRS(cx - halfW + 0.055, floorY + 2.38, 0, 0, 0, 0, 0.03, 0.032, halfZ * 1.94), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], 'negX', negXLim);
-                    for (let r = 0; r < rows; r++) {{
-                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
-                        for (let c = 0; c < endCols; c++) {{
-                            const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
-                            const col = tileCols[(c + r * 2) % tileCols.length];
-                            pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'negX', negXLim);
+                    if (!lowPerf) {{
+                        for (let r = 0; r < rows; r++) {{
+                            const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                            for (let c = 0; c < endCols; c++) {{
+                                const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
+                                const col = tileCols[(c + r * 2) % tileCols.length];
+                                pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'negX', negXLim);
+                            }}
                         }}
+                    }} else {{
+                        pushPart('box', viewer.matTRS(cx - halfW + 0.02, wallMidY, 0, 0, 0, 0, 0.04, wallH - 0.62, halfZ * 1.96), C_TILE_A, [0.48, 36], 'negX', negXLim);
                     }}
                     // Quadro elétrico industrial & conduta de extração na parede -X
                     pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.18, floorY + 1.85, -3.2, 0, 0, 0, 0.24, 1.15, 0.88), C_STEEL, [0.62, 46], 'negX', negXLim);
@@ -5699,14 +5794,22 @@ def gerar_dashboard_html(
                     }}
 
                     // Azulejos pretos à volta da porta de garagem
-                    for (let r = 0; r < rows; r++) {{
-                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
-                        for (let c = 0; c < endCols; c++) {{
-                            const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
-                            const inDoorSpan = Math.abs(tz) < (doorHalfW + 0.08) && (ty - tileH * 0.45) < (doorTopY + 0.10);
-                            if (inDoorSpan) continue;
-                            const col = tileCols[(c + r * 2) % tileCols.length];
-                            pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'posX', posXLim);
+                    if (!lowPerf) {{
+                        for (let r = 0; r < rows; r++) {{
+                            const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                            for (let c = 0; c < endCols; c++) {{
+                                const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
+                                const inDoorSpan = Math.abs(tz) < (doorHalfW + 0.08) && (ty - tileH * 0.45) < (doorTopY + 0.10);
+                                if (inDoorSpan) continue;
+                                const col = tileCols[(c + r * 2) % tileCols.length];
+                                pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'posX', posXLim);
+                            }}
+                        }}
+                    }} else {{
+                        for (const side of [-1, 1]) {{
+                            const flankW = halfZ - doorHalfW - 0.12;
+                            const flankMidZ = side * (doorHalfW + 0.12 + flankW * 0.5);
+                            pushPart('box', viewer.matTRS(cx + halfW - 0.02, wallMidY, flankMidZ, 0, 0, 0, 0.04, wallH - 0.62, flankW), C_TILE_A, [0.48, 36], 'posX', posXLim);
                         }}
                     }}
 
@@ -5820,12 +5923,16 @@ def gerar_dashboard_html(
                 for (const lz of [-2.4, 0.0, 2.4]) {{
                     pushPart('box', viewer.matTRS(cx, ledDropY + 0.035, lz, 0, 0, 0, 14.8, 0.045, 0.13), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
                     pushPart('box', viewer.matTRS(cx, ledDropY, lz, 0, 0, 0, 14.6, 0.034, 0.085), C_LED, [1.45, -1.0], 'ceil', ceilClipLim);
-                    for (const hx of [-5.4, -1.8, 1.8, 5.4]) {{
-                        pushPart('cyl', viewer.matTRS(cx + hx, ledDropY + 0.18, lz, 0, 0, 0, 0.014, 0.28, 0.014), C_CHROME, [0.80, 64], 'ceil', ceilClipLim);
+                    if (!lowPerf) {{
+                        for (const hx of [-5.4, -1.8, 1.8, 5.4]) {{
+                            pushPart('cyl', viewer.matTRS(cx + hx, ledDropY + 0.18, lz, 0, 0, 0, 0.014, 0.28, 0.014), C_CHROME, [0.80, 64], 'ceil', ceilClipLim);
+                        }}
                     }}
                 }}
                 for (const bx of [-5.4, -1.8, 1.8, 5.4]) {{
-                    pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.04, 0, 0, 0, 0, 0.11, 0.04, 11.4), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
+                    if (!lowPerf) {{
+                        pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.04, 0, 0, 0, 0, 0.11, 0.04, 11.4), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
+                    }}
                     pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.01, 0, 0, 0, 0, 0.075, 0.03, 11.2), C_LED, [1.35, -1.0], 'ceil', ceilClipLim);
                 }}
 
@@ -5835,39 +5942,43 @@ def gerar_dashboard_html(
                 const tcZ = -5.55;
                 pushPart('bevelBox', viewer.matTRS(tcX, floorY + 0.64, tcZ, 0, 0, 0, 1.48, 1.06, 0.68), C_RED, [0.58, 46]);
                 pushPart('bevelBox', viewer.matTRS(tcX, floorY + 1.24, tcZ - 0.04, 0, 0, 0, 1.40, 0.22, 0.58), C_STEEL_DARK, [0.62, 48]);
-                pushPart('box', viewer.matTRS(tcX, floorY + 1.18, tcZ, 0, 0, 0, 1.50, 0.03, 0.70), C_RUBBER, [0.22, 14]);
-                for (let di = 0; di < 5; di++) {{
-                    const dy = floorY + 0.26 + di * 0.185;
-                    pushPart('bevelBox', viewer.matTRS(tcX, dy, tcZ + 0.345, 0, 0, 0, 1.32, 0.14, 0.03), [0.52, 0.09, 0.10, 1.0], [0.55, 42]);
-                    pushPart('box', viewer.matTRS(tcX, dy + 0.035, tcZ + 0.365, 0, 0, 0, 1.18, 0.022, 0.02), C_CHROME, [0.85, 68]);
-                }}
-                pushPart('cyl', viewer.matTRS(tcX - 0.80, floorY + 1.02, tcZ, Math.PI * 0.5, 0, 0, 0.022, 0.54, 0.022), C_CHROME, [0.84, 66]);
-                for (const wx of [-0.62, 0.62]) {{
-                    for (const wz of [-0.26, 0.26]) {{
-                        pushPart('cyl', viewer.matTRS(tcX + wx, floorY + 0.06, tcZ + wz, 0, 0, Math.PI * 0.5, 0.06, 0.05, 0.06), C_RUBBER, [0.26, 18]);
+                if (!lowPerf) {{
+                    pushPart('box', viewer.matTRS(tcX, floorY + 1.18, tcZ, 0, 0, 0, 1.50, 0.03, 0.70), C_RUBBER, [0.22, 14]);
+                    for (let di = 0; di < 5; di++) {{
+                        const dy = floorY + 0.26 + di * 0.185;
+                        pushPart('bevelBox', viewer.matTRS(tcX, dy, tcZ + 0.345, 0, 0, 0, 1.32, 0.14, 0.03), [0.52, 0.09, 0.10, 1.0], [0.55, 42]);
+                        pushPart('box', viewer.matTRS(tcX, dy + 0.035, tcZ + 0.365, 0, 0, 0, 1.18, 0.022, 0.02), C_CHROME, [0.85, 68]);
                     }}
+                    pushPart('cyl', viewer.matTRS(tcX - 0.80, floorY + 1.02, tcZ, Math.PI * 0.5, 0, 0, 0.022, 0.54, 0.022), C_CHROME, [0.84, 66]);
+                    for (const wx of [-0.62, 0.62]) {{
+                        for (const wz of [-0.26, 0.26]) {{
+                            pushPart('cyl', viewer.matTRS(tcX + wx, floorY + 0.06, tcZ + wz, 0, 0, Math.PI * 0.5, 0.06, 0.05, 0.06), C_RUBBER, [0.26, 18]);
+                        }}
+                    }}
+                    pushPart('box', viewer.matTRS(tcX - 0.26, floorY + 1.365, tcZ + 0.06, 0, 0.28, 0, 0.36, 0.018, 0.04), C_CHROME, [0.88, 72]);
+                    pushPart('box', viewer.matTRS(tcX + 0.18, floorY + 1.365, tcZ - 0.02, 0, -0.18, 0, 0.28, 0.016, 0.035), C_CHROME, [0.88, 72]);
                 }}
-                pushPart('box', viewer.matTRS(tcX - 0.26, floorY + 1.365, tcZ + 0.06, 0, 0.28, 0, 0.36, 0.018, 0.04), C_CHROME, [0.88, 72]);
-                pushPart('box', viewer.matTRS(tcX + 0.18, floorY + 1.365, tcZ - 0.02, 0, -0.18, 0, 0.28, 0.016, 0.035), C_CHROME, [0.88, 72]);
 
                 // B) Consola móvel de telemetria / dyno (cx + 4.4, z = -5.2)
                 const dcX = cx + 4.4;
                 const dcZ = -5.2;
-                pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.07, dcZ, 0, -0.35, 0, 0.92, 0.06, 0.72), C_STEEL_DARK, [0.58, 44]);
-                for (const wx of [-0.36, 0.36]) {{
-                    for (const wz of [-0.26, 0.26]) {{
-                        pushPart('cyl', viewer.matTRS(dcX + wx * 0.9, floorY + 0.03, dcZ + wz * 0.9, 0, 0, Math.PI * 0.5, 0.038, 0.04, 0.038), C_RUBBER, [0.24, 16]);
-                    }}
-                }}
                 pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.42, dcZ, 0, -0.35, 0, 0.64, 0.62, 0.52), C_STEEL, [0.62, 46]);
-                pushPart('box', viewer.matTRS(dcX - 0.12, floorY + 0.64, dcZ + 0.24, 0, -0.35, 0, 0.12, 0.022, 0.02), accent, [1.3, -1.0]);
                 pushPart('cyl', viewer.matTRS(dcX, floorY + 1.15, dcZ - 0.06, 0, 0, 0, 0.045, 0.88, 0.045), C_STEEL_BRUSH, [0.76, 58]);
-                pushPart('bevelBox', viewer.matTRS(dcX + 0.05, floorY + 0.92, dcZ + 0.14, 0, -0.35, 0, 0.84, 0.04, 0.42), C_STEEL_DARK, [0.56, 42]);
                 pushPart('bevelBox', viewer.matTRS(dcX - 0.05, floorY + 1.50, dcZ - 0.04, -0.10, -0.35, 0, 1.12, 0.56, 0.06), C_STEEL_DARK, [0.52, 40]);
                 pushPart('box', viewer.matTRS(dcX - 0.03, floorY + 1.50, dcZ - 0.005, -0.10, -0.35, 0, 1.02, 0.46, 0.02), [0.04, 0.10, 0.16, 1.0], [0.95, -1.0]);
-                pushPart('box', viewer.matTRS(dcX - 0.20, floorY + 1.56, dcZ + 0.01, -0.10, -0.35, 0.18, 0.52, 0.026, 0.022), [0.22, 0.86, 0.98, 1.0], [1.28, -1.0]);
-                pushPart('box', viewer.matTRS(dcX - 0.16, floorY + 1.46, dcZ + 0.01, -0.10, -0.35, -0.12, 0.48, 0.022, 0.022), [0.96, 0.48, 0.18, 1.0], [1.25, -1.0]);
-                viewer.addPipe(list, [[dcX - 0.2, floorY + 0.12, dcZ + 0.2], [dcX - 1.2, floorY + 0.022, dcZ + 1.6], [cx + 1.6, floorY + 0.022, -0.9]], 0.024, C_RUBBER, [0.22, 16], [], true);
+                if (!lowPerf) {{
+                    pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.07, dcZ, 0, -0.35, 0, 0.92, 0.06, 0.72), C_STEEL_DARK, [0.58, 44]);
+                    for (const wx of [-0.36, 0.36]) {{
+                        for (const wz of [-0.26, 0.26]) {{
+                            pushPart('cyl', viewer.matTRS(dcX + wx * 0.9, floorY + 0.03, dcZ + wz * 0.9, 0, 0, Math.PI * 0.5, 0.038, 0.04, 0.038), C_RUBBER, [0.24, 16]);
+                        }}
+                    }}
+                    pushPart('box', viewer.matTRS(dcX - 0.12, floorY + 0.64, dcZ + 0.24, 0, -0.35, 0, 0.12, 0.022, 0.02), accent, [1.3, -1.0]);
+                    pushPart('bevelBox', viewer.matTRS(dcX + 0.05, floorY + 0.92, dcZ + 0.14, 0, -0.35, 0, 0.84, 0.04, 0.42), C_STEEL_DARK, [0.56, 42]);
+                    pushPart('box', viewer.matTRS(dcX - 0.20, floorY + 1.56, dcZ + 0.01, -0.10, -0.35, 0.18, 0.52, 0.026, 0.022), [0.22, 0.86, 0.98, 1.0], [1.28, -1.0]);
+                    pushPart('box', viewer.matTRS(dcX - 0.16, floorY + 1.46, dcZ + 0.01, -0.10, -0.35, -0.12, 0.48, 0.022, 0.022), [0.96, 0.48, 0.18, 1.0], [1.25, -1.0]);
+                    viewer.addPipe(list, [[dcX - 0.2, floorY + 0.12, dcZ + 0.2], [dcX - 1.2, floorY + 0.022, dcZ + 1.6], [cx + 1.6, floorY + 0.022, -0.9]], 0.024, C_RUBBER, [0.22, 16], [], true);
+                }}
 
                 // C) Bancada de trabalho em aço com torno e peças (cx + 0.2, z = -6.45)
                 const wbX = cx + 0.2;
@@ -5879,63 +5990,67 @@ def gerar_dashboard_html(
                         pushPart('box', viewer.matTRS(wbX + lx, floorY + 0.50, wbZ + lz, 0, 0, 0, 0.08, 1.00, 0.08), C_STEEL, [0.66, 48]);
                     }}
                 }}
-                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 0.32, wbZ, 0, 0, 0, 2.42, 0.04, 0.78), C_STEEL_DARK, [0.58, 42]);
-                // Torno de bancada + disco de travão e pinça + lata de óleo
-                pushPart('bevelBox', viewer.matTRS(wbX - 0.95, floorY + 1.16, wbZ + 0.26, 0, 0, 0, 0.22, 0.20, 0.30), [0.18, 0.34, 0.54, 1.0], [0.56, 42]);
-                pushPart('cyl', viewer.matTRS(wbX - 0.95, floorY + 1.18, wbZ + 0.44, Math.PI * 0.5, 0, 0, 0.018, 0.22, 0.018), C_CHROME, [0.85, 68]);
-                pushPart('cyl', viewer.matTRS(wbX + 0.25, floorY + 1.09, wbZ + 0.05, 0, 0, 0, 0.24, 0.045, 0.24), C_STEEL_BRUSH, [0.82, 66]);
-                pushPart('bevelBox', viewer.matTRS(wbX + 0.44, floorY + 1.12, wbZ + 0.14, 0, 0.4, 0, 0.14, 0.10, 0.18), C_RED, [0.64, 50]);
-                pushPart('cyl', viewer.matTRS(wbX + 0.92, floorY + 1.19, wbZ - 0.05, 0, 0, 0, 0.075, 0.24, 0.075), [0.82, 0.62, 0.20, 1.0], [0.62, 48]);
+                if (!lowPerf) {{
+                    pushPart('bevelBox', viewer.matTRS(wbX, floorY + 0.32, wbZ, 0, 0, 0, 2.42, 0.04, 0.78), C_STEEL_DARK, [0.58, 42]);
+                    // Torno de bancada + disco de travão e pinça + lata de óleo
+                    pushPart('bevelBox', viewer.matTRS(wbX - 0.95, floorY + 1.16, wbZ + 0.26, 0, 0, 0, 0.22, 0.20, 0.30), [0.18, 0.34, 0.54, 1.0], [0.56, 42]);
+                    pushPart('cyl', viewer.matTRS(wbX - 0.95, floorY + 1.18, wbZ + 0.44, Math.PI * 0.5, 0, 0, 0.018, 0.22, 0.018), C_CHROME, [0.85, 68]);
+                    pushPart('cyl', viewer.matTRS(wbX + 0.25, floorY + 1.09, wbZ + 0.05, 0, 0, 0, 0.24, 0.045, 0.24), C_STEEL_BRUSH, [0.82, 66]);
+                    pushPart('bevelBox', viewer.matTRS(wbX + 0.44, floorY + 1.12, wbZ + 0.14, 0, 0.4, 0, 0.14, 0.10, 0.18), C_RED, [0.64, 50]);
+                    pushPart('cyl', viewer.matTRS(wbX + 0.92, floorY + 1.19, wbZ - 0.05, 0, 0, 0, 0.075, 0.24, 0.075), [0.82, 0.62, 0.20, 1.0], [0.62, 48]);
+                }}
 
                 // D) Garrafas de gás industrial + tambor de óleo 200L + extintor (cx - 6.6, z = +5.4)
                 const gdX = cx - 6.6;
                 const gdZ = 5.4;
-                pushPart('bevelBox', viewer.matTRS(gdX, floorY + 0.04, gdZ, 0, 0, 0, 0.96, 0.08, 0.52), C_STEEL_DARK, [0.58, 42]);
                 pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 0.88, gdZ, 0, 0, 0, 0.17, 1.55, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
-                pushPart('sphere', viewer.matTRS(gdX - 0.22, floorY + 1.65, gdZ, 0, 0, 0, 0.17, 0.18, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
-                pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 1.87, gdZ, 0, 0, 0, 0.045, 0.12, 0.045), C_BRASS, [0.80, 64]);
                 pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 0.82, gdZ, 0, 0, 0, 0.16, 1.44, 0.16), C_STEEL, [0.60, 48]);
-                pushPart('sphere', viewer.matTRS(gdX + 0.22, floorY + 1.54, gdZ, 0, 0, 0, 0.16, 0.16, 0.16), C_STEEL, [0.60, 48]);
-                pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 1.74, gdZ, 0, 0, 0, 0.042, 0.11, 0.042), C_BRASS, [0.80, 64]);
-                // Tambor de óleo 200L com aros
                 const drX = gdX + 1.25;
                 const drZ = gdZ + 0.25;
                 pushPart('cyl', viewer.matTRS(drX, floorY + 0.58, drZ, 0, 0, 0, 0.36, 1.16, 0.36), C_STEEL_DARK, [0.52, 38]);
-                for (const ry of [0.36, 0.78, 1.14]) {{
-                    pushPart('torus', viewer.matTRS(drX, floorY + ry, drZ, Math.PI * 0.5, 0, 0, 0.37, 0.37, 0.08), C_STEEL_BRUSH, [0.68, 50]);
-                }}
-                // Extintor fixo no pilar traseiro
-                pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 0.95, halfZ - 0.42, 0, 0, 0, 0.11, 0.62, 0.11), C_RED, [0.64, 52], 'posZ', halfZ - 0.32);
-                pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 1.32, halfZ - 0.42, 0, 0, 0, 0.04, 0.12, 0.04), C_BRASS, [0.80, 62], 'posZ', halfZ - 0.32);
-
-                // E) Pilha de pneus & jantes + macaco hidráulico (cx + 5.6, z = +5.3)
-                const trX = cx + 5.6;
-                const trZ = 5.3;
-                for (let ti = 0; ti < 3; ti++) {{
-                    const ty = floorY + 0.18 + ti * 0.36;
-                    const offX = ti === 2 ? 0.06 : 0;
-                    pushPart('torus', viewer.matTRS(trX + offX, ty, trZ, Math.PI * 0.5, 0, 0, 0.46, 0.46, 0.32), C_RUBBER, [0.22, 16]);
-                    pushPart('cyl', viewer.matTRS(trX + offX, ty, trZ, 0, 0, 0, 0.33, 0.30, 0.33), [0.36, 0.32, 0.24, 1.0], [0.78, 60]);
-                    pushPart('cyl', viewer.matTRS(trX + offX, ty + 0.13, trZ, 0, 0, 0, 0.12, 0.06, 0.12), C_STEEL_DARK, [0.66, 52]);
-                }}
-                // Macaco hidráulico baixo
-                const jkX = cx + 3.2;
-                const jkZ = 5.75;
-                pushPart('bevelBox', viewer.matTRS(jkX, floorY + 0.09, jkZ, 0, 0.42, 0, 0.96, 0.12, 0.38), C_RED, [0.62, 48]);
-                pushPart('cyl', viewer.matTRS(jkX - 0.24, floorY + 0.17, jkZ - 0.10, 0, 0, 0, 0.09, 0.04, 0.09), C_STEEL_BRUSH, [0.76, 58]);
-                pushPart('cyl', viewer.matTRS(jkX + 0.45, floorY + 0.56, jkZ + 0.20, 0, 0.42, -0.78, 0.022, 1.15, 0.022), C_CHROME, [0.86, 68]);
-                for (const rx of [-0.36, 0.36]) {{
-                    for (const rz of [-0.20, 0.20]) {{
-                        pushPart('cyl', viewer.matTRS(jkX + rx, floorY + 0.045, jkZ + rz, Math.PI * 0.5, 0.42, 0, 0.045, 0.04, 0.045), C_STEEL_DARK, [0.60, 44]);
+                if (!lowPerf) {{
+                    pushPart('bevelBox', viewer.matTRS(gdX, floorY + 0.04, gdZ, 0, 0, 0, 0.96, 0.08, 0.52), C_STEEL_DARK, [0.58, 42]);
+                    pushPart('sphere', viewer.matTRS(gdX - 0.22, floorY + 1.65, gdZ, 0, 0, 0, 0.17, 0.18, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
+                    pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 1.87, gdZ, 0, 0, 0, 0.045, 0.12, 0.045), C_BRASS, [0.80, 64]);
+                    pushPart('sphere', viewer.matTRS(gdX + 0.22, floorY + 1.54, gdZ, 0, 0, 0, 0.16, 0.16, 0.16), C_STEEL, [0.60, 48]);
+                    pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 1.74, gdZ, 0, 0, 0, 0.042, 0.11, 0.042), C_BRASS, [0.80, 64]);
+                    for (const ry of [0.36, 0.78, 1.14]) {{
+                        pushPart('torus', viewer.matTRS(drX, floorY + ry, drZ, Math.PI * 0.5, 0, 0, 0.37, 0.37, 0.08), C_STEEL_BRUSH, [0.68, 50]);
                     }}
+                    // Extintor fixo no pilar traseiro
+                    pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 0.95, halfZ - 0.42, 0, 0, 0, 0.11, 0.62, 0.11), C_RED, [0.64, 52], 'posZ', halfZ - 0.32);
+                    pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 1.32, halfZ - 0.42, 0, 0, 0, 0.04, 0.12, 0.04), C_BRASS, [0.80, 62], 'posZ', halfZ - 0.32);
+
+                    // E) Pilha de pneus & jantes + macaco hidráulico (cx + 5.6, z = +5.3)
+                    const trX = cx + 5.6;
+                    const trZ = 5.3;
+                    for (let ti = 0; ti < 3; ti++) {{
+                        const ty = floorY + 0.18 + ti * 0.36;
+                        const offX = ti === 2 ? 0.06 : 0;
+                        pushPart('torus', viewer.matTRS(trX + offX, ty, trZ, Math.PI * 0.5, 0, 0, 0.46, 0.46, 0.32), C_RUBBER, [0.22, 16]);
+                        pushPart('cyl', viewer.matTRS(trX + offX, ty, trZ, 0, 0, 0, 0.33, 0.30, 0.33), [0.36, 0.32, 0.24, 1.0], [0.78, 60]);
+                        pushPart('cyl', viewer.matTRS(trX + offX, ty + 0.13, trZ, 0, 0, 0, 0.12, 0.06, 0.12), C_STEEL_DARK, [0.66, 52]);
+                    }}
+                    // Macaco hidráulico baixo
+                    const jkX = cx + 3.2;
+                    const jkZ = 5.75;
+                    pushPart('bevelBox', viewer.matTRS(jkX, floorY + 0.09, jkZ, 0, 0.42, 0, 0.96, 0.12, 0.38), C_RED, [0.62, 48]);
+                    pushPart('cyl', viewer.matTRS(jkX - 0.24, floorY + 0.17, jkZ - 0.10, 0, 0, 0, 0.09, 0.04, 0.09), C_STEEL_BRUSH, [0.76, 58]);
+                    pushPart('cyl', viewer.matTRS(jkX + 0.45, floorY + 0.56, jkZ + 0.20, 0, 0.42, -0.78, 0.022, 1.15, 0.022), C_CHROME, [0.86, 68]);
+                    for (const rx of [-0.36, 0.36]) {{
+                        for (const rz of [-0.20, 0.20]) {{
+                            pushPart('cyl', viewer.matTRS(jkX + rx, floorY + 0.045, jkZ + rz, Math.PI * 0.5, 0.42, 0, 0.045, 0.04, 0.045), C_STEEL_DARK, [0.60, 44]);
+                        }}
+                    }}
+
+                    // F) Enrolador de mangueira na parede + rampa de proteção de cabos
+                    pushPart('cyl', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, 0, Math.PI * 0.5, 0.24, 0.26, 0.24), C_STEEL, [0.62, 46], 'negZ', -(halfZ - 0.32));
+                    pushPart('torus', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, Math.PI * 0.5, 0, 0.19, 0.19, 0.18), [0.16, 0.42, 0.72, 1.0], [0.40, 28], 'negZ', -(halfZ - 0.32));
+                    pushPart('bevelBox', viewer.matTRS(cx - 2.9, floorY + 0.03, 5.9, 0, 0.15, 0, 1.45, 0.06, 0.38), C_RUBBER, [0.24, 16]);
+                    pushPart('box', viewer.matTRS(cx - 2.9, floorY + 0.062, 5.9, 0, 0.15, 0, 1.32, 0.012, 0.14), [0.85, 0.62, 0.14, 1.0], [0.42, 28]);
                 }}
 
-                // F) Enrolador de mangueira na parede + rampa de proteção de cabos
-                pushPart('cyl', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, 0, Math.PI * 0.5, 0.24, 0.26, 0.24), C_STEEL, [0.62, 46], 'negZ', -(halfZ - 0.32));
-                pushPart('torus', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, Math.PI * 0.5, 0, 0.19, 0.19, 0.18), [0.16, 0.42, 0.72, 1.0], [0.40, 28], 'negZ', -(halfZ - 0.32));
-                pushPart('bevelBox', viewer.matTRS(cx - 2.9, floorY + 0.03, 5.9, 0, 0.15, 0, 1.45, 0.06, 0.38), C_RUBBER, [0.24, 16]);
-                pushPart('box', viewer.matTRS(cx - 2.9, floorY + 0.062, 5.9, 0, 0.15, 0, 1.32, 0.012, 0.14), [0.85, 0.62, 0.14, 1.0], [0.42, 28]);
-
+                list.sort((a, b) => (a.type < b.type ? -1 : (a.type > b.type ? 1 : 0)));
                 return list;
             }}
 
@@ -7909,7 +8024,8 @@ def gerar_dashboard_html(
             const wrap = dynoCanvas.parentElement;
             const rect = wrap.getBoundingClientRect();
             if (!rect.width || !rect.height) return;
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const perfOn = !!(window.__perfMode && window.__perfMode.isEnabled());
+            const dpr = Math.min(window.devicePixelRatio || 1, perfOn ? 1 : 2);
             const w = Math.max(1, Math.round(rect.width * dpr));
             const h = Math.max(1, Math.round(rect.height * dpr));
             if (dynoCanvas.width !== w || dynoCanvas.height !== h) {{
@@ -8210,6 +8326,15 @@ def gerar_dashboard_html(
                 this.staticTrans = [];
                 this.envOpaque = [];
                 this.dynamicCyls = [];
+                this._normTmp = new Float32Array(9);
+                this._boundMesh = null;
+                this._staticSorted = false;
+                this._needsRender = true;
+                this._lastFrameMs = 0;
+                this._lastRafMs = 0;
+                this._rafStepMs = 16.7;
+                this.hiMeshes = null;
+                this.loMeshes = null;
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
                 this.dynamicCams = [];
@@ -8249,6 +8374,7 @@ def gerar_dashboard_html(
                     uniform vec4 uColor;
                     uniform vec2 uSpec;
                     uniform vec3 uCamPos;
+                    uniform float uLowPerf;
                     void main() {{
                         if (uSpec.y < 0.0) {{
                             gl_FragColor = vec4(uColor.rgb * uSpec.x, uColor.a);
@@ -8256,9 +8382,18 @@ def gerar_dashboard_html(
                         }}
                         vec3 N = normalize(vNorm);
                         vec3 V = normalize(uCamPos - vWorldPos);
-                        vec3 R = reflect(-V, N);
                         vec3 L1 = normalize(vec3(0.55, 0.88, 0.65));
                         vec3 L2 = normalize(vec3(-0.78, 0.35, -0.55));
+                        if (uLowPerf > 0.5) {{
+                            float d1 = max(dot(N, L1), 0.0);
+                            float d2 = max(dot(N, L2), 0.0);
+                            vec3 H1 = normalize(L1 + V);
+                            float sp1 = pow(max(dot(N, H1), 0.0), mix(14.0, 56.0, uSpec.x)) * (0.28 + 0.62 * uSpec.x);
+                            vec3 col = uColor.rgb * (0.34 + 0.62 * d1 + 0.24 * d2) + vec3(0.95, 0.97, 1.0) * sp1;
+                            gl_FragColor = vec4(clamp(col, 0.0, 1.0), uColor.a);
+                            return;
+                        }}
+                        vec3 R = reflect(-V, N);
                         vec3 L3 = normalize(vec3(0.15, -0.65, 0.72));
 
                         float metal = clamp((uSpec.x - 0.32) / 0.58, 0.0, 1.0);
@@ -8348,7 +8483,8 @@ def gerar_dashboard_html(
                     uNormalMat: gl.getUniformLocation(prog, 'uNormalMat'),
                     uColor: gl.getUniformLocation(prog, 'uColor'),
                     uSpec: gl.getUniformLocation(prog, 'uSpec'),
-                    uCamPos: gl.getUniformLocation(prog, 'uCamPos')
+                    uCamPos: gl.getUniformLocation(prog, 'uCamPos'),
+                    uLowPerf: gl.getUniformLocation(prog, 'uLowPerf')
                 }};
 
                 gl.enableVertexAttribArray(this.loc.aPos);
@@ -8371,6 +8507,23 @@ def gerar_dashboard_html(
                     impeller: this.makeMesh(this.buildImpellerData(7)),
                     wankelHousing: this.makeMesh(this.buildWankelHousingData(54)),
                     wankelRotor: this.makeMesh(this.buildWankelRotorData(36))
+                }};
+                this.hiMeshes = this.meshes;
+                this.loMeshes = {{
+                    box: this.meshes.box,
+                    bevelBox: this.meshes.box,
+                    cyl: this.makeMesh(this.buildCylinderData(12, 1.0, 1.0)),
+                    cone: this.makeMesh(this.buildCylinderData(12, 1.0, 0.54)),
+                    hex: this.meshes.hex,
+                    camLobe: this.makeMesh(this.buildCamLobeData(14)),
+                    gear: this.makeMesh(this.buildGearData(10, 0.88, 1.04)),
+                    torus: this.makeMesh(this.buildTorusData(14, 8, 0.42)),
+                    sphere: this.makeMesh(this.buildSphereData(6, 8)),
+                    spring: this.makeMesh(this.buildHelixSpringData(3.0, 12, 4)),
+                    crankWeb: this.makeMesh(this.buildCrankWebData(14)),
+                    impeller: this.makeMesh(this.buildImpellerData(5)),
+                    wankelHousing: this.makeMesh(this.buildWankelHousingData(24)),
+                    wankelRotor: this.makeMesh(this.buildWankelRotorData(16))
                 }};
             }}
 
@@ -8936,7 +9089,7 @@ def gerar_dashboard_html(
                 return m;
             }}
 
-            normalMat3(m) {{
+            normalMat3(m, out) {{
                 const a00 = m[0], a01 = m[4], a02 = m[8];
                 const a10 = m[1], a11 = m[5], a12 = m[9];
                 const a20 = m[2], a21 = m[6], a22 = m[10];
@@ -8952,11 +9105,12 @@ def gerar_dashboard_html(
                 const c22 =  (a00 * a11 - a01 * a10);
 
                 const det = a00 * c00 + a01 * c01 + a02 * c02 || 1;
-                return new Float32Array([
-                    c00 / det, c10 / det, c20 / det,
-                    c01 / det, c11 / det, c21 / det,
-                    c02 / det, c12 / det, c22 / det
-                ]);
+                const invDet = 1 / det;
+                const dst = out || new Float32Array(9);
+                dst[0] = c00 * invDet; dst[1] = c10 * invDet; dst[2] = c20 * invDet;
+                dst[3] = c01 * invDet; dst[4] = c11 * invDet; dst[5] = c21 * invDet;
+                dst[6] = c02 * invDet; dst[7] = c12 * invDet; dst[8] = c22 * invDet;
+                return dst;
             }}
 
             setConfig(cfg) {{
@@ -8969,6 +9123,7 @@ def gerar_dashboard_html(
             }}
 
             addPipe(targetList, points, radius, color, spec = [0.62, 52], couplerIndices = [], smooth = true) {{
+                const lowPerf = !!(window.__perfMode && window.__perfMode.isEnabled());
                 const C_COUPLER = [0.14, 0.19, 0.28, 1.0];
                 const C_CLAMP = [0.82, 0.86, 0.90, 1.0];
                 const addSeg = (p1, p2, r, col, sp) => {{
@@ -8995,14 +9150,16 @@ def gerar_dashboard_html(
                             const s0 = [mx - u[0] * 0.06, my - u[1] * 0.06, mz - u[2] * 0.06];
                             const s1 = [mx + u[0] * 0.06, my + u[1] * 0.06, mz + u[2] * 0.06];
                             addSeg(s0, s1, radius * 1.24, C_COUPLER, [0.22, 16]);
-                            addSeg([mx - u[0] * 0.052, my - u[1] * 0.052, mz - u[2] * 0.052], [mx - u[0] * 0.036, my - u[1] * 0.036, mz - u[2] * 0.036], radius * 1.31, C_CLAMP, [0.82, 68]);
-                            addSeg([mx + u[0] * 0.036, my + u[1] * 0.036, mz + u[2] * 0.036], [mx + u[0] * 0.052, my + u[1] * 0.052, mz + u[2] * 0.052], radius * 1.31, C_CLAMP, [0.82, 68]);
+                            if (!lowPerf) {{
+                                addSeg([mx - u[0] * 0.052, my - u[1] * 0.052, mz - u[2] * 0.052], [mx - u[0] * 0.036, my - u[1] * 0.036, mz - u[2] * 0.036], radius * 1.31, C_CLAMP, [0.82, 68]);
+                                addSeg([mx + u[0] * 0.036, my + u[1] * 0.036, mz + u[2] * 0.036], [mx + u[0] * 0.052, my + u[1] * 0.052, mz + u[2] * 0.052], radius * 1.31, C_CLAMP, [0.82, 68]);
+                            }}
                         }}
                     }}
                 }}
 
                 let curvePts = points;
-                if (smooth && points.length >= 3) {{
+                if (smooth && !lowPerf && points.length >= 3) {{
                     const maxFil = (couplerIndices.length > 0) ? 0.18 : 0.24;
                     curvePts = [points[0]];
                     for (let i = 1; i < points.length - 1; i++) {{
@@ -9343,40 +9500,6 @@ def gerar_dashboard_html(
                         const botR = 0.290 - topR;
                         const gCol = (gi % 2 === 0) ? [0.66, 0.71, 0.78, 1.0] : [0.54, 0.59, 0.66, 1.0];
                         this.dynamicRotors.push({{ type: 'gearboxGear', symmetry: 20, cx: gx, cy: 0.02, cz: 0, r: topR, thick: 0.058, speedMult: 1.0, colorRim: gCol }});
-                        this.dynamicRotors.push({{ type: 'gearboxGear', symmetry: 20, cx: gx, cy: -0.27, cz: 0, r: botR, thick: 0.058, speedMult: -0.78, colorRim: [0.48, 0.53, 0.60, 1.0] }});
-                        if (gi < speeds - 1) {{
-                            const synX = gx + ((xEndG - xStartG) / (speeds - 1)) * 0.5;
-                            this.addPart(this.staticOpaque, 'cyl', this.matTRS(synX, 0.02, 0, 0, 0, Math.PI * 0.5, 0.088, 0.022, 0.088), [0.84, 0.64, 0.24, 1.0], [0.80, 62]);
-                        }}
-                    }}
-                    // Carreto de marcha-atrás lateral
-                    this.dynamicRotors.push({{ type: 'gearboxGear', symmetry: 20, cx: xStartG, cy: -0.13, cz: 0.23, r: 0.084, thick: 0.055, speedMult: -0.95, colorRim: [0.76, 0.58, 0.26, 1.0] }});
-                }}
-
-                // Coroa do diferencial traseiro (proporcional à relação final) + cauda + veio de saída
-                const ringR = Math.max(0.24, Math.min(0.36, 0.22 + (finalDrive - 2.9) * 0.06));
-                this.dynamicRotors.push({{ type: 'gearboxGear', symmetry: 20, cx: xCase + caseLen * 0.44, cy: -0.24, cz: 0.14, r: ringR, thick: 0.075, speedMult: 1.0 / Math.max(1.5, finalDrive), colorRim: [0.78, 0.62, 0.28, 1.0] }});
-                this.addPart(this.staticOpaque, 'cone', this.matTRS(xTail, 0.02, 0, 0, 0, -Math.PI * 0.5, 0.28, 0.44, 0.28), st.caseCol, st.spec);
-                this.dynamicRotors.push({{
-                    type: 'driveshaft',
-                    symmetry: 4,
-                    cx: xTail + 0.30, cy: 0.02, cz: 0,
-                    r: 0.13, thick: 0.32,
-                    speedMult: 0.85,
-                    colorRim: [0.78, 0.82, 0.88, 1.0],
-                    colorHub: st.ribCol
-                }});
-
-                return {{ xTailEnd: xTail + 0.46, caseLen, xCase }};
-            }}
-
-            getExhaustParams() {{
-                const exType = this.config.exhaustType || 'OEM Catalisador';
-                const tipsMode = this.config.exhaustTips || 'Dupla';
-                const exJunc = this.config.exhaustJunction || 'X-Pipe';
-                const diamMm = Math.max(35, Math.min(140, Number(this.config.exhaustDiameter) || 63));
-                const pipeR = (diamMm / 63.0) * 0.082;
-                const styles = {{
                     'OEM Catalisador':     {{ col: [0.54, 0.57, 0.62, 1.0], spec: [0.52, 40], catCol: [0.38, 0.41, 0.46, 1.0], mufCol: [0.48, 0.51, 0.56, 1.0], tipCol: [0.78, 0.82, 0.88, 1.0], hasCat: true, hasMuf: true, valved: false }},
                     'Sport Cat-Back':      {{ col: [0.72, 0.76, 0.82, 1.0], spec: [0.78, 62], catCol: [0.64, 0.68, 0.74, 1.0], mufCol: [0.74, 0.78, 0.84, 1.0], tipCol: [0.86, 0.90, 0.94, 1.0], hasCat: true, hasMuf: true, valved: false }},
                     'Inconel 4-1':         {{ col: [0.76, 0.60, 0.34, 1.0], spec: [0.76, 60], catCol: [0.68, 0.52, 0.28, 1.0], mufCol: [0.72, 0.56, 0.32, 1.0], tipCol: [0.82, 0.68, 0.42, 1.0], hasCat: false, hasMuf: true, valved: false }},
@@ -9535,6 +9658,9 @@ def gerar_dashboard_html(
                 this.staticTrans = [];
                 this.envOpaque = [];
                 this.dynamicCyls = [];
+                this._boundMesh = null;
+                this._staticSorted = false;
+                this._needsRender = true;
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
                 this.dynamicEvRotors = [];
@@ -10875,6 +11001,8 @@ def gerar_dashboard_html(
                 this.envOpaque = (window.__studioBg && typeof window.__studioBg.build === 'function')
                     ? window.__studioBg.build(this, {{ floorY: -1.62, accent }})
                     : [];
+                this._staticSorted = false;
+                this._needsRender = true;
             }}
 
             bindEvents() {{
@@ -10889,11 +11017,13 @@ def gerar_dashboard_html(
                         const pts = Array.from(this.pointers.values());
                         this.lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
                     }}
+                    this._needsRender = true;
                 }});
 
                 targetEl.addEventListener('pointermove', e => {{
                     const prev = this.pointers.get(e.pointerId);
                     if (!prev) return;
+                    this._needsRender = true;
                     const dx = e.clientX - prev.x;
                     const dy = e.clientY - prev.y;
                     prev.x = e.clientX;
@@ -10931,6 +11061,7 @@ def gerar_dashboard_html(
                     e.preventDefault();
                     const factor = Math.exp(-e.deltaY * 0.0011);
                     this.targetCam.zoom = Math.max(0.45, Math.min(2.6, this.targetCam.zoom * factor));
+                    this._needsRender = true;
                 }}, {{ passive: false }});
 
                 targetEl.addEventListener('dblclick', () => this.resetView());
@@ -10952,6 +11083,7 @@ def gerar_dashboard_html(
                     this.targetCam.panX = nextPanX;
                     this.targetCam.panY = nextPanY;
                 }}
+                this._needsRender = true;
             }}
 
             resetView() {{
@@ -10962,40 +11094,49 @@ def gerar_dashboard_html(
                 this.defaultCam.panX = (rightVis && isDesktop) ? (rightCompact ? 0.42 : 0.78) : 0.0;
                 this.defaultCam.panY = isDesktop ? (rightVis ? (rightCompact ? -0.01 : -0.05) : 0.04) : 0.12;
                 this.targetCam = {{ ...this.defaultCam }};
+                this._needsRender = true;
             }}
 
             resize() {{
                 const target = this.canvas.parentElement || this.canvas;
                 const rect = target.getBoundingClientRect();
                 if (!rect.width || !rect.height) return;
-                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                const perfOn = !!(window.__perfMode && window.__perfMode.isEnabled());
+                const dpr = Math.min(window.devicePixelRatio || 1, perfOn ? 1 : 2);
                 const w = Math.max(1, Math.round(rect.width * dpr));
                 const h = Math.max(1, Math.round(rect.height * dpr));
                 if (this.canvas.width !== w || this.canvas.height !== h) {{
                     this.canvas.width = w;
                     this.canvas.height = h;
+                    this._needsRender = true;
                 }}
             }}
 
-            drawItem(mesh, model, color, spec, viewProj) {{
+            drawItem(mesh, model, color, spec, cachedNormMat) {{
                 const gl = this.gl;
+                const nMat = (cachedNormMat && cachedNormMat.length === 9)
+                    ? cachedNormMat
+                    : this.normalMat3(model, this._normTmp);
                 gl.uniformMatrix4fv(this.loc.uModel, false, model);
-                gl.uniformMatrix3fv(this.loc.uNormalMat, false, this.normalMat3(model));
-                gl.uniformMatrix4fv(this.loc.uViewProj, false, viewProj);
+                gl.uniformMatrix3fv(this.loc.uNormalMat, false, nMat);
                 gl.uniform4fv(this.loc.uColor, color);
                 gl.uniform2fv(this.loc.uSpec, spec);
 
-                gl.bindBuffer(gl.ARRAY_BUFFER, mesh.posBuf);
-                gl.vertexAttribPointer(this.loc.aPos, 3, gl.FLOAT, false, 0, 0);
-                gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normBuf);
-                gl.vertexAttribPointer(this.loc.aNorm, 3, gl.FLOAT, false, 0, 0);
-                gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idxBuf);
+                if (this._boundMesh !== mesh) {{
+                    this._boundMesh = mesh;
+                    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.posBuf);
+                    gl.vertexAttribPointer(this.loc.aPos, 3, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ARRAY_BUFFER, mesh.normBuf);
+                    gl.vertexAttribPointer(this.loc.aNorm, 3, gl.FLOAT, false, 0, 0);
+                    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, mesh.idxBuf);
+                }}
                 gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
             }}
 
             resumeLoop() {{
                 this.resize();
                 this.lastTime = performance.now();
+                this._needsRender = true;
                 if (this._loopPaused) {{
                     this._loopPaused = false;
                     requestAnimationFrame(t => this.loop(t));
@@ -11009,6 +11150,18 @@ def gerar_dashboard_html(
                     return;
                 }}
                 this._loopPaused = false;
+                const perfOn = !!(window.__perfMode && window.__perfMode.isEnabled());
+                const rafDelta = this._lastRafMs ? (now - this._lastRafMs) : 16.7;
+                this._lastRafMs = now;
+                if (rafDelta > 1 && rafDelta < 100) {{
+                    this._rafStepMs = this._rafStepMs ? (this._rafStepMs * 0.85 + rafDelta * 0.15) : rafDelta;
+                }}
+                const targetMinMs = (perfOn && this._rafStepMs < 13.5) ? 16.0 : 0;
+                if (targetMinMs > 0 && this._lastFrameMs && (now - this._lastFrameMs) < targetMinMs && !this._needsRender) {{
+                    requestAnimationFrame(t => this.loop(t));
+                    return;
+                }}
+                this._lastFrameMs = now;
                 const dt = Math.min(0.033, Math.max(0.001, (now - this.lastTime) * 0.001));
                 this.lastTime = now;
 
@@ -11122,7 +11275,10 @@ def gerar_dashboard_html(
                     }}
                 }}
                 if (engineSim.currentRpm > 5 || engineSim.on) {{
-                    drawDynoChart();
+                    if (!perfOn || Math.abs(engineSim.currentRpm - (this._lastDynoRpm || -999)) > 5) {{
+                        this._lastDynoRpm = engineSim.currentRpm;
+                        drawDynoChart();
+                    }}
                 }}
                 if (window.__engineAudio && typeof window.__engineAudio.updateIce === 'function') {{
                     window.__engineAudio.updateIce(engineSim.lastParams || readEnginePayload(), engineSim, hybridEnabled);
@@ -11132,17 +11288,38 @@ def gerar_dashboard_html(
                     this.targetCam.yaw += dt * 0.36;
                 }}
 
-                const damp = 1 - Math.exp(-14 * dt);
-                this.cam.yaw += (this.targetCam.yaw - this.cam.yaw) * damp;
-                this.cam.pitch += (this.targetCam.pitch - this.cam.pitch) * damp;
-                this.cam.zoom += (this.targetCam.zoom - this.cam.zoom) * damp;
-                this.cam.panX += (this.targetCam.panX - this.cam.panX) * damp;
-                this.cam.panY += (this.targetCam.panY - this.cam.panY) * damp;
+                const camMoving =
+                    Math.abs(this.targetCam.yaw - this.cam.yaw) > 1e-4 ||
+                    Math.abs(this.targetCam.pitch - this.cam.pitch) > 1e-4 ||
+                    Math.abs(this.targetCam.zoom - this.cam.zoom) > 1e-4 ||
+                    Math.abs(this.targetCam.panX - this.cam.panX) > 1e-4 ||
+                    Math.abs(this.targetCam.panY - this.cam.panY) > 1e-4;
 
-                if (this.gl) {{
-                    this.renderGL();
+                if (camMoving) {{
+                    const damp = 1 - Math.exp(-14 * dt);
+                    this.cam.yaw += (this.targetCam.yaw - this.cam.yaw) * damp;
+                    this.cam.pitch += (this.targetCam.pitch - this.cam.pitch) * damp;
+                    this.cam.zoom += (this.targetCam.zoom - this.cam.zoom) * damp;
+                    this.cam.panX += (this.targetCam.panX - this.cam.panX) * damp;
+                    this.cam.panY += (this.targetCam.panY - this.cam.panY) * damp;
                 }} else {{
-                    this.renderFallback2D();
+                    this.cam.yaw = this.targetCam.yaw;
+                    this.cam.pitch = this.targetCam.pitch;
+                    this.cam.zoom = this.targetCam.zoom;
+                    this.cam.panX = this.targetCam.panX;
+                    this.cam.panY = this.targetCam.panY;
+                }}
+
+                const vm = this.config.viewMode || 'engine';
+                const hasIdleFlow = vm === 'exhaust' || vm === 'all' || vm === 'electric' || vm === 'emotor' || vm === 'battery';
+                const shouldRender = this._needsRender || camMoving || engineSim.on || engineSim.currentRpm > 5 || hasIdleFlow || (this.autoRotate && this.pointers.size === 0) || this.pointers.size > 0;
+                if (shouldRender) {{
+                    if (this.gl) {{
+                        this.renderGL();
+                    }} else {{
+                        this.renderFallback2D();
+                    }}
+                    this._needsRender = false;
                 }}
                 requestAnimationFrame(t => this.loop(t));
             }}
@@ -11177,15 +11354,26 @@ def gerar_dashboard_html(
                 const proj = this.matPersp(0.68, w / h, 0.1, 80.0);
                 const view = this.matLookAt(eye, [tx, ty, tz], [0, 1, 0]);
                 const viewProj = this.matMul(proj, view);
+                const lowPerf = (window.__perfMode && window.__perfMode.isEnabled()) ? 1.0 : 0.0;
+                this.meshes = (lowPerf > 0.5 && this.loMeshes) ? this.loMeshes : (this.hiMeshes || this.meshes);
+                gl.uniformMatrix4fv(this.loc.uViewProj, false, viewProj);
+                gl.uniform1f(this.loc.uLowPerf, lowPerf);
                 gl.uniform3fv(this.loc.uCamPos, eye);
+                this._boundMesh = null;
 
                 gl.disable(gl.BLEND);
                 gl.depthMask(true);
                 gl.enable(gl.CULL_FACE);
                 gl.cullFace(gl.BACK);
 
+                if (!this._staticSorted && this.staticOpaque.length > 1) {{
+                    this.staticOpaque.sort((a, b) => (a.type < b.type ? -1 : (a.type > b.type ? 1 : 0)));
+                    this._staticSorted = true;
+                }}
+
                 for (const item of this.staticOpaque) {{
-                    this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                    const nMat = item.normMat || (item.normMat = this.normalMat3(item.model, new Float32Array(9)));
+                    this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, nMat);
                 }}
 
                 if (this.envOpaque && this.envOpaque.length) {{
@@ -11196,7 +11384,8 @@ def gerar_dashboard_html(
                         if (item.clipSide === 'negX' && eye[0] < item.clipLim) continue;
                         if (item.clipSide === 'ceil' && eye[1] > item.clipLim) continue;
                         if (item.clipSide === 'floor' && eye[1] < item.clipLim) continue;
-                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                        const nMat = item.normMat || (item.normMat = this.normalMat3(item.model, new Float32Array(9)));
+                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, nMat);
                     }}
                 }}
 
@@ -11218,8 +11407,10 @@ def gerar_dashboard_html(
                     for (const cheekOff of [-0.088, 0.088]) {{
                         const webM = this.matSpinX(c.x + cheekOff, 0, c.zOff, phi, 0, 0, 0, 0.044, c.crankR, c.crankR);
                         this.drawItem(this.meshes.crankWeb, webM, c.cCrank, [0.64, 52], viewProj);
-                        const tungM = this.matSpinX(c.x + cheekOff, -yPin * 0.96, c.zOff - zPin * 0.96, phi, 0, 0, Math.PI * 0.5, 0.048, 0.048, 0.048);
-                        this.drawItem(this.meshes.cyl, tungM, [0.76, 0.58, 0.24, 1.0], [0.76, 60], viewProj);
+                        if (lowPerf < 0.5) {{
+                            const tungM = this.matSpinX(c.x + cheekOff, -yPin * 0.96, c.zOff - zPin * 0.96, phi, 0, 0, Math.PI * 0.5, 0.048, 0.048, 0.048);
+                            this.drawItem(this.meshes.cyl, tungM, [0.76, 0.58, 0.24, 1.0], [0.76, 60], viewProj);
+                        }}
                     }}
                     const pinM = this.matSpinX(c.x, yPin, zPinGlobal, phi, 0, 0, Math.PI * 0.5, 0.075, 0.148, 0.075);
                     this.drawItem(this.meshes.cyl, pinM, c.cCrank, [0.70, 58], viewProj);
@@ -11228,12 +11419,14 @@ def gerar_dashboard_html(
                     const rodMidY = (yPin + yPis) * 0.5;
                     const rodMidZ = (zPinGlobal + zPisGlobal) * 0.5;
                     const rodDark = [c.cRod[0] * 0.78, c.cRod[1] * 0.78, c.cRod[2] * 0.78, 1.0];
-                    const rodWebM = this.matTRS(c.x, rodMidY, rodMidZ, rodAngle, 0, 0, 0.028, c.rodLen * 0.96, 0.056);
-                    this.drawItem(this.meshes.bevelBox, rodWebM, rodDark, [0.58, 44], viewProj);
+                    const rodWebM = this.matTRS(c.x, rodMidY, rodMidZ, rodAngle, 0, 0, lowPerf > 0.5 ? 0.056 : 0.028, c.rodLen * 0.96, 0.056);
+                    this.drawItem(this.meshes.bevelBox, rodWebM, lowPerf > 0.5 ? c.cRod : rodDark, [0.58, 44], viewProj);
                     const rSin = Math.sin(rodAngle), rCos = Math.cos(rodAngle);
-                    for (const fOff of [-0.028, 0.028]) {{
-                        const rFlangeM = this.matTRS(c.x, rodMidY - fOff * rSin, rodMidZ + fOff * rCos, rodAngle, 0, 0, 0.058, c.rodLen * 0.94, 0.019);
-                        this.drawItem(this.meshes.bevelBox, rFlangeM, c.cRod, [0.70, 56], viewProj);
+                    if (lowPerf < 0.5) {{
+                        for (const fOff of [-0.028, 0.028]) {{
+                            const rFlangeM = this.matTRS(c.x, rodMidY - fOff * rSin, rodMidZ + fOff * rCos, rodAngle, 0, 0, 0.058, c.rodLen * 0.94, 0.019);
+                            this.drawItem(this.meshes.bevelBox, rFlangeM, c.cRod, [0.70, 56], viewProj);
+                        }}
                     }}
                     const yWrist = 2.0 * rodMidY - yPin;
                     const zWrist = 2.0 * rodMidZ - zPinGlobal;
@@ -11242,35 +11435,43 @@ def gerar_dashboard_html(
                     // Cabeça da biela bipartida no moente + parafusos hexagonais ARP
                     const bigEndM = this.matSpinX(c.x, yPin, zPinGlobal, rodAngle, 0, 0, Math.PI * 0.5, 0.106, 0.108, 0.106);
                     this.drawItem(this.meshes.cyl, bigEndM, c.cRod, [0.64, 50], viewProj);
-                    const shellM = this.matSpinX(c.x, yPin, zPinGlobal, rodAngle, 0, 0, Math.PI * 0.5, 0.088, 0.114, 0.088);
-                    this.drawItem(this.meshes.cyl, shellM, [0.78, 0.60, 0.26, 1.0], [0.78, 60], viewProj);
-                    for (const bSide of [-0.054, 0.054]) {{
-                        const bPosY = yPin - bSide * rSin;
-                        const bPosZ = zPinGlobal + bSide * rCos;
-                        const boltM = this.matTRS(c.x, bPosY - 0.044 * rCos, bPosZ - 0.044 * rSin, rodAngle, 0, 0, 0.022, 0.072, 0.022);
-                        this.drawItem(this.meshes.hex, boltM, [0.84, 0.87, 0.92, 1.0], [0.82, 64], viewProj);
+                    if (lowPerf < 0.5) {{
+                        const shellM = this.matSpinX(c.x, yPin, zPinGlobal, rodAngle, 0, 0, Math.PI * 0.5, 0.088, 0.114, 0.088);
+                        this.drawItem(this.meshes.cyl, shellM, [0.78, 0.60, 0.26, 1.0], [0.78, 60], viewProj);
+                        for (const bSide of [-0.054, 0.054]) {{
+                            const bPosY = yPin - bSide * rSin;
+                            const bPosZ = zPinGlobal + bSide * rCos;
+                            const boltM = this.matTRS(c.x, bPosY - 0.044 * rCos, bPosZ - 0.044 * rSin, rodAngle, 0, 0, 0.022, 0.072, 0.022);
+                            this.drawItem(this.meshes.hex, boltM, [0.84, 0.87, 0.92, 1.0], [0.82, 64], viewProj);
+                        }}
                     }}
 
                     // Pistão forjado: saia aliviada com patins em grafite + cúpula chanfrada + cavidade + 3 anéis distintos
                     const pisM = this.matTRS(c.x, yPis, zPisGlobal, c.angle, 0, 0, c.cylR * 0.88, c.pistonH * 0.86, c.cylR * 0.88);
                     this.drawItem(this.meshes.cyl, pisM, c.cPiston, [0.78, 64], viewProj);
-                    for (const padSide of [-1, 1]) {{
-                        const padOff = padSide * (c.cylR * 0.84);
-                        const padM = this.matTRS(c.x, yPis - (c.pistonH * 0.12) * cosA - padOff * sinA, zPisGlobal - (c.pistonH * 0.12) * sinA + padOff * cosA, c.angle, 0, 0, c.cylR * 0.95, c.pistonH * 0.42, 0.022);
-                        this.drawItem(this.meshes.bevelBox, padM, [0.16, 0.18, 0.22, 1.0], [0.28, 18], viewProj);
+                    if (lowPerf < 0.5) {{
+                        for (const padSide of [-1, 1]) {{
+                            const padOff = padSide * (c.cylR * 0.84);
+                            const padM = this.matTRS(c.x, yPis - (c.pistonH * 0.12) * cosA - padOff * sinA, zPisGlobal - (c.pistonH * 0.12) * sinA + padOff * cosA, c.angle, 0, 0, c.cylR * 0.95, c.pistonH * 0.42, 0.022);
+                            this.drawItem(this.meshes.bevelBox, padM, [0.16, 0.18, 0.22, 1.0], [0.28, 18], viewProj);
+                        }}
                     }}
                     const crownOff = c.pistonH * 0.47;
                     const crownM = this.matTRS(c.x, yPis + crownOff * cosA, zPisGlobal + crownOff * sinA, c.angle, 0, 0, c.cylR * 0.82, 0.042, c.cylR * 0.82);
                     this.drawItem(this.meshes.cone, crownM, [0.90, 0.93, 0.96, 1.0], [0.86, 74], viewProj);
-                    const dishM = this.matTRS(c.x, yPis + (crownOff + 0.018) * cosA, zPisGlobal + (crownOff + 0.018) * sinA, c.angle, 0, 0, c.cylR * 0.36, 0.012, c.cylR * 0.36);
-                    this.drawItem(this.meshes.cyl, dishM, [0.28, 0.31, 0.36, 1.0], [0.35, 22], viewProj);
+                    if (lowPerf < 0.5) {{
+                        const dishM = this.matTRS(c.x, yPis + (crownOff + 0.018) * cosA, zPisGlobal + (crownOff + 0.018) * sinA, c.angle, 0, 0, c.cylR * 0.36, 0.012, c.cylR * 0.36);
+                        this.drawItem(this.meshes.cyl, dishM, [0.28, 0.31, 0.36, 1.0], [0.35, 22], viewProj);
+                    }}
                     const wristPinM = this.matTRS(c.x, yPis - (c.pistonH * 0.10) * cosA, zPisGlobal - (c.pistonH * 0.10) * sinA, 0, 0, Math.PI * 0.5, 0.050, c.cylR * 1.50, 0.050);
                     this.drawItem(this.meshes.cyl, wristPinM, c.cCrank, [0.72, 56], viewProj);
                     const ringOffset = c.pistonH * 0.31;
                     const ring1M = this.matTRS(c.x, yPis + ringOffset * cosA, zPisGlobal + ringOffset * sinA, c.angle, 0, 0, c.cylR * 0.905, 0.022, c.cylR * 0.905);
                     this.drawItem(this.meshes.cyl, ring1M, [0.92, 0.95, 0.98, 1.0], [0.86, 72], viewProj);
-                    const ring2M = this.matTRS(c.x, yPis + (ringOffset * 0.64) * cosA, zPisGlobal + (ringOffset * 0.64) * sinA, c.angle, 0, 0, c.cylR * 0.902, 0.022, c.cylR * 0.902);
-                    this.drawItem(this.meshes.cyl, ring2M, c.cRing, [0.42, 26], viewProj);
+                    if (lowPerf < 0.5) {{
+                        const ring2M = this.matTRS(c.x, yPis + (ringOffset * 0.64) * cosA, zPisGlobal + (ringOffset * 0.64) * sinA, c.angle, 0, 0, c.cylR * 0.902, 0.022, c.cylR * 0.902);
+                        this.drawItem(this.meshes.cyl, ring2M, c.cRing, [0.42, 26], viewProj);
+                    }}
                     const ring3M = this.matTRS(c.x, yPis + (ringOffset * 0.28) * cosA, zPisGlobal + (ringOffset * 0.28) * sinA, c.angle, 0, 0, c.cylR * 0.902, 0.028, c.cylR * 0.902);
                     this.drawItem(this.meshes.cyl, ring3M, [0.78, 0.56, 0.24, 1.0], [0.74, 56], viewProj);
                 }}
@@ -11336,8 +11537,10 @@ def gerar_dashboard_html(
                         const spRad = v.vType === 'Pneumático' ? 0.048 : 0.044;
                         const spM = this.matTRS(v.x, spMidD * axY + latOff * latY, v.zOff + spMidD * axZ + latOff * latZ, tilt, 0, 0, spRad, spH, spRad);
                         this.drawItem(spMesh, spM, spCol, [0.74, 58], viewProj);
-                        const retM = this.matTRS(v.x, retD * axY + latOff * latY, v.zOff + retD * axZ + latOff * latZ, tilt, 0, 0, spRad * 1.18, 0.016, spRad * 1.18);
-                        this.drawItem(this.meshes.cyl, retM, [0.78, 0.82, 0.88, 1.0], [0.80, 64], viewProj);
+                        if (lowPerf < 0.5) {{
+                            const retM = this.matTRS(v.x, retD * axY + latOff * latY, v.zOff + retD * axZ + latOff * latZ, tilt, 0, 0, spRad * 1.18, 0.016, spRad * 1.18);
+                            this.drawItem(this.meshes.cyl, retM, [0.78, 0.82, 0.88, 1.0], [0.80, 64], viewProj);
+                        }}
                     }}
                 }}
 
@@ -11356,11 +11559,13 @@ def gerar_dashboard_html(
                                 const sealRingM = this.matSpinX(r.cx - r.thick * 0.42, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.88, r.thick * 0.26, r.r * 0.88);
                                 this.drawItem(this.meshes.cyl, sealRingM, [0.78, 0.82, 0.87, 1.0], [0.85, 72], viewProj);
                             }} else if (r.damperStyle === 'ATI Super Damper') {{
-                                for (let b = 0; b < 6; b++) {{
-                                    const ba = ang + (b * Math.PI * 2) / 6;
-                                    const bRad = r.r * 0.68;
-                                    const boltM = this.matSpinX(r.cx - r.thick * 0.52, r.cy + Math.cos(ba) * bRad, r.cz + Math.sin(ba) * bRad, ba, 0, 0, Math.PI * 0.5, 0.022, 0.028, 0.022);
-                                    this.drawItem(this.meshes.hex, boltM, [0.86, 0.89, 0.94, 1.0], [0.84, 64], viewProj);
+                                if (lowPerf < 0.5) {{
+                                    for (let b = 0; b < 6; b++) {{
+                                        const ba = ang + (b * Math.PI * 2) / 6;
+                                        const bRad = r.r * 0.68;
+                                        const boltM = this.matSpinX(r.cx - r.thick * 0.52, r.cy + Math.cos(ba) * bRad, r.cz + Math.sin(ba) * bRad, ba, 0, 0, Math.PI * 0.5, 0.022, 0.028, 0.022);
+                                        this.drawItem(this.meshes.hex, boltM, [0.86, 0.89, 0.94, 1.0], [0.84, 64], viewProj);
+                                    }}
                                 }}
                             }} else if (r.damperStyle === 'Polia Sólida') {{
                                 for (let s = 0; s < 3; s++) {{
@@ -11377,7 +11582,8 @@ def gerar_dashboard_html(
                             this.drawItem(this.meshes.gear, rimM, r.colorRim, [0.64, 52], viewProj);
                             const hubM = this.matSpinX(r.cx - r.thick * 0.35, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.44, r.thick * 0.65, r.r * 0.44);
                             this.drawItem(this.meshes.cyl, hubM, r.colorHub, [0.76, 64], viewProj);
-                            for (let sp = 0; sp < 4; sp++) {{
+                            const spStep = lowPerf > 0.5 ? 2 : 1;
+                            for (let sp = 0; sp < 4; sp += spStep) {{
                                 const sAng = ang + sp * Math.PI * 0.5;
                                 const spokeM = this.matTRS(r.cx - r.thick * 0.54, r.cy + Math.cos(sAng) * (r.r * 0.42), r.cz + Math.sin(sAng) * (r.r * 0.42), sAng, 0, 0, 0.024, r.r * 0.72, 0.036);
                                 this.drawItem(this.meshes.box, spokeM, sp === 0 ? r.colorHub : [0.56, 0.61, 0.68, 1.0], [0.74, 60], viewProj);
@@ -11402,16 +11608,20 @@ def gerar_dashboard_html(
                         if (fwS === 'Dupla Massa') {{
                             const dmfCoreM = this.matSpinX(r.cx + r.thick * 0.04, r.cy, r.cz, ang, 0, 0, Math.PI * 0.5, r.r * 0.86, r.thick * 0.46, r.r * 0.86);
                             this.drawItem(this.meshes.cyl, dmfCoreM, [0.12, 0.14, 0.18, 1.0], [0.22, 16], viewProj);
-                            for (let k = 0; k < 4; k++) {{
-                                const ka = ang + (k * Math.PI) / 2;
-                                const sprM = this.matTRS(r.cx + r.thick * 0.48, r.cy + Math.cos(ka) * (r.r * 0.56), r.cz + Math.sin(ka) * (r.r * 0.56), ka, 0, 0, 0.025, r.r * 0.26, 0.065);
-                                this.drawItem(this.meshes.box, sprM, [0.76, 0.56, 0.22, 1.0], [0.70, 54], viewProj);
+                            if (lowPerf < 0.5) {{
+                                for (let k = 0; k < 4; k++) {{
+                                    const ka = ang + (k * Math.PI) / 2;
+                                    const sprM = this.matTRS(r.cx + r.thick * 0.48, r.cy + Math.cos(ka) * (r.r * 0.56), r.cz + Math.sin(ka) * (r.r * 0.56), ka, 0, 0, 0.025, r.r * 0.26, 0.065);
+                                    this.drawItem(this.meshes.box, sprM, [0.76, 0.56, 0.22, 1.0], [0.70, 54], viewProj);
+                                }}
                             }}
                         }} else if (fwS === 'Aligeirado Cromoly') {{
-                            for (let k = 0; k < 4; k++) {{
-                                const ka = ang + (k * Math.PI) / 2;
-                                const cutM = this.matTRS(r.cx + r.thick * 0.48, r.cy + Math.cos(ka) * (r.r * 0.56), r.cz + Math.sin(ka) * (r.r * 0.56), ka, 0, 0, 0.028, r.r * 0.34, 0.070);
-                                this.drawItem(this.meshes.box, cutM, [0.16, 0.19, 0.24, 1.0], [0.35, 22], viewProj);
+                            if (lowPerf < 0.5) {{
+                                for (let k = 0; k < 4; k++) {{
+                                    const ka = ang + (k * Math.PI) / 2;
+                                    const cutM = this.matTRS(r.cx + r.thick * 0.48, r.cy + Math.cos(ka) * (r.r * 0.56), r.cz + Math.sin(ka) * (r.r * 0.56), ka, 0, 0, 0.028, r.r * 0.34, 0.070);
+                                    this.drawItem(this.meshes.box, cutM, [0.16, 0.19, 0.24, 1.0], [0.35, 22], viewProj);
+                                }}
                             }}
                         }} else if (fwS === 'Alumínio Billet') {{
                             for (let k = 0; k < 8; k++) {{
@@ -11504,6 +11714,7 @@ def gerar_dashboard_html(
                 }}
 
                 // Rotores elétricos dinâmicos (PMSM, Fluxo Axial, EESM, Indução, In-Wheel)
+                const evPStep = lowPerf > 0.5 ? 2 : 1;
                 for (const er of this.dynamicEvRotors) {{
                     const ang = er.angle || 0;
                     const s = er.scale || 1.0;
@@ -11513,7 +11724,7 @@ def gerar_dashboard_html(
                             const dz = er.cz + discSide * er.lenCore * 0.36;
                             const discM = this.matTRS(er.cx, er.cy, dz, Math.PI * 0.5, 0, ang, er.rRotor, er.lenCore * 0.18, er.rRotor);
                             this.drawItem(this.meshes.cyl, discM, [0.36, 0.40, 0.48, 1.0], [0.68, 52], viewProj);
-                            for (let p = 0; p < nP; p++) {{
+                            for (let p = 0; p < nP; p += evPStep) {{
                                 const pa = ang + (p * Math.PI * 2) / nP;
                                 const mr = er.rRotor * 0.72;
                                 const magM = this.matTRS(er.cx + Math.cos(pa) * mr, er.cy + Math.sin(pa) * mr, dz - discSide * er.lenCore * 0.06, 0, 0, pa, er.rRotor * 0.32, Math.min(0.10 * s, (er.rRotor * 1.4) / nP), 0.032 * s);
@@ -11525,7 +11736,7 @@ def gerar_dashboard_html(
                             const dx = er.cx + discSide * er.lenCore * 0.36;
                             const discM = this.matSpinX(dx, er.cy, er.cz, ang, 0, 0, Math.PI * 0.5, er.rRotor, er.lenCore * 0.18, er.rRotor);
                             this.drawItem(this.meshes.cyl, discM, [0.36, 0.40, 0.48, 1.0], [0.68, 52], viewProj);
-                            for (let p = 0; p < nP; p++) {{
+                            for (let p = 0; p < nP; p += evPStep) {{
                                 const pa = ang + (p * Math.PI * 2) / nP;
                                 const mr = er.rRotor * 0.72;
                                 const magM = this.matTRS(dx - discSide * er.lenCore * 0.06, er.cy + Math.cos(pa) * mr, er.cz + Math.sin(pa) * mr, pa, 0, 0, 0.032 * s, er.rRotor * 0.32, Math.min(0.10 * s, (er.rRotor * 1.4) / nP));
@@ -11541,21 +11752,21 @@ def gerar_dashboard_html(
                                 const endRM = this.matSpinX(er.cx + eS * er.lenCore * 0.48, er.cy, er.cz, ang, 0, 0, Math.PI * 0.5, er.rRotor * 0.96, 0.032 * s, er.rRotor * 0.96);
                                 this.drawItem(this.meshes.cyl, endRM, [0.88, 0.48, 0.20, 1.0], [0.86, 68], viewProj);
                             }}
-                            for (let b = 0; b < 12; b++) {{
+                            for (let b = 0; b < 12; b += evPStep) {{
                                 const ba = ang + (b * Math.PI * 2) / 12;
                                 const br = er.rRotor * 0.90;
                                 const barM = this.matTRS(er.cx, er.cy + Math.cos(ba) * br, er.cz + Math.sin(ba) * br, ba, 0, 0, er.lenCore * 0.98, 0.025 * s, 0.022 * s);
                                 this.drawItem(this.meshes.box, barM, [0.88, 0.48, 0.20, 1.0], [0.86, 68], viewProj);
                             }}
                         }} else if (er.rotorMode === 'eesm') {{
-                            for (let p = 0; p < nP; p++) {{
+                            for (let p = 0; p < nP; p += evPStep) {{
                                 const pa = ang + (p * Math.PI * 2) / nP;
                                 const pr = er.rRotor * 0.86;
                                 const poleM = this.matTRS(er.cx, er.cy + Math.cos(pa) * pr, er.cz + Math.sin(pa) * pr, pa, 0, 0, er.lenCore * 0.84, er.rRotor * 0.24, Math.min(0.08 * s, (er.rRotor * 1.3) / nP));
                                 this.drawItem(this.meshes.bevelBox, poleM, [0.88, 0.48, 0.20, 1.0], [0.82, 62], viewProj);
                             }}
                         }} else {{
-                            for (let p = 0; p < nP; p++) {{
+                            for (let p = 0; p < nP; p += evPStep) {{
                                 const pa = ang + (p * Math.PI * 2) / nP;
                                 const mr = er.rRotor * 0.88;
                                 for (const vSign of [-1, 1]) {{
@@ -11580,8 +11791,9 @@ def gerar_dashboard_html(
                     const isRegenHv = isActiveHv && engineSim.throttlePct <= 0.5 && engineSim.currentRpm > (engineSim.idleRpm || 950) + 120;
                     const pAlpha = isActiveHv ? 0.88 : 0.32;
                     const pCol = isRegenHv ? [0.14, 0.95, 0.56, pAlpha] : [1.0, 0.64, 0.22, pAlpha];
+                    const hvCnt = lowPerf > 0.5 ? 1 : 2;
                     for (const hp of this.hvPaths) {{
-                        for (let k = 0; k < 2; k++) {{
+                        for (let k = 0; k < hvCnt; k++) {{
                             const s = ((this.energyPhase * 0.85 + hp.phaseOff + k * 0.5) % 1.0 + 1.0) % 1.0;
                             const pt = this.samplePolyline(hp.pts, s);
                             const pm = this.matTRS(pt[0], pt[1], pt[2], 0, 0, 0, hp.r, hp.r, hp.r);
@@ -11602,8 +11814,9 @@ def gerar_dashboard_html(
                     const alphaScale = isActive ? 0.92 : 0.34;
                     const rScale = isActive ? (0.95 + 0.35 * (engineSim.currentRpm / Math.max(1500, engineSim.maxRpm || 7500))) : 0.75;
                     const nitroExh = this.config.combustivel === 'Nitrometano';
+                    const gasCnt = lowPerf > 0.5 ? 1 : 3;
                     for (const gp of this.exhaustGasPaths) {{
-                        for (let k = 0; k < 3; k++) {{
+                        for (let k = 0; k < gasCnt; k++) {{
                             const s = (this.gasFlowPhase + gp.phaseOff + k * 0.3333) % 1.0;
                             const pt = this.samplePolyline(gp.pts, s);
                             let gCol;
@@ -11690,11 +11903,13 @@ def gerar_dashboard_html(
                     gl.enable(gl.BLEND);
                     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
                     gl.depthMask(false);
-                    for (const cullFace of [gl.FRONT, gl.BACK]) {{
+                    const cullFaces = lowPerf > 0.5 ? [gl.BACK] : [gl.FRONT, gl.BACK];
+                    for (const cullFace of cullFaces) {{
                         gl.cullFace(cullFace);
                         for (const item of this.staticTrans) {{
                             const col = [item.color[0], item.color[1], item.color[2], 0.25];
-                            this.drawItem(this.meshes[item.type], item.model, col, item.spec, viewProj);
+                            const nMat = item.normMat || (item.normMat = this.normalMat3(item.model, new Float32Array(9)));
+                            this.drawItem(this.meshes[item.type], item.model, col, item.spec, nMat);
                         }}
                     }}
                     gl.cullFace(gl.BACK);
@@ -11702,9 +11917,11 @@ def gerar_dashboard_html(
                     gl.disable(gl.BLEND);
                 }} else {{
                     for (const item of this.staticTrans) {{
-                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                        const nMat = item.normMat || (item.normMat = this.normalMat3(item.model, new Float32Array(9)));
+                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, nMat);
                     }}
                 }}
+                if (this.hiMeshes) this.meshes = this.hiMeshes;
             }}
 
             renderFallback2D() {{
@@ -11763,6 +11980,7 @@ def gerar_dashboard_html(
                     btnCutaway.setAttribute('aria-pressed', motor3D.cutaway ? 'true' : 'false');
                     const t = I18N[currentLang];
                     btnCutaway.textContent = motor3D.cutaway ? t.cutawayOn : t.cutawayOff;
+                    motor3D._needsRender = true;
                 }});
             }}
             if (btnAutoRotate3D) {{
@@ -12629,6 +12847,15 @@ def gerar_dashboard_html(
                     motor3D.rebuildEnv();
                 }}
             }},
+            refreshPerfMode() {{
+                if (motor3D) {{
+                    if (typeof motor3D.resize === 'function') motor3D.resize();
+                    if (typeof motor3D.rebuildScene === 'function') motor3D.rebuildScene();
+                    else if (typeof motor3D.rebuildEnv === 'function') motor3D.rebuildEnv();
+                    motor3D._needsRender = true;
+                }}
+                drawDynoChart();
+            }},
             isHybrid() {{ return hybridEnabled; }}
         }};
 
@@ -12692,6 +12919,8 @@ def gerar_dashboard_html(
                 settingsSoundDesc: 'Síntese áudio Web Audio por tipo de motor',
                 settingsBgLbl: 'Ambiente 3D',
                 settingsBgDesc: 'Sala fechada, piso preto, porta de garagem, vigas e objetos',
+                settingsPerfLbl: 'Modo Leve',
+                settingsPerfDesc: 'Simplifica modelos 3D, blurs e resolução mantendo 40–60 FPS',
                 launchStatusIce: 'IGNIÇÃO · COMBUSTÃO INTERNA',
                 launchStatusHybrid: 'SINCRONIZAÇÃO · SISTEMA HÍBRIDO',
                 launchStatusElectric: 'ALTA TENSÃO · TRAÇÃO ELÉTRICA'
@@ -12740,6 +12969,8 @@ def gerar_dashboard_html(
                 settingsSoundDesc: 'Web Audio synthesis tailored per powertrain',
                 settingsBgLbl: '3D Studio Background',
                 settingsBgDesc: 'Enclosed bay, black floor, garage door, steel beams & props',
+                settingsPerfLbl: 'Lightweight Mode',
+                settingsPerfDesc: 'Simplifies 3D models, glass blur and resolution targeting 40–60 FPS',
                 launchStatusIce: 'IGNITION · INTERNAL COMBUSTION',
                 launchStatusHybrid: 'POWER-SPLIT SYNC · HYBRID',
                 launchStatusElectric: 'HIGH VOLTAGE · ELECTRIC DRIVE'
@@ -12771,6 +13002,7 @@ def gerar_dashboard_html(
         const btnSettingsSound = document.getElementById('settings-btn-sound-toggle');
         const rangeSettingsSound = document.getElementById('settings-sound-range');
         const btnSettingsBg = document.getElementById('settings-btn-bg-toggle');
+        const btnSettingsPerf = document.getElementById('settings-btn-perf-toggle');
         const settingsTriggers = [btnLauncherSettings, btnIceSettings, btnEvSettings];
 
         function setSettingsOpen(isOpen) {{
@@ -12826,8 +13058,13 @@ def gerar_dashboard_html(
             setTxt('settings-sound-desc', t.settingsSoundDesc);
             setTxt('settings-bg-lbl', t.settingsBgLbl);
             setTxt('settings-bg-desc', t.settingsBgDesc);
+            setTxt('settings-perf-lbl', t.settingsPerfLbl);
+            setTxt('settings-perf-desc', t.settingsPerfDesc);
             if (window.__studioBg && typeof window.__studioBg.syncUI === 'function') {{
                 window.__studioBg.syncUI();
+            }}
+            if (window.__perfMode && typeof window.__perfMode.syncUI === 'function') {{
+                window.__perfMode.syncUI();
             }}
             settingsTriggers.forEach(btn => {{
                 if (btn) btn.title = t.settingsTitle;
@@ -12983,6 +13220,11 @@ def gerar_dashboard_html(
         if (btnSettingsBg) {{
             btnSettingsBg.addEventListener('click', () => {{
                 if (window.__studioBg) window.__studioBg.toggle();
+            }});
+        }}
+        if (btnSettingsPerf) {{
+            btnSettingsPerf.addEventListener('click', () => {{
+                if (window.__perfMode) window.__perfMode.toggle();
             }});
         }}
         if (rangeSettingsSound) {{
