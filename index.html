@@ -85,6 +85,10 @@
             cursor: grabbing;
         }
 
+        body.studio-bg-active .motor-3d-canvas {
+            opacity: 1;
+        }
+
         /* Camada de UI sobre o background (cliques fora dos painéis passam para o motor 3D) */
         .ui-layer {
             position: relative;
@@ -1806,6 +1810,545 @@
             }
         }
 
+        /* Animação de arranque ao clicar num tipo de motor no ecrã inicial */
+        .launch-shockwave {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 2px solid var(--card-accent);
+            box-shadow: 0 0 26px var(--card-glow), inset 0 0 18px var(--card-glow);
+            transform: translate(-50%, -50%) scale(0.4);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .launcher-card.is-selected-launch {
+            z-index: 40;
+            border-color: var(--card-accent);
+            box-shadow: 0 0 54px -4px var(--card-glow), 0 24px 52px -12px rgba(0, 0, 0, 0.96);
+            animation: launchCardImpulse 0.62s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            pointer-events: none;
+        }
+
+        .launcher-card.is-selected-launch .launch-shockwave {
+            animation: launchShockwaveRing 0.68s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .launcher-card.is-selected-launch .pop-sym.pop-tr {
+            opacity: 1;
+            transform: translate(40px, -44px) scale(1.22) rotate(12deg);
+            transition-duration: 0.36s;
+        }
+
+        .launcher-card.is-selected-launch .pop-sym.pop-br {
+            opacity: 1;
+            transform: translate(40px, 42px) scale(1.2) rotate(-10deg);
+            transition-duration: 0.36s;
+        }
+
+        .launcher-card.is-selected-launch .pop-sym.pop-tl {
+            opacity: 1;
+            transform: translate(-36px, -38px) scale(1.18) rotate(-14deg);
+            transition-duration: 0.36s;
+        }
+
+        .launcher-card.is-selected-launch .launcher-cta-symbols {
+            opacity: 1;
+            transform: translateX(0) scale(1.12);
+        }
+
+        .launcher-card.is-dismissed-launch {
+            opacity: 0;
+            transform: scale(0.91) translateY(14px);
+            filter: blur(4px);
+            pointer-events: none;
+            transition: opacity 0.34s ease, transform 0.38s cubic-bezier(0.4, 0, 0.2, 1), filter 0.34s ease;
+        }
+
+        .launcher-screen.is-launching .launcher-hero {
+            opacity: 0;
+            transform: translateY(-16px) scale(0.97);
+            transition: opacity 0.34s ease, transform 0.38s ease;
+        }
+
+        .launcher-screen.is-launching .launcher-blueprint-bg {
+            transform: scale(1.06);
+            opacity: 0.32;
+            transition: transform 0.88s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.55s ease;
+        }
+
+        .launch-transition-overlay {
+            --launch-accent: #f97316;
+            --launch-accent-2: #ef4444;
+            --launch-glow: rgba(249, 115, 22, 0.42);
+            position: fixed;
+            inset: 0;
+            z-index: 55;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 50%, rgba(8, 12, 20, 0.72) 0%, rgba(0, 0, 0, 0.94) 68%);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            opacity: 0;
+            pointer-events: all;
+            transition: opacity 0.28s ease;
+        }
+
+        .launch-transition-overlay[hidden] {
+            display: none !important;
+        }
+
+        .launch-transition-overlay.is-active {
+            opacity: 1;
+        }
+
+        .launch-transition-overlay[data-mode="ice"] {
+            --launch-accent: #f97316;
+            --launch-accent-2: #fde047;
+            --launch-glow: rgba(249, 115, 22, 0.45);
+        }
+
+        .launch-transition-overlay[data-mode="hybrid"] {
+            --launch-accent: #2dd4bf;
+            --launch-accent-2: #f97316;
+            --launch-glow: rgba(45, 212, 191, 0.45);
+        }
+
+        .launch-transition-overlay[data-mode="electric"] {
+            --launch-accent: #38bdf8;
+            --launch-accent-2: #818cf8;
+            --launch-glow: rgba(56, 189, 248, 0.48);
+        }
+
+        .launch-overlay-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            padding: 24px 28px;
+            text-align: center;
+            transform: scale(0.86);
+            opacity: 0;
+            transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.32s ease;
+        }
+
+        .launch-transition-overlay.is-active .launch-overlay-stage {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .launch-emblem-wrap {
+            position: relative;
+            width: 124px;
+            height: 124px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Camadas de efeitos específicos por tipo de motor (ICE Redline+Fogo, Elétrico, Híbrido Junção) */
+        .launch-fx-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: visible;
+            display: none;
+        }
+
+        .launch-transition-overlay[data-mode="ice"] .launch-fx-ice,
+        .launch-transition-overlay[data-mode="electric"] .launch-fx-electric,
+        .launch-transition-overlay[data-mode="hybrid"] .launch-fx-hybrid {
+            display: block;
+        }
+
+        /* --- ICE: Redline Tachometer + Fogo a sair de lado --- */
+        .ice-redline-svg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 210px;
+            height: 210px;
+            transform: translate(-50%, -50%);
+            overflow: visible;
+        }
+
+        .ice-tach-sweep {
+            stroke-dasharray: 420;
+            stroke-dashoffset: 420;
+            filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.85));
+        }
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-tach-sweep {
+            animation: iceRedlineSweep 0.78s cubic-bezier(0.18, 0.88, 0.32, 1) forwards;
+        }
+
+        .ice-tach-needle-wrap {
+            transform-origin: 105px 105px;
+            transform: rotate(-130deg);
+        }
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-tach-needle-wrap {
+            animation: iceNeedleRedline 0.88s cubic-bezier(0.18, 0.88, 0.32, 1) forwards;
+        }
+
+        .ice-side-flame {
+            position: absolute;
+            top: 50%;
+            width: 190px;
+            height: 86px;
+            opacity: 0;
+            filter: drop-shadow(0 0 16px rgba(249, 115, 22, 0.85)) drop-shadow(0 0 28px rgba(239, 68, 68, 0.65));
+        }
+
+        .ice-side-flame.flame-left {
+            right: calc(50% + 48px);
+            transform-origin: 100% 50%;
+            transform: translateY(-50%) scaleX(0.2);
+        }
+
+        .ice-side-flame.flame-right {
+            left: calc(50% + 48px);
+            transform-origin: 0% 50%;
+            transform: translateY(-50%) scaleX(0.2);
+        }
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-side-flame.flame-left {
+            animation: iceFlameJetLeft 0.78s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="ice"] .ice-side-flame.flame-right {
+            animation: iceFlameJetRight 0.78s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
+        }
+
+        /* --- ELÉTRICO: Raios e Arcos de Alta Tensão --- */
+        .ev-electric-svg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 460px;
+            height: 240px;
+            transform: translate(-50%, -50%);
+            overflow: visible;
+        }
+
+        .ev-arc-bolt {
+            stroke-dasharray: 260;
+            stroke-dashoffset: 260;
+            opacity: 0;
+            filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.95)) drop-shadow(0 0 22px rgba(129, 140, 248, 0.75));
+        }
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-arc-bolt {
+            animation: evArcZap 0.72s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-arc-bolt.arc-delay-1 {
+            animation-delay: 0.10s;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-arc-bolt.arc-delay-2 {
+            animation-delay: 0.22s;
+        }
+
+        .ev-pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 2px solid rgba(56, 189, 248, 0.85);
+            box-shadow: 0 0 26px rgba(56, 189, 248, 0.65), inset 0 0 16px rgba(129, 140, 248, 0.45);
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-pulse-ring {
+            animation: evFieldPulse 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="electric"] .ev-pulse-ring.ring-2 {
+            animation-delay: 0.22s;
+            border-color: rgba(129, 140, 248, 0.8);
+        }
+
+        /* --- HÍBRIDO: Junção Combustão (Esq.) + Eletricidade (Dir.) no Centro --- */
+        .hyb-junction-svg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 460px;
+            height: 200px;
+            transform: translate(-50%, -50%);
+            overflow: visible;
+        }
+
+        .hyb-stream-ice {
+            opacity: 0;
+            transform-origin: 100% 50%;
+            filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.85));
+        }
+
+        .hyb-stream-ev {
+            opacity: 0;
+            transform-origin: 0% 50%;
+            filter: drop-shadow(0 0 14px rgba(45, 212, 191, 0.9));
+        }
+
+        .hyb-merge-core {
+            opacity: 0;
+            transform-origin: 230px 100px;
+            filter: drop-shadow(0 0 24px rgba(45, 212, 191, 0.85));
+        }
+
+        .launch-transition-overlay.is-active[data-mode="hybrid"] .hyb-stream-ice {
+            animation: hybConvergeLeft 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="hybrid"] .hyb-stream-ev {
+            animation: hybConvergeRight 0.78s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .launch-transition-overlay.is-active[data-mode="hybrid"] .hyb-merge-core {
+            animation: hybFusionFlash 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.32s forwards;
+        }
+
+        .launch-emblem-aura {
+            position: absolute;
+            inset: -14px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--launch-glow) 0%, transparent 70%);
+            animation: launchAuraPulse 0.85s ease-out forwards;
+        }
+
+        .launch-ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+        }
+
+        .launch-ring-outer {
+            inset: 0;
+            border-top-color: var(--launch-accent);
+            border-right-color: var(--launch-accent);
+            border-bottom-color: rgba(255, 255, 255, 0.08);
+            border-left-color: rgba(255, 255, 255, 0.08);
+            filter: drop-shadow(0 0 10px var(--launch-glow));
+            animation: launchSpinCW 0.85s cubic-bezier(0.25, 0.9, 0.35, 1) infinite;
+        }
+
+        .launch-ring-inner {
+            inset: 14px;
+            border-style: dashed;
+            border-color: var(--launch-accent-2);
+            opacity: 0.72;
+            animation: launchSpinCCW 1.1s linear infinite;
+        }
+
+        .launch-emblem-core {
+            position: relative;
+            z-index: 2;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, rgba(22, 28, 40, 0.95), rgba(5, 8, 14, 0.98));
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 0 28px var(--launch-glow), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .launch-mode-svg {
+            display: none;
+            filter: drop-shadow(0 0 10px var(--launch-glow));
+        }
+
+        .launch-transition-overlay[data-mode="ice"] .launch-mode-svg[data-icon="ice"],
+        .launch-transition-overlay[data-mode="hybrid"] .launch-mode-svg[data-icon="hybrid"],
+        .launch-transition-overlay[data-mode="electric"] .launch-mode-svg[data-icon="electric"] {
+            display: block;
+            animation: launchCorePop 0.55s cubic-bezier(0.22, 1.35, 0.36, 1) forwards;
+        }
+
+        .launch-overlay-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-shadow: 0 0 22px var(--launch-glow);
+        }
+
+        .launch-overlay-status {
+            font-family: var(--font-mono);
+            font-size: 0.74rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--launch-accent);
+        }
+
+        .launch-progress-track {
+            width: min(260px, 68vw);
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            overflow: hidden;
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.6);
+        }
+
+        .launch-progress-fill {
+            height: 100%;
+            width: 0%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--launch-accent), var(--launch-accent-2));
+            box-shadow: 0 0 14px var(--launch-glow);
+        }
+
+        .launch-transition-overlay.is-active .launch-progress-fill {
+            animation: launchProgressSweep 0.72s cubic-bezier(0.22, 0.85, 0.35, 1) forwards;
+        }
+
+        .app-mode-shell.is-entering {
+            animation: appShellReveal 0.42s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes launchCardImpulse {
+            0% { transform: translateY(-5px) scale(1); }
+            24% { transform: translateY(-2px) scale(0.965); }
+            62% { transform: translateY(-10px) scale(1.045); opacity: 1; }
+            100% { transform: translateY(-16px) scale(1.07); opacity: 0; }
+        }
+
+        @keyframes launchShockwaveRing {
+            0% { transform: translate(-50%, -50%) scale(0.45); opacity: 0.95; }
+            100% { transform: translate(-50%, -50%) scale(8.5); opacity: 0; }
+        }
+
+        @keyframes launchAuraPulse {
+            0% { transform: scale(0.55); opacity: 0.25; }
+            55% { transform: scale(1.18); opacity: 0.95; }
+            100% { transform: scale(1.35); opacity: 0.65; }
+        }
+
+        @keyframes launchSpinCW {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes launchSpinCCW {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+
+        @keyframes launchCorePop {
+            0% { transform: scale(0.5) rotate(-14deg); opacity: 0; }
+            65% { transform: scale(1.14) rotate(4deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes launchProgressSweep {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        @keyframes appShellReveal {
+            from { opacity: 0; transform: scale(0.985); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes iceRedlineSweep {
+            0% { stroke-dashoffset: 420; }
+            72% { stroke-dashoffset: 27; }
+            84% { stroke-dashoffset: 46; }
+            94% { stroke-dashoffset: 27; }
+            100% { stroke-dashoffset: 34; }
+        }
+
+        @keyframes iceNeedleRedline {
+            0% { transform: rotate(-130deg); }
+            70% { transform: rotate(128deg); }
+            82% { transform: rotate(116deg); }
+            92% { transform: rotate(130deg); }
+            100% { transform: rotate(122deg); }
+        }
+
+        @keyframes iceFlameJetLeft {
+            0% { opacity: 0; transform: translateY(-50%) translateX(24px) scaleX(0.15) scaleY(0.55); }
+            28% { opacity: 1; transform: translateY(-50%) translateX(0px) scaleX(1.12) scaleY(1.08); }
+            48% { opacity: 0.95; transform: translateY(-50%) translateX(-6px) scaleX(0.94) scaleY(0.92); }
+            70% { opacity: 1; transform: translateY(-50%) translateX(-14px) scaleX(1.18) scaleY(1.05); }
+            100% { opacity: 0; transform: translateY(-50%) translateX(-34px) scaleX(1.32) scaleY(0.75); }
+        }
+
+        @keyframes iceFlameJetRight {
+            0% { opacity: 0; transform: translateY(-50%) translateX(-24px) scaleX(0.15) scaleY(0.55); }
+            28% { opacity: 1; transform: translateY(-50%) translateX(0px) scaleX(1.12) scaleY(1.08); }
+            48% { opacity: 0.95; transform: translateY(-50%) translateX(6px) scaleX(0.94) scaleY(0.92); }
+            70% { opacity: 1; transform: translateY(-50%) translateX(14px) scaleX(1.18) scaleY(1.05); }
+            100% { opacity: 0; transform: translateY(-50%) translateX(34px) scaleX(1.32) scaleY(0.75); }
+        }
+
+        @keyframes evArcZap {
+            0% { stroke-dashoffset: 260; opacity: 0; }
+            22% { stroke-dashoffset: 60; opacity: 1; }
+            40% { stroke-dashoffset: 0; opacity: 0.55; }
+            56% { stroke-dashoffset: 0; opacity: 1; }
+            74% { stroke-dashoffset: -40; opacity: 0.35; }
+            88% { stroke-dashoffset: -80; opacity: 0.95; }
+            100% { stroke-dashoffset: -140; opacity: 0; }
+        }
+
+        @keyframes evFieldPulse {
+            0% { transform: translate(-50%, -50%) scale(0.55); opacity: 0.95; }
+            100% { transform: translate(-50%, -50%) scale(2.85); opacity: 0; }
+        }
+
+        @keyframes hybConvergeLeft {
+            0% { opacity: 0; transform: translateX(-110px) scale(0.7); }
+            42% { opacity: 1; transform: translateX(-14px) scale(1.05); }
+            72% { opacity: 0.95; transform: translateX(0px) scale(0.95); }
+            100% { opacity: 0; transform: translateX(18px) scale(0.45); }
+        }
+
+        @keyframes hybConvergeRight {
+            0% { opacity: 0; transform: translateX(110px) scale(0.7); }
+            42% { opacity: 1; transform: translateX(14px) scale(1.05); }
+            72% { opacity: 0.95; transform: translateX(0px) scale(0.95); }
+            100% { opacity: 0; transform: translateX(-18px) scale(0.45); }
+        }
+
+        @keyframes hybFusionFlash {
+            0% { opacity: 0; transform: scale(0.35); }
+            45% { opacity: 1; transform: scale(1.22); }
+            100% { opacity: 0; transform: scale(1.9); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .launcher-card.is-selected-launch,
+            .launcher-card.is-selected-launch .launch-shockwave,
+            .launch-ring-outer,
+            .launch-ring-inner,
+            .launch-emblem-aura,
+            .launch-transition-overlay.is-active .launch-progress-fill,
+            .launch-transition-overlay.is-active .ice-tach-sweep,
+            .launch-transition-overlay.is-active .ice-tach-needle-wrap,
+            .launch-transition-overlay.is-active .ice-side-flame,
+            .launch-transition-overlay.is-active .ev-arc-bolt,
+            .launch-transition-overlay.is-active .ev-pulse-ring,
+            .launch-transition-overlay.is-active .hyb-stream-ice,
+            .launch-transition-overlay.is-active .hyb-stream-ev,
+            .launch-transition-overlay.is-active .hyb-merge-core,
+            .app-mode-shell.is-entering {
+                animation-duration: 0.01ms !important;
+            }
+        }
+
         #ev-range-throttle {
             -webkit-appearance: none;
             appearance: none;
@@ -2299,6 +2842,7 @@
             <div class="launcher-cards-grid">
                 <button type="button" class="launcher-card launcher-card-ice" id="btn-launch-ice">
                     <div class="launcher-popout-layer" aria-hidden="true">
+                        <span class="launch-shockwave"></span>
                         <!-- Chama multi-camada a sair pelo canto superior direito -->
                         <span class="pop-sym pop-tr">
                             <svg class="pop-svg pop-anim-flame" width="68" height="68" viewBox="0 0 64 64" fill="none">
@@ -2379,6 +2923,7 @@
 
                 <button type="button" class="launcher-card launcher-card-hybrid" id="btn-launch-hybrid">
                     <div class="launcher-popout-layer" aria-hidden="true">
+                        <span class="launch-shockwave"></span>
                         <!-- Fusão Híbrida (Chama + Relâmpago) a sair pelo canto superior direito -->
                         <span class="pop-sym pop-tr">
                             <svg class="pop-svg pop-anim-float" width="72" height="72" viewBox="0 0 64 64" fill="none">
@@ -2453,6 +2998,7 @@
 
                 <button type="button" class="launcher-card launcher-card-ev" id="btn-launch-electric">
                     <div class="launcher-popout-layer" aria-hidden="true">
+                        <span class="launch-shockwave"></span>
                         <!-- Relâmpago Alta Tensão a sair pelo canto superior direito -->
                         <span class="pop-sym pop-tr">
                             <svg class="pop-svg pop-anim-bolt" width="68" height="68" viewBox="0 0 64 64" fill="none">
@@ -2524,6 +3070,160 @@
                         </span>
                     </span>
                 </button>
+            </div>
+        </div>
+
+        <div id="launch-transition-overlay" class="launch-transition-overlay" hidden aria-hidden="true">
+            <div class="launch-overlay-stage">
+                <div class="launch-emblem-wrap">
+                    <span class="launch-emblem-aura"></span>
+
+                    <!-- ICE: Redline Tachometer + Fogo lateral (backfire) -->
+                    <div class="launch-fx-layer launch-fx-ice" aria-hidden="true">
+                        <svg class="ice-redline-svg" viewBox="0 0 210 210" fill="none">
+                            <defs>
+                                <linearGradient id="ice-tach-grad" x1="25" y1="160" x2="185" y2="60" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#f97316"/>
+                                    <stop offset="55%" stop-color="#fbbf24"/>
+                                    <stop offset="100%" stop-color="#ef4444"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Arco base do conta-rotações -->
+                            <path d="M41 158 A82 82 0 1 1 169 158" stroke="rgba(255,255,255,0.14)" stroke-width="6" stroke-linecap="round"/>
+                            <!-- Zona Redline -->
+                            <path d="M160 51 A82 82 0 0 1 169 158" stroke="rgba(239,68,68,0.85)" stroke-width="7" stroke-linecap="round"/>
+                            <!-- Barra de aceleração até ao redline -->
+                            <path class="ice-tach-sweep" d="M41 158 A82 82 0 1 1 169 158" stroke="url(#ice-tach-grad)" stroke-width="6" stroke-linecap="round"/>
+                            <!-- Ponteiro -->
+                            <g class="ice-tach-needle-wrap">
+                                <line x1="105" y1="105" x2="105" y2="26" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+                                <circle cx="105" cy="28" r="3" fill="#fef08a"/>
+                            </g>
+                        </svg>
+                        <!-- Chama lateral esquerda -->
+                        <svg class="ice-side-flame flame-left" viewBox="0 0 190 86" fill="none">
+                            <defs>
+                                <linearGradient id="ice-jet-outer" x1="190" y1="43" x2="10" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#fef08a"/>
+                                    <stop offset="32%" stop-color="#f97316"/>
+                                    <stop offset="75%" stop-color="#dc2626"/>
+                                    <stop offset="100%" stop-color="#991b1b" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="ice-jet-core" x1="190" y1="43" x2="65" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="45%" stop-color="#fef08a"/>
+                                    <stop offset="100%" stop-color="#fb923c" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M188 43 C152 14, 114 22, 68 12 C90 28, 44 30, 8 43 C44 56, 90 58, 68 74 C114 64, 152 72, 188 43 Z" fill="url(#ice-jet-outer)"/>
+                            <path d="M188 43 C162 28, 134 32, 92 26 C108 38, 76 38, 48 43 C76 48, 108 48, 92 60 C134 54, 162 58, 188 43 Z" fill="url(#ice-jet-core)"/>
+                            <circle cx="38" cy="24" r="2.4" fill="#fde047"/>
+                            <circle cx="20" cy="54" r="2" fill="#fb923c"/>
+                            <circle cx="56" cy="64" r="1.8" fill="#fef08a"/>
+                        </svg>
+                        <!-- Chama lateral direita -->
+                        <svg class="ice-side-flame flame-right" viewBox="0 0 190 86" fill="none">
+                            <defs>
+                                <linearGradient id="ice-jet-outer-r" x1="0" y1="43" x2="180" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#fef08a"/>
+                                    <stop offset="32%" stop-color="#f97316"/>
+                                    <stop offset="75%" stop-color="#dc2626"/>
+                                    <stop offset="100%" stop-color="#991b1b" stop-opacity="0"/>
+                                </linearGradient>
+                                <linearGradient id="ice-jet-core-r" x1="0" y1="43" x2="125" y2="43" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="45%" stop-color="#fef08a"/>
+                                    <stop offset="100%" stop-color="#fb923c" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <path d="M2 43 C38 14, 76 22, 122 12 C100 28, 146 30, 182 43 C146 56, 100 58, 122 74 C76 64, 38 72, 2 43 Z" fill="url(#ice-jet-outer-r)"/>
+                            <path d="M2 43 C28 28, 56 32, 98 26 C82 38, 114 38, 142 43 C114 48, 82 48, 98 60 C56 54, 28 58, 2 43 Z" fill="url(#ice-jet-core-r)"/>
+                            <circle cx="152" cy="24" r="2.4" fill="#fde047"/>
+                            <circle cx="170" cy="54" r="2" fill="#fb923c"/>
+                            <circle cx="134" cy="64" r="1.8" fill="#fef08a"/>
+                        </svg>
+                    </div>
+
+                    <!-- ELÉTRICO: Raios de Alta Tensão e Ondas de Campo -->
+                    <div class="launch-fx-layer launch-fx-electric" aria-hidden="true">
+                        <span class="ev-pulse-ring"></span>
+                        <span class="ev-pulse-ring ring-2"></span>
+                        <svg class="ev-electric-svg" viewBox="0 0 460 240" fill="none">
+                            <path class="ev-arc-bolt" d="M172 120 L132 104 L112 126 L70 108 L42 132 L12 118" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-1" d="M176 106 L146 72 L118 82 L88 46 L52 54 L24 28" stroke="#bae6fd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-2" d="M178 136 L142 162 L114 152 L82 186 L46 178 L18 206" stroke="#818cf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt" d="M288 120 L328 104 L348 126 L390 108 L418 132 L448 118" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-1" d="M284 106 L314 72 L342 82 L372 46 L408 54 L436 28" stroke="#bae6fd" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="ev-arc-bolt arc-delay-2" d="M282 136 L318 162 L346 152 L378 186 L414 178 L442 206" stroke="#818cf8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+
+                    <!-- HÍBRIDO: Junção (Chama Térmica da Esquerda + Eletricidade da Direita) -->
+                    <div class="launch-fx-layer launch-fx-hybrid" aria-hidden="true">
+                        <svg class="hyb-junction-svg" viewBox="0 0 460 200" fill="none">
+                            <defs>
+                                <linearGradient id="hyb-join-ice" x1="20" y1="100" x2="215" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#dc2626" stop-opacity="0"/>
+                                    <stop offset="45%" stop-color="#f97316"/>
+                                    <stop offset="100%" stop-color="#fde047"/>
+                                </linearGradient>
+                                <linearGradient id="hyb-join-ev" x1="440" y1="100" x2="245" y2="100" gradientUnits="userSpaceOnUse">
+                                    <stop offset="0%" stop-color="#38bdf8" stop-opacity="0"/>
+                                    <stop offset="45%" stop-color="#2dd4bf"/>
+                                    <stop offset="100%" stop-color="#ccfbf1"/>
+                                </linearGradient>
+                                <radialGradient id="hyb-fusion-grad" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#ffffff"/>
+                                    <stop offset="35%" stop-color="#5eead4" stop-opacity="0.9"/>
+                                    <stop offset="68%" stop-color="#f97316" stop-opacity="0.45"/>
+                                    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+                                </radialGradient>
+                            </defs>
+                            <!-- Fluxo Combustão (Esquerda -> Centro) -->
+                            <g class="hyb-stream-ice">
+                                <path d="M24 100 C74 70, 128 76, 214 100 C128 124, 74 130, 24 100 Z" fill="url(#hyb-join-ice)"/>
+                                <path d="M44 76 Q128 84 206 96 M44 124 Q128 116 206 104" stroke="#fed7aa" stroke-width="2" stroke-linecap="round"/>
+                                <circle cx="90" cy="84" r="3" fill="#fde047"/>
+                                <circle cx="122" cy="116" r="2.5" fill="#fb923c"/>
+                            </g>
+                            <!-- Fluxo Elétrico (Direita -> Centro) -->
+                            <g class="hyb-stream-ev">
+                                <path d="M436 100 L382 84 L356 108 L308 88 L278 106 L246 100" stroke="url(#hyb-join-ev)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M416 74 L362 66 L332 86 L286 78 L250 96" stroke="#5eead4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M416 126 L362 134 L332 114 L286 122 L250 104" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <circle cx="366" cy="82" r="2.8" fill="#ccfbf1"/>
+                                <circle cx="330" cy="116" r="2.6" fill="#38bdf8"/>
+                            </g>
+                            <!-- Ponto de Junção / Fusão Central -->
+                            <g class="hyb-merge-core">
+                                <circle cx="230" cy="100" r="64" fill="url(#hyb-fusion-grad)"/>
+                                <circle cx="230" cy="100" r="46" stroke="#5eead4" stroke-width="2" stroke-dasharray="6 4"/>
+                                <circle cx="230" cy="100" r="54" stroke="#fb923c" stroke-width="1.6" stroke-dasharray="4 6"/>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <span class="launch-ring launch-ring-outer"></span>
+                    <span class="launch-ring launch-ring-inner"></span>
+                    <span class="launch-emblem-core">
+                        <svg class="launch-mode-svg" data-icon="ice" width="36" height="36" viewBox="0 0 64 64" fill="none">
+                            <path d="M33 6c3.2 9.4 13.8 14.2 13.8 26.8 0 9.8-6.6 18.2-15.4 18.2-8.8 0-15-7.4-15-16.8 0-5.4 2.4-10.6 6.2-14-.2 4.4 2.2 6.8 4.8 6.8 3.2 0 4.2-5.6 5.6-21z" fill="url(#sym-ice-f1)" stroke="#fed7aa" stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M32 25c2.2 4.6 6.8 7.8 6.8 14.2 0 4.8-3 8.4-6.8 8.4s-6.8-3.6-6.8-8.4c0-3.2 1.6-6 3.4-8.2.4 2.4 1.8 3.6 3.4 3.6" fill="url(#sym-ice-f2)"/>
+                        </svg>
+                        <svg class="launch-mode-svg" data-icon="hybrid" width="38" height="38" viewBox="0 0 64 64" fill="none">
+                            <path d="M25 10c2 6.8 9.2 10.6 9.2 19.6 0 7-4.8 12.6-11.2 12.6s-11-5.4-11-12.2c0-4 1.8-7.8 4.4-10.2.2 3.2 2 4.8 3.8 4.8 2.2 0 3.4-4 4.8-14.6z" fill="url(#sym-hyb-ice)" stroke="#fed7aa" stroke-width="1.5"/>
+                            <path d="M40 8L26 31h10l-3 21 17-25H39z" fill="url(#sym-hyb-ev)" stroke="#ccfbf1" stroke-width="1.6" stroke-linejoin="round"/>
+                        </svg>
+                        <svg class="launch-mode-svg" data-icon="electric" width="36" height="36" viewBox="0 0 64 64" fill="none">
+                            <path d="M36 5L14 34h15l-4 25 25-31H34z" fill="url(#sym-ev-bolt)" stroke="#bae6fd" stroke-width="1.8" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </div>
+                <div class="launch-overlay-title" id="launch-overlay-title">ICE</div>
+                <div class="launch-overlay-status" id="launch-overlay-status">IGNIÇÃO · COMBUSTÃO INTERNA</div>
+                <div class="launch-progress-track">
+                    <div class="launch-progress-fill"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -3567,6 +4267,13 @@
                         <button type="button" class="btn-3d-ctrl" id="settings-btn-sound-toggle" aria-pressed="true">Ativo</button>
                     </div>
                 </div>
+                <div class="settings-row" id="settings-bg-row">
+                    <div class="settings-row-info">
+                        <span class="settings-row-label" id="settings-bg-lbl">Ambiente 3D</span>
+                        <small class="settings-row-desc" id="settings-bg-desc">Sala fechada, piso preto, porta de garagem, vigas e objetos</small>
+                    </div>
+                    <button type="button" class="btn-3d-ctrl" id="settings-btn-bg-toggle" aria-pressed="false">Desativado</button>
+                </div>
             </div>
         </div>
     </div>
@@ -4037,6 +4744,430 @@
                     ramp(nodes.evFilter.Q, mType === 'SynRM' ? 3.2 : 1.4, 0.03);
                     ramp(nodes.evGain.gain, rpm < 25 ? 0.025 : Math.min(0.48, (0.08 + 0.34 * Math.min(1, u * 1.3)) * regGain), 0.03);
                 }
+            };
+        })();
+
+        window.__studioBg = (function() {
+            let enabled = false;
+            try {
+                enabled = localStorage.getItem('dkm_studio_bg') === '1';
+            } catch (_) {}
+
+            function syncUI() {
+                if (document.body) {
+                    document.body.classList.toggle('studio-bg-active', enabled);
+                }
+                const lang = window.__appLang === 'en' ? 'en' : 'pt';
+                const btn = document.getElementById('settings-btn-bg-toggle');
+                if (btn) {
+                    btn.classList.toggle('ativo', enabled);
+                    btn.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+                    btn.textContent = enabled
+                        ? (lang === 'en' ? 'On' : 'Ativo')
+                        : (lang === 'en' ? 'Off' : 'Desativado');
+                }
+            }
+
+            function refreshViewers() {
+                if (window.__iceModule && typeof window.__iceModule.refreshStudioBg === 'function') {
+                    window.__iceModule.refreshStudioBg();
+                }
+                if (window.__evModule && typeof window.__evModule.refreshStudioBg === 'function') {
+                    window.__evModule.refreshStudioBg();
+                }
+            }
+
+            function setEnabled(next) {
+                enabled = Boolean(next);
+                try {
+                    localStorage.setItem('dkm_studio_bg', enabled ? '1' : '0');
+                } catch (_) {}
+                syncUI();
+                refreshViewers();
+            }
+
+            function build(viewer, opts) {
+                const list = [];
+                if (!enabled || !viewer) return list;
+
+                const cx = viewer.sceneCenterX || 0;
+                const floorY = typeof (opts && opts.floorY) === 'number' ? opts.floorY : -1.62;
+                const accent = (opts && opts.accent) || [0.95, 0.42, 0.16, 1.0];
+
+                const halfW = 9.6;
+                const halfZ = 7.6;
+                const ceilY = 4.65;
+                const wallH = ceilY - floorY;
+                const wallMidY = (floorY + ceilY) * 0.5;
+
+                const pushPart = (type, model, color, spec, clipSide, clipLim) => {
+                    list.push({ type, model, color, spec, clipSide: clipSide || null, clipLim: clipLim || 0 });
+                };
+
+                const C_FLOOR = [0.028, 0.031, 0.038, 1.0];
+                const C_FLOOR_SEAM = [0.014, 0.016, 0.020, 1.0];
+                const C_GROUT = [0.015, 0.017, 0.022, 1.0];
+                const C_TILE_A = [0.038, 0.041, 0.049, 1.0];
+                const C_TILE_B = [0.052, 0.056, 0.066, 1.0];
+                const C_TILE_C = [0.044, 0.047, 0.056, 1.0];
+                const C_STEEL = [0.18, 0.20, 0.24, 1.0];
+                const C_STEEL_DARK = [0.10, 0.11, 0.14, 1.0];
+                const C_STEEL_BRUSH = [0.46, 0.50, 0.56, 1.0];
+                const C_CHROME = [0.76, 0.80, 0.86, 1.0];
+                const C_LED = [0.94, 0.97, 1.0, 1.0];
+                const C_RED = [0.64, 0.11, 0.12, 1.0];
+                const C_RUBBER = [0.08, 0.09, 0.11, 1.0];
+                const C_BRASS = [0.78, 0.60, 0.26, 1.0];
+
+                // 1. Piso preto limpo + juntas sutis + plataforma de testes/dyno
+                pushPart('box', viewer.matTRS(cx, floorY - 0.09, 0, 0, 0, 0, halfW * 2.1, 0.18, halfZ * 2.12), C_FLOOR, [0.76, 68], 'floor', floorY - 0.02);
+                for (let gx = -6.4; gx <= 6.41; gx += 3.2) {
+                    pushPart('box', viewer.matTRS(cx + gx, floorY + 0.002, 0, 0, 0, 0, 0.035, 0.006, halfZ * 2.02), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                }
+                for (let gz = -6.0; gz <= 6.01; gz += 3.0) {
+                    pushPart('box', viewer.matTRS(cx, floorY + 0.002, gz, 0, 0, 0, halfW * 2.02, 0.006, 0.035), C_FLOOR_SEAM, [0.22, 16], 'floor', floorY - 0.02);
+                }
+
+                // Plataforma baixa do dinamómetro sob o conjunto motriz
+                const plinthW = 3.8;
+                const plinthD = 2.35;
+                pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.032, 0, 0, 0, 0, plinthW, 0.064, plinthD), C_STEEL_DARK, [0.62, 46]);
+                for (const rz of [-0.72, 0.72]) {
+                    pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.072, rz, 0, 0, 0, plinthW * 0.94, 0.022, 0.11), C_STEEL_BRUSH, [0.76, 58]);
+                }
+                for (let bx = -1.4; bx <= 1.41; bx += 0.40) {
+                    pushPart('box', viewer.matTRS(cx + bx, floorY + 0.066, 0, 0, 0, 0, 0.06, 0.012, 1.16), C_STEEL, [0.66, 48]);
+                }
+                for (const sx of [-1, 1]) {
+                    for (const sz of [-1, 1]) {
+                        pushPart('box', viewer.matTRS(cx + sx * (plinthW * 0.46), floorY + 0.068, sz * (plinthD * 0.46), 0, 0, 0, 0.28, 0.014, 0.035), accent, [1.18, -1.0]);
+                        pushPart('bevelBox', viewer.matTRS(cx + sx * (plinthW * 0.47), floorY + 0.085, sz * (plinthD * 0.47), 0, 0, 0, 0.14, 0.06, 0.14), C_STEEL, [0.66, 50]);
+                    }
+                }
+
+                // 2. Azulejos pretos nas paredes laterais (-Z e +Z)
+                const cols = 12;
+                const rows = 5;
+                const tileW = (halfW * 2.0 - 0.36) / cols;
+                const tileH = (wallH - 0.62) / rows;
+                const tileCols = [C_TILE_A, C_TILE_B, C_TILE_C];
+                for (const side of [-1, 1]) {
+                    const clipSide = side > 0 ? 'posZ' : 'negZ';
+                    const clipLim = side * (halfZ - 0.32);
+                    const wallZ = side * (halfZ + 0.10);
+                    pushPart('box', viewer.matTRS(cx, wallMidY, wallZ, 0, 0, 0, halfW * 2.04, wallH + 0.4, 0.14), C_GROUT, [0.18, 12], clipSide, clipLim);
+                    pushPart('bevelBox', viewer.matTRS(cx, floorY + 0.14, side * (halfZ - 0.02), 0, 0, 0, halfW * 2.02, 0.28, 0.10), C_STEEL_DARK, [0.66, 48], clipSide, clipLim);
+                    pushPart('bevelBox', viewer.matTRS(cx, ceilY - 0.16, side * (halfZ - 0.02), 0, 0, 0, halfW * 2.02, 0.14, 0.12), C_STEEL, [0.70, 52], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(cx, floorY + 2.38, side * (halfZ - 0.055), 0, 0, 0, halfW * 1.94, 0.032, 0.03), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], clipSide, clipLim);
+
+                    for (let r = 0; r < rows; r++) {
+                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                        for (let c = 0; c < cols; c++) {
+                            const tx = cx - halfW + 0.18 + (c + 0.5) * tileW;
+                            const col = tileCols[(c + r * 2) % tileCols.length];
+                            pushPart(
+                                'bevelBox',
+                                viewer.matTRS(tx, ty, side * (halfZ - 0.015), 0, 0, 0, tileW * 0.945, tileH * 0.935, 0.065),
+                                col,
+                                [0.60, 50],
+                                clipSide,
+                                clipLim
+                            );
+                        }
+                    }
+                }
+
+                // 2b. Paredes de topo (-X fechada com azulejos + +X com porta de garagem preta)
+                const endXClipPad = 0.35;
+                const endCols = 10;
+                const endTileZ = (halfZ * 2.0 - 0.36) / endCols;
+                // Parede -X totalmente fechada com azulejos pretos, quadro elétrico e conduta
+                {
+                    const negXLim = cx - halfW + endXClipPad;
+                    const wallX = cx - halfW - 0.10;
+                    pushPart('box', viewer.matTRS(wallX, wallMidY, 0, 0, 0, 0, 0.14, wallH + 0.4, halfZ * 2.06), C_GROUT, [0.18, 12], 'negX', negXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.02, floorY + 0.14, 0, 0, 0, 0, 0.10, 0.28, halfZ * 2.04), C_STEEL_DARK, [0.66, 48], 'negX', negXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.02, ceilY - 0.16, 0, 0, 0, 0, 0.12, 0.14, halfZ * 2.04), C_STEEL, [0.70, 52], 'negX', negXLim);
+                    pushPart('box', viewer.matTRS(cx - halfW + 0.055, floorY + 2.38, 0, 0, 0, 0, 0.03, 0.032, halfZ * 1.94), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], 'negX', negXLim);
+                    for (let r = 0; r < rows; r++) {
+                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                        for (let c = 0; c < endCols; c++) {
+                            const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
+                            const col = tileCols[(c + r * 2) % tileCols.length];
+                            pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'negX', negXLim);
+                        }
+                    }
+                    // Quadro elétrico industrial & conduta de extração na parede -X
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.18, floorY + 1.85, -3.2, 0, 0, 0, 0.24, 1.15, 0.88), C_STEEL, [0.62, 46], 'negX', negXLim);
+                    pushPart('box', viewer.matTRS(cx - halfW + 0.305, floorY + 2.22, -3.42, 0, 0, 0, 0.02, 0.04, 0.14), accent, [1.28, -1.0], 'negX', negXLim);
+                    pushPart('cyl', viewer.matTRS(cx - halfW + 0.24, wallMidY + 0.2, 3.1, 0, 0, 0, 0.18, wallH - 0.5, 0.18), C_STEEL_BRUSH, [0.74, 56], 'negX', negXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx - halfW + 0.24, floorY + 1.1, 3.1, 0, 0, 0, 0.34, 0.42, 0.44), C_STEEL_DARK, [0.60, 44], 'negX', negXLim);
+                }
+
+                // Parede +X fechada com Porta de Garagem Preta Seccionada + Azulejos laterais
+                {
+                    const posXLim = cx + halfW - endXClipPad;
+                    const wallX = cx + halfW + 0.10;
+                    const doorHalfW = 3.15;
+                    const doorH = 3.85;
+                    const doorTopY = floorY + doorH;
+
+                    pushPart('box', viewer.matTRS(wallX, wallMidY, 0, 0, 0, 0, 0.14, wallH + 0.4, halfZ * 2.06), C_GROUT, [0.18, 12], 'posX', posXLim);
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.02, ceilY - 0.16, 0, 0, 0, 0, 0.12, 0.14, halfZ * 2.04), C_STEEL, [0.70, 52], 'posX', posXLim);
+                    for (const side of [-1, 1]) {
+                        const flankW = halfZ - doorHalfW - 0.12;
+                        const flankMidZ = side * (doorHalfW + 0.12 + flankW * 0.5);
+                        pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.02, floorY + 0.14, flankMidZ, 0, 0, 0, 0.10, 0.28, flankW), C_STEEL_DARK, [0.66, 48], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(cx + halfW - 0.055, floorY + 2.38, flankMidZ, 0, 0, 0, 0.03, 0.032, flankW * 0.94), [0.78, 0.88, 1.0, 1.0], [1.05, -1.0], 'posX', posXLim);
+                    }
+
+                    // Azulejos pretos à volta da porta de garagem
+                    for (let r = 0; r < rows; r++) {
+                        const ty = floorY + 0.34 + (r + 0.5) * tileH;
+                        for (let c = 0; c < endCols; c++) {
+                            const tz = -halfZ + 0.18 + (c + 0.5) * endTileZ;
+                            const inDoorSpan = Math.abs(tz) < (doorHalfW + 0.08) && (ty - tileH * 0.45) < (doorTopY + 0.10);
+                            if (inDoorSpan) continue;
+                            const col = tileCols[(c + r * 2) % tileCols.length];
+                            pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.015, ty, tz, 0, 0, 0, 0.065, tileH * 0.935, endTileZ * 0.945), col, [0.60, 50], 'posX', posXLim);
+                        }
+                    }
+
+                    // Aro estrutural em aço da porta de garagem
+                    for (const side of [-1, 1]) {
+                        pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.07, floorY + doorH * 0.5, side * (doorHalfW + 0.08), 0, 0, 0, 0.16, doorH + 0.12, 0.18), C_STEEL_DARK, [0.66, 48], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(cx + halfW - 0.14, floorY + doorH * 0.5, side * (doorHalfW - 0.03), 0, 0, 0, 0.06, doorH, 0.06), C_STEEL_BRUSH, [0.76, 58], 'posX', posXLim);
+                    }
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.07, doorTopY + 0.09, 0, 0, 0, 0, 0.18, 0.18, doorHalfW * 2.0 + 0.34), C_STEEL_DARK, [0.68, 50], 'posX', posXLim);
+
+                    // Painéis seccionados pretos da porta de garagem (5 secções horizontais)
+                    const C_DOOR_BLACK = [0.024, 0.027, 0.033, 1.0];
+                    const C_DOOR_RIB = [0.016, 0.018, 0.023, 1.0];
+                    const C_DOOR_GLASS = [0.075, 0.115, 0.165, 1.0];
+                    const nSections = 5;
+                    const secH = (doorH - 0.06) / nSections;
+                    const doorW = doorHalfW * 2.0 - 0.04;
+                    const doorX = cx + halfW - 0.04;
+
+                    // Vedante inferior em borracha preta + puxador + barra de reforço
+                    pushPart('box', viewer.matTRS(doorX - 0.02, floorY + 0.02, 0, 0, 0, 0, 0.07, 0.04, doorW), C_RUBBER, [0.20, 14], 'posX', posXLim);
+                    for (let si = 0; si < nSections; si++) {
+                        const sy = floorY + 0.04 + (si + 0.5) * secH;
+                        pushPart('bevelBox', viewer.matTRS(doorX, sy, 0, 0, 0, 0, 0.075, secH * 0.94, doorW), C_DOOR_BLACK, [0.58, 46], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(doorX - 0.042, sy, 0, 0, 0, 0, 0.018, 0.028, doorW * 0.98), C_DOOR_RIB, [0.46, 36], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(doorX - 0.044, sy + secH * 0.47, 0, 0, 0, 0, 0.02, 0.016, doorW), C_STEEL_DARK, [0.52, 40], 'posX', posXLim);
+
+                        // 4 janelas fumadas horizontais na 4ª secção superior
+                        if (si === 3) {
+                            for (const wz of [-2.10, -0.70, 0.70, 2.10]) {
+                                pushPart('bevelBox', viewer.matTRS(doorX - 0.038, sy, wz, 0, 0, 0, 0.032, secH * 0.52, 1.04), C_STEEL_DARK, [0.64, 48], 'posX', posXLim);
+                                pushPart('box', viewer.matTRS(doorX - 0.048, sy, wz, 0, 0, 0, 0.020, secH * 0.39, 0.92), C_DOOR_GLASS, [0.88, 74], 'posX', posXLim);
+                            }
+                        }
+                    }
+                    // Puxador de abertura e fecho lateral
+                    pushPart('bevelBox', viewer.matTRS(doorX - 0.065, floorY + 0.92, 0, 0, 0, 0, 0.045, 0.045, 0.42), C_STEEL_BRUSH, [0.80, 62], 'posX', posXLim);
+
+                    // Veio de molas de torção + tambores + calhas de teto + motor de abertura
+                    const shaftY = doorTopY + 0.26;
+                    pushPart('cyl', viewer.matTRS(cx + halfW - 0.16, shaftY, 0, Math.PI * 0.5, 0, 0, 0.032, doorW + 0.45, 0.032), C_STEEL_BRUSH, [0.78, 60], 'posX', posXLim);
+                    for (const dz of [-doorHalfW + 0.04, doorHalfW - 0.04]) {
+                        pushPart('cyl', viewer.matTRS(cx + halfW - 0.16, shaftY, dz, Math.PI * 0.5, 0, 0, 0.085, 0.10, 0.085), C_STEEL, [0.68, 50], 'posX', posXLim);
+                        pushPart('box', viewer.matTRS(cx + halfW - 1.55, doorTopY + 0.06, dz, 0, 0, 0, 2.85, 0.055, 0.055), C_STEEL, [0.66, 48], 'ceil', ceilY - 0.48);
+                    }
+                    pushPart('box', viewer.matTRS(cx + halfW - 1.65, doorTopY + 0.24, 0, 0, 0, 0, 3.15, 0.05, 0.08), C_STEEL_DARK, [0.62, 46], 'ceil', ceilY - 0.48);
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 3.25, doorTopY + 0.22, 0, 0, 0, 0, 0.44, 0.18, 0.28), C_STEEL_DARK, [0.64, 48], 'ceil', ceilY - 0.48);
+
+                    // Caixa de comando mural com LED de estado
+                    pushPart('bevelBox', viewer.matTRS(cx + halfW - 0.10, floorY + 1.48, doorHalfW + 0.48, 0, 0, 0, 0.10, 0.28, 0.18), C_STEEL, [0.62, 46], 'posX', posXLim);
+                    pushPart('box', viewer.matTRS(cx + halfW - 0.155, floorY + 1.54, doorHalfW + 0.48, 0, 0, 0, 0.018, 0.035, 0.045), [0.18, 0.92, 0.52, 1.0], [1.30, -1.0], 'posX', posXLim);
+                }
+
+                // Pilares de canto que fecham os 4 cantos da sala
+                for (const sx of [-1, 1]) {
+                    const cxCorner = cx + sx * (halfW - 0.14);
+                    const cSide = sx > 0 ? 'posX' : 'negX';
+                    const cLim = cx + sx * (halfW - endXClipPad);
+                    for (const sz of [-1, 1]) {
+                        pushPart('box', viewer.matTRS(cxCorner, wallMidY, sz * (halfZ - 0.14), 0, 0, 0, 0.26, wallH, 0.26), C_STEEL_DARK, [0.64, 46], cSide, cLim);
+                    }
+                }
+
+                // 3. Vigas de aço no teto + pilares verticais + fitas de luz LED
+                const addIBeamX = (x0, x1, y, z, h, w, clipSide, clipLim) => {
+                    const len = Math.abs(x1 - x0);
+                    const mx = (x0 + x1) * 0.5;
+                    pushPart('box', viewer.matTRS(mx, y + h * 0.42, z, 0, 0, 0, len, h * 0.16, w), C_STEEL, [0.72, 54], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(mx, y, z, 0, 0, 0, len, h * 0.68, w * 0.24), C_STEEL_DARK, [0.64, 46], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(mx, y - h * 0.42, z, 0, 0, 0, len, h * 0.16, w), C_STEEL, [0.74, 56], clipSide, clipLim);
+                };
+                const addIBeamZ = (x, y, z0, z1, h, w, clipSide, clipLim) => {
+                    const len = Math.abs(z1 - z0);
+                    const mz = (z0 + z1) * 0.5;
+                    pushPart('box', viewer.matTRS(x, y + h * 0.42, mz, 0, 0, 0, w, h * 0.16, len), C_STEEL, [0.72, 54], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(x, y, mz, 0, 0, 0, w * 0.24, h * 0.68, len), C_STEEL_DARK, [0.64, 46], clipSide, clipLim);
+                    pushPart('box', viewer.matTRS(x, y - h * 0.42, mz, 0, 0, 0, w, h * 0.16, len), C_STEEL, [0.74, 56], clipSide, clipLim);
+                };
+
+                const ceilClipLim = ceilY - 0.48;
+                pushPart('box', viewer.matTRS(cx, ceilY + 0.34, 0, 0, 0, 0, halfW * 2.08, 0.14, halfZ * 2.08), [0.015, 0.017, 0.022, 1.0], [0.22, 14], 'ceil', ceilClipLim);
+
+                // Vigas longitudinais ao longo de X + vigas perimetrais
+                for (const lz of [-4.2, 4.2]) {
+                    addIBeamX(cx - halfW, cx + halfW, ceilY - 0.12, lz, 0.30, 0.20, 'ceil', ceilClipLim);
+                }
+                for (const side of [-1, 1]) {
+                    addIBeamX(cx - halfW, cx + halfW, ceilY - 0.06, side * (halfZ - 0.16), 0.28, 0.20, side > 0 ? 'posZ' : 'negZ', side * (halfZ - 0.32));
+                }
+
+                // 5 vigas transversais principais de aço + pilares laterais com placas de base
+                const beamXs = [-7.2, -3.6, 0.0, 3.6, 7.2];
+                for (let bi = 0; bi < beamXs.length; bi++) {
+                    const bx = cx + beamXs[bi];
+                    addIBeamZ(bx, ceilY, -halfZ, halfZ, 0.36, 0.24, 'ceil', ceilClipLim);
+                    if (bi % 2 === 0) {
+                        for (const side of [-1, 1]) {
+                            const clipSide = side > 0 ? 'posZ' : 'negZ';
+                            const clipLim = side * (halfZ - 0.32);
+                            const colZ = side * (halfZ - 0.20);
+                            pushPart('box', viewer.matTRS(bx, wallMidY, colZ, 0, 0, 0, 0.24, wallH, 0.06), C_STEEL, [0.70, 52], clipSide, clipLim);
+                            pushPart('box', viewer.matTRS(bx, wallMidY, colZ - side * 0.08, 0, 0, 0, 0.10, wallH, 0.18), C_STEEL_DARK, [0.62, 44], clipSide, clipLim);
+                            pushPart('bevelBox', viewer.matTRS(bx, floorY + 0.03, colZ - side * 0.05, 0, 0, 0, 0.36, 0.06, 0.32), C_STEEL_BRUSH, [0.74, 56], clipSide, clipLim);
+                            pushPart('bevelBox', viewer.matTRS(bx, ceilY - 0.28, colZ - side * 0.14, 0, 0, 0, 0.16, 0.34, 0.26), C_STEEL, [0.68, 50], clipSide, clipLim);
+                        }
+                    }
+                }
+
+                // Fitas de luz LED no teto (longitudinais contínuas entre vigas + transversais)
+                const ledDropY = ceilY - 0.28;
+                for (const lz of [-2.4, 0.0, 2.4]) {
+                    pushPart('box', viewer.matTRS(cx, ledDropY + 0.035, lz, 0, 0, 0, 14.8, 0.045, 0.13), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
+                    pushPart('box', viewer.matTRS(cx, ledDropY, lz, 0, 0, 0, 14.6, 0.034, 0.085), C_LED, [1.45, -1.0], 'ceil', ceilClipLim);
+                    for (const hx of [-5.4, -1.8, 1.8, 5.4]) {
+                        pushPart('cyl', viewer.matTRS(cx + hx, ledDropY + 0.18, lz, 0, 0, 0, 0.014, 0.28, 0.014), C_CHROME, [0.80, 64], 'ceil', ceilClipLim);
+                    }
+                }
+                for (const bx of [-5.4, -1.8, 1.8, 5.4]) {
+                    pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.04, 0, 0, 0, 0, 0.11, 0.04, 11.4), C_STEEL_DARK, [0.60, 46], 'ceil', ceilClipLim);
+                    pushPart('box', viewer.matTRS(cx + bx, ledDropY + 0.01, 0, 0, 0, 0, 0.075, 0.03, 11.2), C_LED, [1.35, -1.0], 'ceil', ceilClipLim);
+                }
+
+                // 4. Objetos e detalhes de oficina/dinamómetro ao redor do motor
+                // A) Carro de ferramentas vermelho e grafite (cx - 4.8, z = -5.55)
+                const tcX = cx - 4.8;
+                const tcZ = -5.55;
+                pushPart('bevelBox', viewer.matTRS(tcX, floorY + 0.64, tcZ, 0, 0, 0, 1.48, 1.06, 0.68), C_RED, [0.58, 46]);
+                pushPart('bevelBox', viewer.matTRS(tcX, floorY + 1.24, tcZ - 0.04, 0, 0, 0, 1.40, 0.22, 0.58), C_STEEL_DARK, [0.62, 48]);
+                pushPart('box', viewer.matTRS(tcX, floorY + 1.18, tcZ, 0, 0, 0, 1.50, 0.03, 0.70), C_RUBBER, [0.22, 14]);
+                for (let di = 0; di < 5; di++) {
+                    const dy = floorY + 0.26 + di * 0.185;
+                    pushPart('bevelBox', viewer.matTRS(tcX, dy, tcZ + 0.345, 0, 0, 0, 1.32, 0.14, 0.03), [0.52, 0.09, 0.10, 1.0], [0.55, 42]);
+                    pushPart('box', viewer.matTRS(tcX, dy + 0.035, tcZ + 0.365, 0, 0, 0, 1.18, 0.022, 0.02), C_CHROME, [0.85, 68]);
+                }
+                pushPart('cyl', viewer.matTRS(tcX - 0.80, floorY + 1.02, tcZ, Math.PI * 0.5, 0, 0, 0.022, 0.54, 0.022), C_CHROME, [0.84, 66]);
+                for (const wx of [-0.62, 0.62]) {
+                    for (const wz of [-0.26, 0.26]) {
+                        pushPart('cyl', viewer.matTRS(tcX + wx, floorY + 0.06, tcZ + wz, 0, 0, Math.PI * 0.5, 0.06, 0.05, 0.06), C_RUBBER, [0.26, 18]);
+                    }
+                }
+                pushPart('box', viewer.matTRS(tcX - 0.26, floorY + 1.365, tcZ + 0.06, 0, 0.28, 0, 0.36, 0.018, 0.04), C_CHROME, [0.88, 72]);
+                pushPart('box', viewer.matTRS(tcX + 0.18, floorY + 1.365, tcZ - 0.02, 0, -0.18, 0, 0.28, 0.016, 0.035), C_CHROME, [0.88, 72]);
+
+                // B) Consola móvel de telemetria / dyno (cx + 4.4, z = -5.2)
+                const dcX = cx + 4.4;
+                const dcZ = -5.2;
+                pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.07, dcZ, 0, -0.35, 0, 0.92, 0.06, 0.72), C_STEEL_DARK, [0.58, 44]);
+                for (const wx of [-0.36, 0.36]) {
+                    for (const wz of [-0.26, 0.26]) {
+                        pushPart('cyl', viewer.matTRS(dcX + wx * 0.9, floorY + 0.03, dcZ + wz * 0.9, 0, 0, Math.PI * 0.5, 0.038, 0.04, 0.038), C_RUBBER, [0.24, 16]);
+                    }
+                }
+                pushPart('bevelBox', viewer.matTRS(dcX, floorY + 0.42, dcZ, 0, -0.35, 0, 0.64, 0.62, 0.52), C_STEEL, [0.62, 46]);
+                pushPart('box', viewer.matTRS(dcX - 0.12, floorY + 0.64, dcZ + 0.24, 0, -0.35, 0, 0.12, 0.022, 0.02), accent, [1.3, -1.0]);
+                pushPart('cyl', viewer.matTRS(dcX, floorY + 1.15, dcZ - 0.06, 0, 0, 0, 0.045, 0.88, 0.045), C_STEEL_BRUSH, [0.76, 58]);
+                pushPart('bevelBox', viewer.matTRS(dcX + 0.05, floorY + 0.92, dcZ + 0.14, 0, -0.35, 0, 0.84, 0.04, 0.42), C_STEEL_DARK, [0.56, 42]);
+                pushPart('bevelBox', viewer.matTRS(dcX - 0.05, floorY + 1.50, dcZ - 0.04, -0.10, -0.35, 0, 1.12, 0.56, 0.06), C_STEEL_DARK, [0.52, 40]);
+                pushPart('box', viewer.matTRS(dcX - 0.03, floorY + 1.50, dcZ - 0.005, -0.10, -0.35, 0, 1.02, 0.46, 0.02), [0.04, 0.10, 0.16, 1.0], [0.95, -1.0]);
+                pushPart('box', viewer.matTRS(dcX - 0.20, floorY + 1.56, dcZ + 0.01, -0.10, -0.35, 0.18, 0.52, 0.026, 0.022), [0.22, 0.86, 0.98, 1.0], [1.28, -1.0]);
+                pushPart('box', viewer.matTRS(dcX - 0.16, floorY + 1.46, dcZ + 0.01, -0.10, -0.35, -0.12, 0.48, 0.022, 0.022), [0.96, 0.48, 0.18, 1.0], [1.25, -1.0]);
+                viewer.addPipe(list, [[dcX - 0.2, floorY + 0.12, dcZ + 0.2], [dcX - 1.2, floorY + 0.022, dcZ + 1.6], [cx + 1.6, floorY + 0.022, -0.9]], 0.024, C_RUBBER, [0.22, 16], [], true);
+
+                // C) Bancada de trabalho em aço com torno e peças (cx + 0.2, z = -6.45)
+                const wbX = cx + 0.2;
+                const wbZ = -6.45;
+                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 1.02, wbZ, 0, 0, 0, 2.65, 0.09, 0.92), C_STEEL_BRUSH, [0.68, 52]);
+                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 1.26, wbZ - 0.42, 0, 0, 0, 2.65, 0.42, 0.05), C_STEEL_DARK, [0.54, 40]);
+                for (const lx of [-1.22, 1.22]) {
+                    for (const lz of [-0.38, 0.38]) {
+                        pushPart('box', viewer.matTRS(wbX + lx, floorY + 0.50, wbZ + lz, 0, 0, 0, 0.08, 1.00, 0.08), C_STEEL, [0.66, 48]);
+                    }
+                }
+                pushPart('bevelBox', viewer.matTRS(wbX, floorY + 0.32, wbZ, 0, 0, 0, 2.42, 0.04, 0.78), C_STEEL_DARK, [0.58, 42]);
+                // Torno de bancada + disco de travão e pinça + lata de óleo
+                pushPart('bevelBox', viewer.matTRS(wbX - 0.95, floorY + 1.16, wbZ + 0.26, 0, 0, 0, 0.22, 0.20, 0.30), [0.18, 0.34, 0.54, 1.0], [0.56, 42]);
+                pushPart('cyl', viewer.matTRS(wbX - 0.95, floorY + 1.18, wbZ + 0.44, Math.PI * 0.5, 0, 0, 0.018, 0.22, 0.018), C_CHROME, [0.85, 68]);
+                pushPart('cyl', viewer.matTRS(wbX + 0.25, floorY + 1.09, wbZ + 0.05, 0, 0, 0, 0.24, 0.045, 0.24), C_STEEL_BRUSH, [0.82, 66]);
+                pushPart('bevelBox', viewer.matTRS(wbX + 0.44, floorY + 1.12, wbZ + 0.14, 0, 0.4, 0, 0.14, 0.10, 0.18), C_RED, [0.64, 50]);
+                pushPart('cyl', viewer.matTRS(wbX + 0.92, floorY + 1.19, wbZ - 0.05, 0, 0, 0, 0.075, 0.24, 0.075), [0.82, 0.62, 0.20, 1.0], [0.62, 48]);
+
+                // D) Garrafas de gás industrial + tambor de óleo 200L + extintor (cx - 6.6, z = +5.4)
+                const gdX = cx - 6.6;
+                const gdZ = 5.4;
+                pushPart('bevelBox', viewer.matTRS(gdX, floorY + 0.04, gdZ, 0, 0, 0, 0.96, 0.08, 0.52), C_STEEL_DARK, [0.58, 42]);
+                pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 0.88, gdZ, 0, 0, 0, 0.17, 1.55, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
+                pushPart('sphere', viewer.matTRS(gdX - 0.22, floorY + 1.65, gdZ, 0, 0, 0, 0.17, 0.18, 0.17), [0.12, 0.36, 0.42, 1.0], [0.56, 44]);
+                pushPart('cyl', viewer.matTRS(gdX - 0.22, floorY + 1.87, gdZ, 0, 0, 0, 0.045, 0.12, 0.045), C_BRASS, [0.80, 64]);
+                pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 0.82, gdZ, 0, 0, 0, 0.16, 1.44, 0.16), C_STEEL, [0.60, 48]);
+                pushPart('sphere', viewer.matTRS(gdX + 0.22, floorY + 1.54, gdZ, 0, 0, 0, 0.16, 0.16, 0.16), C_STEEL, [0.60, 48]);
+                pushPart('cyl', viewer.matTRS(gdX + 0.22, floorY + 1.74, gdZ, 0, 0, 0, 0.042, 0.11, 0.042), C_BRASS, [0.80, 64]);
+                // Tambor de óleo 200L com aros
+                const drX = gdX + 1.25;
+                const drZ = gdZ + 0.25;
+                pushPart('cyl', viewer.matTRS(drX, floorY + 0.58, drZ, 0, 0, 0, 0.36, 1.16, 0.36), C_STEEL_DARK, [0.52, 38]);
+                for (const ry of [0.36, 0.78, 1.14]) {
+                    pushPart('torus', viewer.matTRS(drX, floorY + ry, drZ, Math.PI * 0.5, 0, 0, 0.37, 0.37, 0.08), C_STEEL_BRUSH, [0.68, 50]);
+                }
+                // Extintor fixo no pilar traseiro
+                pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 0.95, halfZ - 0.42, 0, 0, 0, 0.11, 0.62, 0.11), C_RED, [0.64, 52], 'posZ', halfZ - 0.32);
+                pushPart('cyl', viewer.matTRS(cx - 7.2, floorY + 1.32, halfZ - 0.42, 0, 0, 0, 0.04, 0.12, 0.04), C_BRASS, [0.80, 62], 'posZ', halfZ - 0.32);
+
+                // E) Pilha de pneus & jantes + macaco hidráulico (cx + 5.6, z = +5.3)
+                const trX = cx + 5.6;
+                const trZ = 5.3;
+                for (let ti = 0; ti < 3; ti++) {
+                    const ty = floorY + 0.18 + ti * 0.36;
+                    const offX = ti === 2 ? 0.06 : 0;
+                    pushPart('torus', viewer.matTRS(trX + offX, ty, trZ, Math.PI * 0.5, 0, 0, 0.46, 0.46, 0.32), C_RUBBER, [0.22, 16]);
+                    pushPart('cyl', viewer.matTRS(trX + offX, ty, trZ, 0, 0, 0, 0.33, 0.30, 0.33), [0.36, 0.32, 0.24, 1.0], [0.78, 60]);
+                    pushPart('cyl', viewer.matTRS(trX + offX, ty + 0.13, trZ, 0, 0, 0, 0.12, 0.06, 0.12), C_STEEL_DARK, [0.66, 52]);
+                }
+                // Macaco hidráulico baixo
+                const jkX = cx + 3.2;
+                const jkZ = 5.75;
+                pushPart('bevelBox', viewer.matTRS(jkX, floorY + 0.09, jkZ, 0, 0.42, 0, 0.96, 0.12, 0.38), C_RED, [0.62, 48]);
+                pushPart('cyl', viewer.matTRS(jkX - 0.24, floorY + 0.17, jkZ - 0.10, 0, 0, 0, 0.09, 0.04, 0.09), C_STEEL_BRUSH, [0.76, 58]);
+                pushPart('cyl', viewer.matTRS(jkX + 0.45, floorY + 0.56, jkZ + 0.20, 0, 0.42, -0.78, 0.022, 1.15, 0.022), C_CHROME, [0.86, 68]);
+                for (const rx of [-0.36, 0.36]) {
+                    for (const rz of [-0.20, 0.20]) {
+                        pushPart('cyl', viewer.matTRS(jkX + rx, floorY + 0.045, jkZ + rz, Math.PI * 0.5, 0.42, 0, 0.045, 0.04, 0.045), C_STEEL_DARK, [0.60, 44]);
+                    }
+                }
+
+                // F) Enrolador de mangueira na parede + rampa de proteção de cabos
+                pushPart('cyl', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, 0, Math.PI * 0.5, 0.24, 0.26, 0.24), C_STEEL, [0.62, 46], 'negZ', -(halfZ - 0.32));
+                pushPart('torus', viewer.matTRS(cx, floorY + 1.85, -halfZ + 0.34, 0, Math.PI * 0.5, 0, 0.19, 0.19, 0.18), [0.16, 0.42, 0.72, 1.0], [0.40, 28], 'negZ', -(halfZ - 0.32));
+                pushPart('bevelBox', viewer.matTRS(cx - 2.9, floorY + 0.03, 5.9, 0, 0.15, 0, 1.45, 0.06, 0.38), C_RUBBER, [0.24, 16]);
+                pushPart('box', viewer.matTRS(cx - 2.9, floorY + 0.062, 5.9, 0, 0.15, 0, 1.32, 0.012, 0.14), [0.85, 0.62, 0.14, 1.0], [0.42, 28]);
+
+                return list;
+            }
+
+            return {
+                isEnabled() { return enabled; },
+                setEnabled,
+                toggle() { setEnabled(!enabled); },
+                syncUI,
+                build
             };
         })();
 
@@ -6300,6 +7431,7 @@
 
                 this.staticOpaque = [];
                 this.staticTrans = [];
+                this.envOpaque = [];
                 this.dynamicCyls = [];
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
@@ -6341,6 +7473,10 @@
                     uniform vec2 uSpec;
                     uniform vec3 uCamPos;
                     void main() {
+                        if (uSpec.y < 0.0) {
+                            gl_FragColor = vec4(uColor.rgb * uSpec.x, uColor.a);
+                            return;
+                        }
                         vec3 N = normalize(vNorm);
                         vec3 V = normalize(uCamPos - vWorldPos);
                         vec3 R = reflect(-V, N);
@@ -8483,6 +9619,7 @@
             rebuildScene() {
                 this.staticOpaque = [];
                 this.staticTrans = [];
+                this.envOpaque = [];
                 this.dynamicCyls = [];
                 this.dynamicWankel = [];
                 this.dynamicRotors = [];
@@ -8496,22 +9633,27 @@
                 const viewMode = this.config.viewMode || 'engine';
                 if (viewMode === 'gearbox') {
                     this.buildStandaloneGearboxScene();
+                    this.rebuildEnv();
                     return;
                 }
                 if (viewMode === 'exhaust') {
                     this.buildStandaloneExhaustScene();
+                    this.rebuildEnv();
                     return;
                 }
                 if (viewMode === 'electric') {
                     this.buildStandaloneElectricScene();
+                    this.rebuildEnv();
                     return;
                 }
                 if (viewMode === 'emotor') {
                     this.buildStandaloneEmotorScene();
+                    this.rebuildEnv();
                     return;
                 }
                 if (viewMode === 'battery') {
                     this.buildStandaloneBatteryScene();
+                    this.rebuildEnv();
                     return;
                 }
 
@@ -9810,6 +10952,15 @@
                     this.sceneCenterX = 0;
                     this.baseDist = Math.max(5.5, Math.hypot(halfLenX + 0.90, maxSpanZ) * 2.25 + 1.6);
                 }
+                this.rebuildEnv();
+            }
+
+            rebuildEnv() {
+                const hybOn = this.config.hybridEnabled !== false;
+                const accent = hybOn ? [0.18, 0.85, 0.72, 1.0] : [0.95, 0.42, 0.16, 1.0];
+                this.envOpaque = (window.__studioBg && typeof window.__studioBg.build === 'function')
+                    ? window.__studioBg.build(this, { floorY: -1.62, accent })
+                    : [];
             }
 
             bindEvents() {
@@ -9956,7 +11107,8 @@
                         engineSim.preSpaceThrottlePct = 0;
                         setThrottlePercent(0);
                     }
-                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 5.2 * invInertia);
+                    const offDrop = engineSim.currentRpm * Math.min(1, dt * 1.85 * invInertia) + dt * 190 * invInertia;
+                    engineSim.currentRpm = Math.max(0, engineSim.currentRpm - offDrop);
                     if (engineSim.currentRpm < 15) engineSim.currentRpm = 0;
                 } else {
                     const thr = Math.max(0, Math.min(1, (engineSim.throttlePct || 0) / 100));
@@ -9965,12 +11117,10 @@
                     const idleJitter = idle + Math.sin(now * 0.008) * 18;
                     if (thr <= 0.005) {
                         if (engineSim.currentRpm > idle + 25) {
-                            const decayFactor = Math.min(1, dt * 5.6 * invInertia);
-                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.14) * invInertia * 0.55;
-                            const expDrop = engineSim.currentRpm - (engineSim.currentRpm - idleJitter) * decayFactor;
-                            engineSim.currentRpm = Math.max(idleJitter, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                            const coastDrop = (engineSim.currentRpm - idleJitter) * Math.min(1, dt * 1.55 * invInertia) + dt * 220 * invInertia;
+                            engineSim.currentRpm = Math.max(idleJitter, engineSim.currentRpm - coastDrop);
                         } else {
-                            engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 6.2 * invInertia);
+                            engineSim.currentRpm += (idleJitter - engineSim.currentRpm) * Math.min(1, dt * 2.8 * invInertia);
                         }
                     } else {
                         const targetRpm = idle + (maxR - idle) * Math.pow(thr, 0.85);
@@ -9985,10 +11135,8 @@
                             const step = thr >= 0.98 ? rawStep : Math.min(rawStep, gap * Math.min(1, dt * 11.0));
                             engineSim.currentRpm += step;
                         } else if (engineSim.currentRpm > targetRpm) {
-                            const decayFactor = Math.min(1, dt * 4.4 * invInertia);
-                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.14) * invInertia * 0.55;
-                            const expDrop = engineSim.currentRpm - (engineSim.currentRpm - targetRpm) * decayFactor;
-                            engineSim.currentRpm = Math.max(targetRpm, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                            const decelDrop = (engineSim.currentRpm - targetRpm) * Math.min(1, dt * 1.35 * invInertia) + dt * 180 * invInertia;
+                            engineSim.currentRpm = Math.max(targetRpm, engineSim.currentRpm - decelDrop);
                         }
                         if (thr >= 0.98 && engineSim.currentRpm >= maxR * 0.985) {
                             // Oscilação realista de corte de rotação proporcional ao volante e potência
@@ -10090,7 +11238,12 @@
                 const w = this.canvas.width, h = this.canvas.height;
                 if (!w || !h) return;
                 gl.viewport(0, 0, w, h);
-                gl.clearColor(0, 0, 0, 0);
+                const studioOn = !!(window.__studioBg && window.__studioBg.isEnabled());
+                if (studioOn) {
+                    gl.clearColor(0.012, 0.014, 0.020, 1.0);
+                } else {
+                    gl.clearColor(0, 0, 0, 0);
+                }
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
                 const dist = this.baseDist / this.cam.zoom;
@@ -10119,6 +11272,18 @@
 
                 for (const item of this.staticOpaque) {
                     this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                }
+
+                if (this.envOpaque && this.envOpaque.length) {
+                    for (const item of this.envOpaque) {
+                        if (item.clipSide === 'posZ' && eye[2] > item.clipLim) continue;
+                        if (item.clipSide === 'negZ' && eye[2] < item.clipLim) continue;
+                        if (item.clipSide === 'posX' && eye[0] > item.clipLim) continue;
+                        if (item.clipSide === 'negX' && eye[0] < item.clipLim) continue;
+                        if (item.clipSide === 'ceil' && eye[1] > item.clipLim) continue;
+                        if (item.clipSide === 'floor' && eye[1] < item.clipLim) continue;
+                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                    }
                 }
 
                 // Pistões, bielas e contrapesos da cambota
@@ -11543,6 +12708,11 @@
                 if ((lang === 'pt' || lang === 'en') && lang !== currentLang) {
                     currentLang = lang;
                     applyLanguage();
+                }
+            },
+            refreshStudioBg() {
+                if (motor3D && typeof motor3D.rebuildEnv === 'function') {
+                    motor3D.rebuildEnv();
                 }
             },
             isHybrid() { return hybridEnabled; }
@@ -13071,6 +14241,10 @@ const selectTopology = document.getElementById('ev-select-topology');
                     uniform vec2 uSpec;
                     uniform vec3 uCamPos;
                     void main() {
+                        if (uSpec.y < 0.0) {
+                            gl_FragColor = vec4(uColor.rgb * uSpec.x, uColor.a);
+                            return;
+                        }
                         vec3 N = normalize(vNorm);
                         vec3 V = normalize(uCamPos - vWorldPos);
                         vec3 R = reflect(-V, N);
@@ -14415,6 +15589,7 @@ const selectTopology = document.getElementById('ev-select-topology');
             rebuildScene() {
                 this.staticOpaque = [];
                 this.staticTrans = [];
+                this.envOpaque = [];
                 this.dynamicRotors = [];
                 this.dynamicEvRotors = [];
                 this.hvPaths = [];
@@ -14423,10 +15598,12 @@ const selectTopology = document.getElementById('ev-select-topology');
                 const viewMode = this.config.viewMode || 'engine';
                 if (viewMode === 'gearbox') {
                     this.buildStandaloneGearboxScene();
+                    this.rebuildEnv();
                     return;
                 }
                 if (viewMode === 'battery') {
                     this.buildStandaloneBatteryScene();
+                    this.rebuildEnv();
                     return;
                 }
 
@@ -14450,6 +15627,7 @@ const selectTopology = document.getElementById('ev-select-topology');
                     } else {
                         this.sceneCenterX = 0.0;
                         this.baseDist = 3.15;
+                        this.rebuildEnv();
                         return;
                     }
                 } else if (topo === 'Dual') {
@@ -14555,6 +15733,16 @@ const selectTopology = document.getElementById('ev-select-topology');
 
                 this.sceneCenterX = (xMinAll + xMaxAll) * 0.5;
                 this.baseDist = Math.max(4.6, (xMaxAll - xMinAll) * 1.18 + maxSpanZ * 1.05);
+                this.rebuildEnv();
+            }
+
+            rebuildEnv() {
+                const viewMode = this.config.viewMode || 'engine';
+                const topo = this.config.topology || 'Single';
+                const floorY = (viewMode === 'all' || viewMode === 'battery' || topo === 'In-Wheel') ? -1.45 : -1.18;
+                this.envOpaque = (window.__studioBg && typeof window.__studioBg.build === 'function')
+                    ? window.__studioBg.build(this, { floorY, accent: [0.22, 0.74, 0.96, 1.0] })
+                    : [];
             }
             bindEvents() {
                 const bg = document.getElementById('ev-motor-bg-stage');
@@ -14695,11 +15883,11 @@ const selectTopology = document.getElementById('ev-select-topology');
                 const invInertia = 1.0 / inertiaMult;
                 const regenMode = selectRegenMode ? selectRegenMode.value : 'One-Pedal Alta (180 kW)';
                 const regenDecelMult = {
-                    'Desligada': 0.36,
-                    'Standard (50 kW)': 1.05,
-                    'One-Pedal Alta (180 kW)': 1.85,
-                    'Track Regen (Max)': 2.60
-                }[regenMode] || 1.30;
+                    'Desligada': 0.38,
+                    'Standard (50 kW)': 0.85,
+                    'One-Pedal Alta (180 kW)': 1.25,
+                    'Track Regen (Max)': 1.65
+                }[regenMode] || 1.00;
 
                 if (!engineSim.on) {
                     if (engineSim.throttlePct !== 0 || engineSim.spaceHeld) {
@@ -14708,7 +15896,8 @@ const selectTopology = document.getElementById('ev-select-topology');
                         setThrottlePercent(0);
                     }
                     engineSim.isRegening = false;
-                    engineSim.currentRpm += (0 - engineSim.currentRpm) * Math.min(1, dt * 4.8 * invInertia);
+                    const offDrop = engineSim.currentRpm * Math.min(1, dt * 1.80 * invInertia) + dt * 210 * invInertia;
+                    engineSim.currentRpm = Math.max(0, engineSim.currentRpm - offDrop);
                     if (engineSim.currentRpm < 15) engineSim.currentRpm = 0;
                 } else {
                     const thr = Math.max(0, Math.min(1, (engineSim.throttlePct || 0) / 100));
@@ -14716,10 +15905,8 @@ const selectTopology = document.getElementById('ev-select-topology');
                     const targetRpm = maxR * Math.pow(thr, 0.85);
                     if (thr <= 0.005) {
                         if (engineSim.currentRpm > 40) {
-                            const decayFactor = Math.min(1, dt * 3.8 * regenDecelMult * invInertia);
-                            const linearDrop = dt * (950 + engineSim.currentRpm * 0.16) * regenDecelMult * invInertia * 0.65;
-                            const expDrop = engineSim.currentRpm - engineSim.currentRpm * decayFactor;
-                            engineSim.currentRpm = Math.max(0, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                            const coastDrop = engineSim.currentRpm * Math.min(1, dt * 1.45 * regenDecelMult * invInertia) + dt * (220 * regenDecelMult) * invInertia;
+                            engineSim.currentRpm = Math.max(0, engineSim.currentRpm - coastDrop);
                             engineSim.isRegening = regenMode !== 'Desligada' && engineSim.currentRpm > 80;
                         } else {
                             engineSim.currentRpm = 0;
@@ -14737,10 +15924,8 @@ const selectTopology = document.getElementById('ev-select-topology');
                         const step = thr >= 0.98 ? rawStep : Math.min(rawStep, gap * Math.min(1, dt * 11.5));
                         engineSim.currentRpm += step;
                     } else if (engineSim.currentRpm > targetRpm) {
-                        const decayFactor = Math.min(1, dt * 3.5 * regenDecelMult * invInertia);
-                        const linearDrop = dt * (950 + engineSim.currentRpm * 0.15) * regenDecelMult * invInertia * 0.60;
-                        const expDrop = engineSim.currentRpm - (engineSim.currentRpm - targetRpm) * decayFactor;
-                        engineSim.currentRpm = Math.max(targetRpm, Math.min(expDrop, engineSim.currentRpm - linearDrop));
+                        const decelDrop = (engineSim.currentRpm - targetRpm) * Math.min(1, dt * 1.25 * regenDecelMult * invInertia) + dt * (180 * regenDecelMult) * invInertia;
+                        engineSim.currentRpm = Math.max(targetRpm, engineSim.currentRpm - decelDrop);
                         engineSim.isRegening = regenMode !== 'Desligada' && (engineSim.currentRpm - targetRpm) > 90;
                     } else {
                         engineSim.isRegening = false;
@@ -14831,7 +16016,12 @@ const selectTopology = document.getElementById('ev-select-topology');
                 const w = this.canvas.width, h = this.canvas.height;
                 if (!w || !h) return;
                 gl.viewport(0, 0, w, h);
-                gl.clearColor(0, 0, 0, 0);
+                const studioOn = !!(window.__studioBg && window.__studioBg.isEnabled());
+                if (studioOn) {
+                    gl.clearColor(0.012, 0.014, 0.020, 1.0);
+                } else {
+                    gl.clearColor(0, 0, 0, 0);
+                }
                 gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
                 const dist = this.baseDist / this.cam.zoom;
@@ -14860,6 +16050,18 @@ const selectTopology = document.getElementById('ev-select-topology');
 
                 for (const item of this.staticOpaque) {
                     this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                }
+
+                if (this.envOpaque && this.envOpaque.length) {
+                    for (const item of this.envOpaque) {
+                        if (item.clipSide === 'posZ' && eye[2] > item.clipLim) continue;
+                        if (item.clipSide === 'negZ' && eye[2] < item.clipLim) continue;
+                        if (item.clipSide === 'posX' && eye[0] > item.clipLim) continue;
+                        if (item.clipSide === 'negX' && eye[0] < item.clipLim) continue;
+                        if (item.clipSide === 'ceil' && eye[1] > item.clipLim) continue;
+                        if (item.clipSide === 'floor' && eye[1] < item.clipLim) continue;
+                        this.drawItem(this.meshes[item.type], item.model, item.color, item.spec, viewProj);
+                    }
                 }
 
                 // Rotores elétricos dinâmicos (N52 V-Shape, Halbach Array, Gaiola Cobre, EESM Bobinado, Manga Carbono, Fluxo Axial)
@@ -15748,6 +16950,11 @@ const selectTopology = document.getElementById('ev-select-topology');
                     applyLanguage();
                 }
             },
+            refreshStudioBg() {
+                if (motor3D && typeof motor3D.rebuildEnv === 'function') {
+                    motor3D.rebuildEnv();
+                }
+            },
             getApi() {
                 return { motor3D, engineSim, I18N, setActivePage, setViewAndPopover, computeDynoData, readEnginePayload };
             }
@@ -15800,7 +17007,12 @@ const selectTopology = document.getElementById('ev-select-topology');
                 settingsLangLbl: 'Idioma',
                 settingsLangDesc: 'Alterar entre Português e Inglês',
                 settingsSoundLbl: 'Som do Motor',
-                settingsSoundDesc: 'Síntese áudio Web Audio por tipo de motor'
+                settingsSoundDesc: 'Síntese áudio Web Audio por tipo de motor',
+                settingsBgLbl: 'Ambiente 3D',
+                settingsBgDesc: 'Sala fechada, piso preto, porta de garagem, vigas e objetos',
+                launchStatusIce: 'IGNIÇÃO · COMBUSTÃO INTERNA',
+                launchStatusHybrid: 'SINCRONIZAÇÃO · SISTEMA HÍBRIDO',
+                launchStatusElectric: 'ALTA TENSÃO · TRAÇÃO ELÉTRICA'
             },
             en: {
                 langBtn: 'EN → PT',
@@ -15843,7 +17055,12 @@ const selectTopology = document.getElementById('ev-select-topology');
                 settingsLangLbl: 'Language',
                 settingsLangDesc: 'Switch between Portuguese and English',
                 settingsSoundLbl: 'Engine Sound',
-                settingsSoundDesc: 'Web Audio synthesis tailored per powertrain'
+                settingsSoundDesc: 'Web Audio synthesis tailored per powertrain',
+                settingsBgLbl: '3D Studio Background',
+                settingsBgDesc: 'Enclosed bay, black floor, garage door, steel beams & props',
+                launchStatusIce: 'IGNITION · INTERNAL COMBUSTION',
+                launchStatusHybrid: 'POWER-SPLIT SYNC · HYBRID',
+                launchStatusElectric: 'HIGH VOLTAGE · ELECTRIC DRIVE'
             }
         };
 
@@ -15856,6 +17073,13 @@ const selectTopology = document.getElementById('ev-select-topology');
         const btnIce = document.getElementById('btn-launch-ice');
         const btnHybrid = document.getElementById('btn-launch-hybrid');
         const btnElectric = document.getElementById('btn-launch-electric');
+        const launchOverlay = document.getElementById('launch-transition-overlay');
+        const launchOverlayTitle = document.getElementById('launch-overlay-title');
+        const launchOverlayStatus = document.getElementById('launch-overlay-status');
+        const launcherCards = [btnIce, btnHybrid, btnElectric].filter(Boolean);
+        let launchTransitionTimer = null;
+        let shellEnterTimer = null;
+        let isLaunchingMode = false;
         const settingsBackdrop = document.getElementById('settings-backdrop');
         const btnLauncherSettings = document.getElementById('btn-launcher-settings');
         const btnIceSettings = document.getElementById('btn-ice-settings');
@@ -15864,6 +17088,7 @@ const selectTopology = document.getElementById('ev-select-topology');
         const btnSettingsLang = document.getElementById('settings-btn-lang-toggle');
         const btnSettingsSound = document.getElementById('settings-btn-sound-toggle');
         const rangeSettingsSound = document.getElementById('settings-sound-range');
+        const btnSettingsBg = document.getElementById('settings-btn-bg-toggle');
         const settingsTriggers = [btnLauncherSettings, btnIceSettings, btnEvSettings];
 
         function setSettingsOpen(isOpen) {
@@ -15917,6 +17142,11 @@ const selectTopology = document.getElementById('ev-select-topology');
             setTxt('settings-lang-desc', t.settingsLangDesc);
             setTxt('settings-sound-lbl', t.settingsSoundLbl);
             setTxt('settings-sound-desc', t.settingsSoundDesc);
+            setTxt('settings-bg-lbl', t.settingsBgLbl);
+            setTxt('settings-bg-desc', t.settingsBgDesc);
+            if (window.__studioBg && typeof window.__studioBg.syncUI === 'function') {
+                window.__studioBg.syncUI();
+            }
             settingsTriggers.forEach(btn => {
                 if (btn) btn.title = t.settingsTitle;
             });
@@ -15945,14 +17175,94 @@ const selectTopology = document.getElementById('ev-select-topology');
             if (window.__engineAudio && typeof window.__engineAudio.syncUI === 'function') window.__engineAudio.syncUI();
         };
 
+        function resetLauncherTransition() {
+            if (launchTransitionTimer) {
+                clearTimeout(launchTransitionTimer);
+                launchTransitionTimer = null;
+            }
+            isLaunchingMode = false;
+            if (screenLauncher) screenLauncher.classList.remove('is-launching');
+            launcherCards.forEach(card => {
+                card.classList.remove('is-selected-launch', 'is-dismissed-launch');
+            });
+            if (launchOverlay) {
+                launchOverlay.classList.remove('is-active');
+                launchOverlay.hidden = true;
+                launchOverlay.removeAttribute('data-mode');
+            }
+        }
+
+        function launchWithAnimation(mode, selectedCard) {
+            if (!['ice', 'hybrid', 'electric'].includes(mode) || isLaunchingMode) return;
+            isLaunchingMode = true;
+            setSettingsOpen(false);
+
+            const t = LAUNCHER_I18N[window.__appLang] || LAUNCHER_I18N.pt;
+            const modeMeta = {
+                ice: { title: t.iceTitle, status: t.launchStatusIce },
+                hybrid: { title: t.hybTitle, status: t.launchStatusHybrid },
+                electric: { title: t.evTitle, status: t.launchStatusElectric }
+            }[mode];
+
+            if (screenLauncher) screenLauncher.classList.add('is-launching');
+            launcherCards.forEach(card => {
+                if (card === selectedCard) {
+                    card.classList.add('is-selected-launch');
+                    card.classList.remove('is-dismissed-launch');
+                } else {
+                    card.classList.add('is-dismissed-launch');
+                    card.classList.remove('is-selected-launch');
+                }
+            });
+
+            if (launchOverlay) {
+                launchOverlay.setAttribute('data-mode', mode);
+                if (launchOverlayTitle && modeMeta) launchOverlayTitle.textContent = modeMeta.title;
+                if (launchOverlayStatus && modeMeta) launchOverlayStatus.textContent = modeMeta.status;
+                launchOverlay.hidden = false;
+                launchOverlay.classList.remove('is-active');
+                void launchOverlay.offsetWidth;
+                requestAnimationFrame(() => {
+                    if (launchOverlay && isLaunchingMode) launchOverlay.classList.add('is-active');
+                });
+            }
+
+            const reduceMotion = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const durationMs = reduceMotion ? 120 : 1050;
+
+            launchTransitionTimer = setTimeout(() => {
+                launchTransitionTimer = null;
+                window.__enterPowertrainMode(mode);
+                resetLauncherTransition();
+                const activeShell = mode === 'electric' ? shellEv : shellIce;
+                if (activeShell) {
+                    if (shellEnterTimer) clearTimeout(shellEnterTimer);
+                    activeShell.classList.remove('is-entering');
+                    void activeShell.offsetWidth;
+                    activeShell.classList.add('is-entering');
+                    shellEnterTimer = setTimeout(() => {
+                        activeShell.classList.remove('is-entering');
+                        shellEnterTimer = null;
+                    }, 460);
+                }
+            }, durationMs);
+        }
+
         window.__showLauncher = function() {
+            resetLauncherTransition();
             setSettingsOpen(false);
             if (window.__engineAudio) window.__engineAudio.silence();
             if (window.__iceModule && typeof window.__iceModule.deactivate === 'function') window.__iceModule.deactivate();
             if (window.__evModule && typeof window.__evModule.deactivate === 'function') window.__evModule.deactivate();
             window.__activePowertrainMode = 'launcher';
-            if (shellIce) shellIce.hidden = true;
-            if (shellEv) shellEv.hidden = true;
+            if (shellIce) {
+                shellIce.classList.remove('is-entering');
+                shellIce.hidden = true;
+            }
+            if (shellEv) {
+                shellEv.classList.remove('is-entering');
+                shellEv.hidden = true;
+            }
             if (screenLauncher) screenLauncher.hidden = false;
         };
 
@@ -15975,9 +17285,9 @@ const selectTopology = document.getElementById('ev-select-topology');
             }
         };
 
-        if (btnIce) btnIce.addEventListener('click', () => window.__enterPowertrainMode('ice'));
-        if (btnHybrid) btnHybrid.addEventListener('click', () => window.__enterPowertrainMode('hybrid'));
-        if (btnElectric) btnElectric.addEventListener('click', () => window.__enterPowertrainMode('electric'));
+        if (btnIce) btnIce.addEventListener('click', () => launchWithAnimation('ice', btnIce));
+        if (btnHybrid) btnHybrid.addEventListener('click', () => launchWithAnimation('hybrid', btnHybrid));
+        if (btnElectric) btnElectric.addEventListener('click', () => launchWithAnimation('electric', btnElectric));
         if (btnSettingsLang) {
             btnSettingsLang.addEventListener('click', () => {
                 window.__setAppLang(window.__appLang === 'pt' ? 'en' : 'pt');
@@ -15986,6 +17296,11 @@ const selectTopology = document.getElementById('ev-select-topology');
         if (btnSettingsSound) {
             btnSettingsSound.addEventListener('click', () => {
                 if (window.__engineAudio) window.__engineAudio.toggleMute();
+            });
+        }
+        if (btnSettingsBg) {
+            btnSettingsBg.addEventListener('click', () => {
+                if (window.__studioBg) window.__studioBg.toggle();
             });
         }
         if (rangeSettingsSound) {
